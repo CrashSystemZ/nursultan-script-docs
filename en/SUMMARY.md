@@ -2,63 +2,55 @@
 
 * [What this is](README.md)
 
-## Getting started
+* [Getting started](start/README.md)
+  * [Your first script](start/first-script.md)
+  * [The project in your IDE](start/ide.md)
+  * [How a script works](start/lifecycle.md)
 
-* [Your first script](start/first-script.md)
-* [The project in your IDE](start/ide.md)
-* [How a script works](start/lifecycle.md)
+* [Settings](settings/README.md)
+  * [Kinds of settings](settings/types.md)
+  * [Entries with their own logic](settings/entries.md)
+  * [Saving data](settings/storage.md)
 
-## Settings
+* [Events](events/README.md)
+  * [Subscribing](events/basics.md)
+  * [Event list](events/reference.md)
 
-* [Kinds of settings](settings/types.md)
-* [Entries with their own logic](settings/entries.md)
-* [Saving data](settings/storage.md)
+* [Game data](game/README.md)
+  * [Your player](game/player.md)
+  * [World and blocks](game/world.md)
+  * [Entities and filters](game/entities.md)
+  * [Inventory and items](game/inventory.md)
+  * [Containers](game/containers.md)
+  * [Rays and the crosshair](game/raycast.md)
+  * [Server, scoreboard, tab list](game/server.md)
 
-## Events
+* [Actions](actions/README.md)
+  * [Interaction](actions/interaction.md)
+  * [Rotations](actions/rotations.md)
+  * [Slots and armor](actions/slots.md)
+  * [Movement](actions/control.md)
+  * [Packets](actions/packets.md)
+  * [Prediction](actions/prediction.md)
 
-* [Subscribing](events/basics.md)
-* [Event list](events/reference.md)
+* [Interface](ui/README.md)
+  * [2D render](ui/render-2d.md)
+  * [3D render](ui/render-3d.md)
+  * [Shaders](ui/shaders.md)
+  * [Messages](ui/messages.md)
+  * [Styled text](ui/text.md)
 
-## Game data
+* [More](extras/README.md)
+  * [Your own commands](extras/commands.md)
+  * [Client modules](extras/modules.md)
+  * [Timers and tasks](extras/tasks.md)
+  * [Waypoints](extras/waypoints.md)
+  * [Sandbox and limits](extras/limits.md)
+  * [API versions](extras/api-versions.md)
+  * [MCP for AI agents](extras/mcp.md)
 
-* [Your player](game/player.md)
-* [World and blocks](game/world.md)
-* [Entities and filters](game/entities.md)
-* [Inventory and items](game/inventory.md)
-* [Containers](game/containers.md)
-* [Rays and the crosshair](game/raycast.md)
-* [Server, scoreboard, tab list](game/server.md)
-
-## Actions
-
-* [Interaction](actions/interaction.md)
-* [Rotations](actions/rotations.md)
-* [Slots and armor](actions/slots.md)
-* [Movement](actions/control.md)
-* [Packets](actions/packets.md)
-* [Prediction](actions/prediction.md)
-
-## Interface
-
-* [2D render](ui/render-2d.md)
-* [3D render](ui/render-3d.md)
-* [Shaders](ui/shaders.md)
-* [Messages](ui/messages.md)
-* [Styled text](ui/text.md)
-
-## More
-
-* [Your own commands](extras/commands.md)
-* [Client modules](extras/modules.md)
-* [Timers and tasks](extras/tasks.md)
-* [Waypoints](extras/waypoints.md)
-* [Sandbox and limits](extras/limits.md)
-* [API versions](extras/api-versions.md)
-* [MCP for AI agents](extras/mcp.md)
-
-## Examples
-
-* [MineBlaze auto duel](examples/mineblaze-auto-duel.md)
-* [Bridge builder](examples/bridge-builder.md)
-* [Auto soup](examples/auto-soup.md)
-* [Anarchy helper](examples/anarchyhelper.md)
+* [Examples](examples/README.md)
+  * [MineBlaze auto duel](examples/mineblaze-auto-duel.md)
+  * [Bridge builder](examples/bridge-builder.md)
+  * [Auto soup](examples/auto-soup.md)
+  * [Anarchy helper](examples/anarchyhelper.md)
