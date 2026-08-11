@@ -175,6 +175,31 @@ Filter by `listed()` when you want only what the tab actually draws — servers 
 
 `skinTexture()` works for the whole roster, entity or no entity, so a tab list with heads down the side needs nothing loaded — see [drawing a piece of a texture](../ui/render-2d.md).
 
+### Writing the ping back
+
+`pingMs()` also takes a value, and it writes straight into the entry the client keeps:
+
+```kotlin
+val pingRegex = Regex("""(\d+)\s*ms""")
+var parsed = -1
+
+on<PacketReceiveEvent> { event ->
+    val packet = event.packet()
+    if (packet !is S2CPlayerListHeaderPacket) return@on
+    parsed = pingRegex.find(packet.footer())?.groupValues?.get(1)?.toIntOrNull() ?: parsed
+}
+
+on<ClientTickEvent> {
+    if (!inGame || parsed < 0) return@on
+    val uuid = player.uuid()
+    tab.players().firstOrNull { it.uuid() == uuid }?.pingMs(parsed)
+}
+```
+
+This is for servers that never send a real latency and print the number somewhere else instead — the footer, the header, the display name. Parse it out of the text, write it into the row, and everything that reads ping shows it: the vanilla tab, the client's own tab, `pingMs()` in any other script.
+
+Two things to keep in mind. The server keeps sending latency updates and each one overwrites what you wrote, so set it on a tick rather than once. And do not write it from inside the packet handler: that runs before the client has applied the packet, so your value is gone a moment later.
+
 ## Screens
 
 ```kotlin

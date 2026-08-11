@@ -37,6 +37,7 @@
   * [Рендер 2D](ui/render-2d.md)
   * [Рендер 3D](ui/render-3d.md)
   * [Шейдеры](ui/shaders.md)
+  * [Своя геометрия](ui/gpu.md)
   * [Сообщения](ui/messages.md)
   * [Оформленный текст](ui/text.md)
 
