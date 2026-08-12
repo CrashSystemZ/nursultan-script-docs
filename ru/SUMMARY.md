@@ -46,6 +46,7 @@
   * [Модули клиента](extras/modules.md)
   * [Таймеры и задачи](extras/tasks.md)
   * [Путевые точки](extras/waypoints.md)
+  * [Папка assets](extras/assets.md)
   * [Песочница и лимиты](extras/limits.md)
   * [Версии API](extras/api-versions.md)
   * [MCP для ИИ-агентов](extras/mcp.md)

@@ -9,6 +9,7 @@ The script development folder is on the site. It already contains everything:
 | Path | What it is |
 |---|---|
 | `*.kts` | your scripts — `example.kts` is there to start from |
+| `assets/` | fonts, images and data your scripts read — see [the assets folder](../extras/assets.md) |
 | `.sdk/nursultan-script-api-vN.jar` | the API itself, and the script template that tells the IDE what a `.kts` in this folder is |
 | `.sdk/nursultan-script-packets-<version>.jar` | Minecraft packet classes, only needed if your script reads or sends them |
 | `build.gradle.kts`, `settings.gradle.kts` | wire those jars in |
@@ -34,6 +35,8 @@ Without this every `.kts` is red. Resolution is computed per file, so open a scr
 ## Moving it into the game
 
 A finished script is a single `.kts`. Copy it into the client's scripts folder (`%APPDATA%\Nursultan\scripts`) and switch it on in the Scripts tab. Nothing else needs to travel — not `.sdk`, not the build files.
+
+If the script reads fonts, images or data, those files travel too — into `%APPDATA%\Nursultan\scripts\assets`, keeping the same subfolders you used while developing.
 
 Saving a file that is already loaded reloads the script live, so you never restart the game to test an edit.
 

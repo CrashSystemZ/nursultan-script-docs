@@ -30,6 +30,8 @@ on<ClientTickEvent> {
 
 That folder holds **only** finished `.kts` files. Writing scripts is nicer in a separate project folder — see [The project in your IDE](start/ide.md).
 
+Everything a script reads — fonts, images, data — goes one folder down, into `scripts\assets`. See [The assets folder](extras/assets.md).
+
 The file name is the script id: `auto-jump.kts` shows up in the menu as `auto-jump` until you give it a `name(...)`.
 
 ## The Scripts tab

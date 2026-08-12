@@ -12,7 +12,7 @@ You never write imports — it is all available at the top level.
 
 ## What is not there
 
-* Files and folders.
+* Files and folders — apart from reading [the assets folder](assets.md).
 * The network.
 * Java threads and timers.
 * Reflection and class loading.
@@ -20,7 +20,7 @@ You never write imports — it is all available at the top level.
 
 A script that tries any of this **will not load**: the client checks it before running and tells you which symbol is blocked.
 
-You do not need files anyway — [configs](../settings/storage.md) handle saving, and the API handles reading the world.
+Writing files is not a thing at all: [configs](../settings/storage.md) handle saving, the API handles reading the world, and your own fonts, images and data come out of [the assets folder](assets.md).
 
 ## How long you may think
 

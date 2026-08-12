@@ -46,6 +46,7 @@
   * [Client modules](extras/modules.md)
   * [Timers and tasks](extras/tasks.md)
   * [Waypoints](extras/waypoints.md)
+  * [The assets folder](extras/assets.md)
   * [Sandbox and limits](extras/limits.md)
   * [API versions](extras/api-versions.md)
   * [MCP for AI agents](extras/mcp.md)
