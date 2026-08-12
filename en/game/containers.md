@@ -87,6 +87,56 @@ container.clickButton(0)                       // a screen button: stonecutter, 
 
 `QUICK_MOVE` is what you want for moving things: one click moves the whole stack, instead of picking it up and putting it down twice.
 
+## Recipes
+
+`recipes` is the recipe book: the entries the server sent you. Each one carries a numeric id for this session, and with it the server **places the ingredients into the grid itself**, like clicking a recipe in the green book:
+
+```kotlin
+val entry = recipes.find("experience_bottle").firstOrNull()
+if (entry != null && container.open()) {
+    recipes.craft(entry.id(), true)    // true — craft a whole stack at once
+}
+```
+
+| | |
+|---|---|
+| `all()` | every recipe book entry |
+| `find(itemId)` | the entries whose result is that item |
+| `craft(id[, craftAll])` | ask the server to place the ingredients; `craftAll = true` fills up to a stack |
+
+An entry has `id()`, `resultId()`, `resultCount()`, `category()` and `craftable()` — whether your inventory holds the ingredients right now.
+
+### The grid and the ingredients
+
+What goes where is visible too — `kind()`, `width()`, `height()`, `station()` and `ingredients()`:
+
+```kotlin
+val entry = recipes.find("crafting_table").first()
+for (row in 0 until entry.height()) {
+    val line = (0 until entry.width()).joinToString(" | ") { column ->
+        entry.ingredients()[row * entry.width() + column].firstOrNull()?.id() ?: "-"
+    }
+    chat.print(line)
+}
+```
+
+`ingredients()` is a list of slots, and each slot is a list of the items it accepts: a recipe with a tag ("any planks") gives you every option, an empty grid slot gives an empty list.
+
+| `kind()` | What is in `ingredients()` |
+|---|---|
+| `SHAPED` | the grid row by row, `width() * height()` slots, empty ones included |
+| `SHAPELESS` | ingredients with no positions, `width()` and `height()` are 0 |
+| `FURNACE` | one slot — what gets smelted |
+| `STONECUTTER` | one slot — what gets cut |
+| `SMITHING` | three slots: template, base, addition |
+| `OTHER` | empty |
+
+`station()` is the block it is crafted on: `"minecraft:crafting_table"`, `"minecraft:furnace"`, … An empty string when the server sent no block.
+
+* `craft` clicks the recipe in the handler that is **open right now**: open the crafting table first — or your own inventory for 2×2 recipes. The server puts the output into the result slot; collecting it is on you — `shiftClick`.
+* An `id` lives for one session: the server hands the indices out on join. Don't store it between sessions — look the entry up again by `resultId()`.
+* The server only places recipes it knows and sent to the book. Custom plugin crafts that are not in the recipe book cannot be crafted this way.
+
 ## Sequences and delays
 
 A single click goes out immediately. When you need several in order — and the server needs a tick between them to keep up — queue them as one batch:
