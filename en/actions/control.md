@@ -77,6 +77,46 @@ Cancel the event and the mouse stops turning the camera at all.
 
 Turning the head towards a target is not this — that is [Rotations](rotations.md).
 
+## Game settings
+
+`gameSettings` is Minecraft's own options — what the player set in the game menu:
+
+```kotlin
+gameSettings.perspective()                               // FIRST_PERSON | THIRD_PERSON_BACK | THIRD_PERSON_FRONT
+gameSettings.perspective(Perspective.THIRD_PERSON_BACK)  // exactly what pressing F5 does
+
+gameSettings.scaleFactor()                               // GUI Scale as a number: 1.0, 2.0, 3.0 …
+gameSettings.mouseSensitivity()                          // 0..1, where 0.5 is the "100%" the game shows
+gameSettings.mouseSensitivity(0.5)
+```
+
+A `Perspective` answers three questions about itself: `firstPerson()`, `thirdPerson()`, `frontView()`.
+
+Writing any of these has to happen on the client thread — inside a handler you already are there, from anywhere else wrap it in `onClientThread { }`. Nothing is restored when your script switches off, so put it back yourself:
+
+```kotlin
+var previous = gameSettings.perspective()
+
+onEnable {
+    previous = gameSettings.perspective()
+    gameSettings.perspective(Perspective.THIRD_PERSON_BACK)
+}
+
+onDisable { gameSettings.perspective(previous) }
+```
+
+`PerspectiveEvent` fires whenever the view changes, no matter who changed it — the player, your script, or another one:
+
+```kotlin
+on<PerspectiveEvent> { e ->
+    log.info("${e.previous()} -> ${e.current()}")
+}
+```
+
+What you read is always the player's own choice. Client modules that force a view — FreeCam, FreeLook — change how the frame is drawn, not the option, so `gameSettings.perspective()` keeps telling you what the player picked.
+
+`scaleFactor()` is the bridge between [2D render](../ui/render-2d.md), which works in real framebuffer pixels, and the vanilla interface, which is those pixels divided by this number.
+
 ## Asking a key directly
 
 Events tell you when a key *changed*. `keys` tells you what is held **right now**, which is what a HUD needs:

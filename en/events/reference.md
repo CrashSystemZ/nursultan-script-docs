@@ -167,6 +167,7 @@ These fire **on the network thread**. Details and the packet list are in [Packet
 | `SwingSpeedEvent` | the game asks how long a hand swing lasts | |
 | `RenderItemEvent` | before the swing transform of the first-person item is applied | yes |
 | `FramebufferResizeEvent` | the window changed size | |
+| `PerspectiveEvent` | the point of view changed — F5 or a script | |
 
 `Render2DEvent` carries `render()`, the screen size `width()` × `height()` and `tickDelta()`. `Render3DEvent` carries `render()`, `tickDelta()` and the camera position `camera()`. See [2D render](../ui/render-2d.md) and [3D render](../ui/render-3d.md).
 
@@ -194,6 +195,8 @@ It fires during the world render, before both render events of the same frame, s
 `RenderItemEvent` carries `arm()` and `swingProgress()`. Cancel it and the swing transform is not applied — the item stays still in your hand.
 
 `FramebufferResizeEvent` carries `width()` and `height()` in real pixels — the same space `Render2DEvent` draws in. Use it to drop anything you sized to the old window.
+
+`PerspectiveEvent` carries `previous()` and `current()`, both a `Perspective`. It is the option the player switched, not what a client module forces on the frame — see [Game settings](../actions/control.md#game-settings).
 
 ## Modules
 

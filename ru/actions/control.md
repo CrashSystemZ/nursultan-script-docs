@@ -77,6 +77,46 @@ on<LookInputEvent> { e ->
 
 Поворачивать голову по цели — это не сюда, это [Повороты](rotations.md).
 
+## Настройки игры
+
+`gameSettings` — это настройки самого Minecraft, то, что игрок выставил в меню игры:
+
+```kotlin
+gameSettings.perspective()                               // FIRST_PERSON | THIRD_PERSON_BACK | THIRD_PERSON_FRONT
+gameSettings.perspective(Perspective.THIRD_PERSON_BACK)  // ровно то же, что нажатие F5
+
+gameSettings.scaleFactor()                               // масштаб интерфейса числом: 1.0, 2.0, 3.0 …
+gameSettings.mouseSensitivity()                          // 0..1, где 0.5 — те самые «100%» из настроек
+gameSettings.mouseSensitivity(0.5)
+```
+
+Сама `Perspective` отвечает на три вопроса о себе: `firstPerson()`, `thirdPerson()`, `frontView()`.
+
+Писать любую из этих настроек можно только с клиентского потока: внутри обработчика ты уже на нём, откуда угодно ещё — оберни в `onClientThread { }`. Ничего не возвращается обратно, когда скрипт выключают, так что верни сам:
+
+```kotlin
+var previous = gameSettings.perspective()
+
+onEnable {
+    previous = gameSettings.perspective()
+    gameSettings.perspective(Perspective.THIRD_PERSON_BACK)
+}
+
+onDisable { gameSettings.perspective(previous) }
+```
+
+`PerspectiveEvent` приходит при каждой смене вида, кто бы её ни сделал — игрок, твой скрипт или чужой:
+
+```kotlin
+on<PerspectiveEvent> { e ->
+    log.info("${e.previous()} -> ${e.current()}")
+}
+```
+
+Читаешь ты всегда выбор самого игрока. Модули клиента, которые навязывают вид, — FreeCam, FreeLook — меняют то, как рисуется кадр, а не опцию, так что `gameSettings.perspective()` по-прежнему показывает, что выбрал игрок.
+
+`scaleFactor()` — это мостик между [рендером 2D](../ui/render-2d.md), который работает в настоящих пикселях фреймбуфера, и ванильным интерфейсом, который есть те же пиксели, делённые на это число.
+
 ## Спросить клавишу напрямую
 
 События говорят, когда клавиша *изменилась*. `keys` говорит, что зажато **прямо сейчас**, — а это то, что нужно HUD'у:

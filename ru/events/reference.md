@@ -167,6 +167,7 @@ on<PlaySoundEvent> {
 | `SwingSpeedEvent` | игра спрашивает, сколько длится взмах рукой | |
 | `RenderItemEvent` | перед применением трансформации взмаха предмета от первого лица | да |
 | `FramebufferResizeEvent` | окно поменяло размер | |
+| `PerspectiveEvent` | сменился вид от лица — F5 или скрипт | |
 
 `Render2DEvent` несёт `render()`, размер экрана `width()` × `height()` и `tickDelta()`. `Render3DEvent` несёт `render()`, `tickDelta()` и позицию камеры `camera()`. Смотри [Рендер 2D](../ui/render-2d.md) и [Рендер 3D](../ui/render-3d.md).
 
@@ -194,6 +195,8 @@ on<Render3DEvent> { e ->
 `RenderItemEvent` несёт `arm()` и `swingProgress()`. Отмени — трансформация взмаха не применится, предмет останется неподвижным в руке.
 
 `FramebufferResizeEvent` несёт `width()` и `height()` в настоящих пикселях — в том же пространстве, где рисует `Render2DEvent`. Пригодится, чтобы выкинуть всё, что ты посчитал под старый размер окна.
+
+`PerspectiveEvent` несёт `previous()` и `current()`, оба — `Perspective`. Это опция, которую переключил игрок, а не то, что модуль клиента навязал кадру, — смотри [Настройки игры](../actions/control.md#настройки-игры).
 
 ## Модули
 
