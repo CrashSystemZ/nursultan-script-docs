@@ -37,6 +37,7 @@
   * [2D render](ui/render-2d.md)
   * [3D render](ui/render-3d.md)
   * [Shaders](ui/shaders.md)
+  * [Your own geometry](ui/gpu.md)
   * [Messages](ui/messages.md)
   * [Styled text](ui/text.md)
 

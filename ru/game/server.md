@@ -175,6 +175,31 @@ val nearby = tab.players().mapNotNull { it.player() }
 
 `skinTexture()` работает на весь список, есть сущность или нет, так что таблисту с головами сбоку ничего прогружать не нужно — см. [кусок текстуры](../ui/render-2d.md).
 
+### Записать пинг обратно
+
+`pingMs()` принимает и значение — оно пишется прямо в запись, которую держит клиент:
+
+```kotlin
+val pingRegex = Regex("""(\d+)\s*ms""")
+var parsed = -1
+
+on<PacketReceiveEvent> { event ->
+    val packet = event.packet()
+    if (packet !is S2CPlayerListHeaderPacket) return@on
+    parsed = pingRegex.find(packet.footer())?.groupValues?.get(1)?.toIntOrNull() ?: parsed
+}
+
+on<ClientTickEvent> {
+    if (!inGame || parsed < 0) return@on
+    val uuid = player.uuid()
+    tab.players().firstOrNull { it.uuid() == uuid }?.pingMs(parsed)
+}
+```
+
+Это для серверов, которые вообще не присылают настоящую задержку, а пишут число где-то ещё — в футере, в шапке, в отображаемом имени. Вытащи его из текста, запиши в строку — и пинг увидят все, кто его читает: ванильный таб, таб клиента, `pingMs()` в любом другом скрипте.
+
+Что учесть. Сервер продолжает слать обновления задержки, и каждое затирает записанное, поэтому ставь значение на тике, а не один раз. И не пиши его прямо в обработчике пакета: он срабатывает до того, как клиент применит пакет, так что твоё значение исчезнет через мгновение.
+
 ## Экраны
 
 ```kotlin

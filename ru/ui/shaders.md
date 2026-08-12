@@ -50,7 +50,7 @@ on<Render2DEvent> { e ->
 ```kotlin
 on<Render2DEvent> { e ->
     glow.set("uSize", e.width(), e.height())
-    glow.set("uTime", client.millis() / 1000f)
+    glow.set("uTime", client.tick() / 20f)
     e.render().shader(glow, 8f, 8f, 160f, 40f)
 }
 ```
