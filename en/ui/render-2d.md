@@ -1,10 +1,10 @@
 # 2D render
 
-The `Render2DEvent` event fires every frame on the client overlay layer — above the game's own HUD, below the client's HUD elements. It carries `render()`, the screen size `width()` × `height()` and `tickDelta()`.
+The `Render2DEvent` event fires every frame in the script layer — above the game's own HUD and above the client's world overlays (ESP, waypoints, arrows), below the client's HUD elements. It carries `render()`, the screen size `width()` × `height()` and `tickDelta()`.
 
 All drawing goes through `e.render()`. Coordinates are real window pixels, the same ones `width()` and `height()` are in, and they do not depend on the game's GUI Scale setting: at scale 2 a 1920×1080 screen still gives you `width()` = 1920, not 960. `project` works in that same space, so a world point can go straight next to a rectangle or a piece of text. Colours are ordinary `Int`s shaped `0xAARRGGBB`, and `Colors` is the easy way to build them.
 
-One thing follows from that: do not hardcode sizes if you want the same look on every monitor. Place everything relative to `width()` and `height()`, and derive your font size from them too.
+One thing follows from that: do not hardcode sizes if you want the same look on every monitor. Place everything relative to `width()` and `height()`, and derive your font size from them too. To match the vanilla interface exactly, multiply by [`gameSettings.scaleFactor()`](../actions/control.md#game-settings) — that is the number the game divides these pixels by.
 
 ```kotlin
 on<Render2DEvent> { e ->
@@ -65,7 +65,12 @@ r.blur(8f, 8f, 160f, 40f, 12f)
 r.blur(8f, 8f, 160f, 40f, 12f, Colors.rgba(0, 0, 0, 80), 8f)
 ```
 
-The second form also fills the area with a colour and rounds the corners.
+The second form rounds the corners and takes **only the alpha** of the colour you pass — how strongly the blur shows through. Want a tinted panel — draw a `roundedRect` over the blur:
+
+```kotlin
+r.blur(8f, 8f, 160f, 40f, 12f, Colors.rgba(0, 0, 0, 255), 8f)
+r.roundedRect(8f, 8f, 160f, 40f, 8f, Colors.rgba(10, 12, 15, 140))
+```
 
 ## Text
 
@@ -110,7 +115,7 @@ font("myfont", "my-font.ttf")
 r.text("hi", 10f, 30f, 12f, Colors.WHITE, "myfont")
 ```
 
-The TTF file goes into the scripts folder next to the script itself.
+The TTF file goes into [the assets folder](../extras/assets.md) — `%APPDATA%\Nursultan\scripts\assets`, subfolders included: `font("myfont", "fonts/my-font.ttf")`. It can also travel inside the script itself: `font("myfont", base64(PART1, PART2))`, see [assets inside the script](../extras/assets.md#assets-inside-the-script).
 
 ## Images and icons
 
@@ -120,7 +125,7 @@ r.item("minecraft:diamond", 30f, 10f, 16f)       // by id
 r.head(playerEntity, 50f, 10f, 16f)              // a player's head
 r.effectIcon("speed", 70f, 10f, 16f)             // an effect icon
 r.texture("minecraft:textures/item/apple.png", 90f, 10f, 16f, 16f)
-r.image("logo.png", 110f, 10f, 32f, 32f)         // a file from the scripts folder
+r.image("logo.png", 110f, 10f, 32f, 32f)         // a file from the assets folder
 ```
 
 You do not bind anything and you do not load anything: you name the texture, and it is looked up in the game's own texture manager when the frame is flushed. A name nothing answers to gets you Minecraft's missing-texture chequerboard, so a typo is loud rather than silent.
@@ -131,7 +136,8 @@ Sometimes a name is not enough — you want the size, or you want to hand the th
 
 ```kotlin
 val apple = texture("minecraft:textures/item/apple.png")   // any game texture
-val logo = image("logo.png")                               // a file from the scripts folder
+val logo = image("logo.png")                               // a file from the assets folder
+val badge = image("badge", base64(BADGE_PNG))              // bytes carried inside the script
 val skin = target.skinTexture()                            // a player's skin
 ```
 
