@@ -160,6 +160,7 @@ The whole batch is one queue: the client sends the first click, waits the delay 
 | `swap(slot, hotbarIndex)` | `hotbarIndex` is `0..8` |
 | `drop(slot, wholeStack)` | |
 | `delay(ticks)` | wait before the next step, 1 tick or more |
+| `onFinish { ... }` | runs once the batch has finished; an empty batch drops it too |
 
 `container.busy()` is `true` while a queue is still draining — yours or the client's own. Wait it out before starting another:
 
