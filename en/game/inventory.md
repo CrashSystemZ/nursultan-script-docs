@@ -177,6 +177,19 @@ inventory.batch {
 
 `delay(ticks)` puts a gap between two steps of the batch, measured in **game ticks**. The batch does not block: your handler returns immediately and the queue keeps draining over the following ticks. A three-step armour swap needs those gaps — without them the server sees three clicks in one tick and the middle one lands on a slot whose contents it has not updated yet.
 
+`onFinish { ... }` runs your code once the batch has finished — every step has gone out and the inventory has been closed. Use it to chain the next move instead of polling `busy()` every tick:
+
+```kotlin
+inventory.batch {
+    it.swap(slot, hotbar)
+    it.onFinish {
+        // the batch is done, the inventory is closed
+    }
+}
+```
+
+An empty batch is dropped whole, together with its `onFinish`.
+
 ## Do not trip over yourself
 
 `inventory.busy()` tells you the client is moving items right now — yours or someone else's. While it is `true`, stay out of the way:
