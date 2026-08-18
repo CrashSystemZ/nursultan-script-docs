@@ -73,7 +73,7 @@ Attribute base values and modifiers for one entity.
 | `entityId()` | `int` | entity network id |
 | `attributes()` | `List<Attribute>` | attribute entries |
 
-`S2CEntityAttributesPacket.Attribute`
+### S2CEntityAttributesPacket.Attribute
 
 | Component | Type | Description |
 |---|---|---|
@@ -81,7 +81,7 @@ Attribute base values and modifiers for one entity.
 | `base()` | `double` | base value before modifiers |
 | `modifiers()` | `List<Modifier>` | modifiers applied to this attribute |
 
-`S2CEntityAttributesPacket.Modifier`
+### S2CEntityAttributesPacket.Modifier
 
 | Component | Type | Description |
 |---|---|---|
@@ -111,7 +111,7 @@ Equipment slot contents for one entity.
 | `entityId()` | `int` | entity network id |
 | `equipment()` | `List<Equipment>` | changed equipment slots |
 
-`S2CEntityEquipmentUpdatePacket.Equipment`
+### S2CEntityEquipmentUpdatePacket.Equipment
 
 | Component | Type | Description |
 |---|---|---|
@@ -257,7 +257,7 @@ Tracked data update for one entity.
 | `id()` | `int` | entity network id |
 | `values()` | `List<TrackedValue>` | changed entries, empty when the packet carries none |
 
-`S2CEntityTrackerUpdatePacket.TrackedValue`
+### S2CEntityTrackerUpdatePacket.TrackedValue
 
 | Component | Type | Description |
 |---|---|---|

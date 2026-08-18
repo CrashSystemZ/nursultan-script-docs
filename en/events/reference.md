@@ -337,6 +337,8 @@ Covers despawn, death removal and chunk unload alike; the reason is not exposed.
 | `added()` | `boolean` | true when the action is `ADD` |
 | `removed()` | `boolean` | true when the action is `REMOVE` |
 
+### EffectEvent.Action
+
 | Constant | Description |
 |---|---|
 | `ADD` | effect newly inserted into the player's effect map |

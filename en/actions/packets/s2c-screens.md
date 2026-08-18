@@ -189,7 +189,9 @@ Full contents resend for one screen handler.
 | `cursorItem()` | `String` | namespaced item id on the cursor, `minecraft:air` when empty |
 | `cursorCount()` | `int` | cursor stack size |
 
-`S2CInventoryPacket.Stack` — one entry of `contents()`:
+### S2CInventoryPacket.Stack
+
+One entry of `contents()`.
 
 | Component | Type | Description |
 |---|---|---|
@@ -453,7 +455,9 @@ Villager or wandering-trader offer list.
 | `refreshable()` | `boolean` | offers restock over time |
 | `offers()` | `List<Offer>` | trades in display order |
 
-`S2CSetTradeOffersPacket.Offer` — one trade:
+### S2CSetTradeOffersPacket.Offer
+
+One trade.
 
 | Component | Type | Description |
 |---|---|---|
@@ -490,7 +494,9 @@ Statistics screen data.
 |---|---|---|
 | `stats()` | `List<Stat>` | statistic entries |
 
-`S2CStatisticsPacket.Stat` — one statistic:
+### S2CStatisticsPacket.Stat
+
+One statistic.
 
 | Component | Type | Description |
 |---|---|---|

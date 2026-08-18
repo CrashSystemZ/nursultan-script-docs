@@ -33,7 +33,7 @@ on<PrePlayerTickEvent> {
 | `slot.armorSlot()` | `ArmorSlot?` | the armor slot, null when kind is not ARMOR |
 | `slot.toString()` | `String` | `none`, `hotbar N`, `inventory N`, `armor HELMET` or `offhand` |
 
-`Slot.Kind`:
+### Slot.Kind
 
 | Constant | Description |
 |---|---|
@@ -43,7 +43,7 @@ on<PrePlayerTickEvent> {
 | `ARMOR` | armor slot, index is the `ArmorSlot` ordinal |
 | `OFFHAND` | off-hand slot, index 0 |
 
-`ArmorSlot`:
+### ArmorSlot
 
 | Constant | Description |
 |---|---|
@@ -94,7 +94,7 @@ No read returns null: an absent stack comes back as an item whose `empty()` is t
 | `inventory.batch(actions)` | `void` | enqueues the collected actions as one move sequence (main thread only) |
 | `inventory.busy()` | `boolean` | the client inventory-move queue is non-empty |
 
-`Inventory.Batch`:
+### Inventory.Batch
 
 | Method | Type | Description |
 |---|---|---|
@@ -143,7 +143,7 @@ Slots of an open chest or server menu are addressed by [Containers](containers.m
 | `item.attributeModifiers()` | `List<AttributeModifier>` | ATTRIBUTE_MODIFIERS entries, empty when absent |
 | `item.containerItems()` | `List<Item>` | CONTAINER contents, else BUNDLE_CONTENTS, else empty |
 
-`AttributeModifier`:
+### AttributeModifier
 
 | Method | Type | Description |
 |---|---|---|
@@ -158,8 +158,8 @@ Slots of an open chest or server menu are addressed by [Containers](containers.m
 | Method | Type | Description |
 |---|---|---|
 | `item.onCooldown()` | `boolean` | this stack's cooldown group is cooling down, false out of world |
-| `item.cooldownProgress()` | `float` | remaining cooldown fraction at tickDelta 0, counts down 1..0 |
-| `item.cooldownProgress(tickDelta)` | `float` | the same fraction interpolated by tickDelta, 1..0 |
+| `item.cooldownProgress()` | `float` | remaining cooldown fraction at tickDelta 0, counts down 1..0 (API 2) |
+| `item.cooldownProgress(tickDelta)` | `float` | the same fraction interpolated by tickDelta, 1..0 (API 2) |
 | `item.setCooldown(ticks)` | `void` | client-side cooldown of that many ticks, 0 or less removes it (API 2) (main thread only) (throws ScriptStateException when out of world) |
 | `item.removeCooldown()` | `void` | clears this group's client-side cooldown (API 2) (main thread only) (throws ScriptStateException when out of world) |
 
@@ -193,14 +193,14 @@ A cooldown belongs to the item's cooldown group, not to the stack, so every stac
 
 ## Hands
 
-`Hand`:
+### Hand
 
 | Constant | Description |
 |---|---|
 | `MAIN_HAND` | main hand |
 | `OFF_HAND` | off hand |
 
-`Arm`:
+### Arm
 
 | Constant | Description |
 |---|---|

@@ -34,6 +34,8 @@ on<ClientTickEvent> {
 A null `mode` is treated as `NEAREST`; both `attackPoint` overloads throw `ScriptStateException` when the entity has left the world.
 `markTarget` throws `ScriptStateException` when the target is not a living entity.
 
+### AttackPoint
+
 | Constant | Description |
 |---|---|
 | `CENTER` | geometric centre of the bounding box |

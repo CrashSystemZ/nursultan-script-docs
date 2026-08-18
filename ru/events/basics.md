@@ -15,7 +15,7 @@ val sub = on<AttackEvent>(ignoreCancelled = true) { e -> chat.print(e.target().n
 sub.unsubscribe()
 ```
 
-## Подписка
+## Регистрация обработчика
 
 | Метод | Тип | Описание |
 |---|---|---|
@@ -25,6 +25,8 @@ sub.unsubscribe()
 | `on(type, priority, ignoreCancelled) { }` | `Subscription` | (устарело, убери аргумент) |
 
 `ignoreCancelled = true` пропускает обработчик, если событие уже отменено.
+
+### Events
 
 | Метод | Тип | Описание |
 |---|---|---|
@@ -88,5 +90,5 @@ sub.unsubscribe()
 ## Потоки и бюджет
 
 Все события приходят на клиентском потоке Minecraft, кроме `PacketReceiveEvent` (IO-поток netty) и `PacketSendEvent` (поток, который отправляет пакет) — см. [Пакеты](../actions/packets.md).
-На один вызов обработчика даётся 250 мс; превышение выключает скрипт, как и 5 исключений подряд.
+На один вызов обработчика даётся 250 мс; превышение выключает скрипт, как и 5 исключений подряд — [Песочница и лимиты](../extras/limits.md#бюджеты).
 `Render2DEvent`, `Render3DEvent`, `PacketReceiveEvent` и `PacketSendEvent` полностью игнорируют `EventOptions` — и `priority`, и `ignoreCancelled`.

@@ -15,7 +15,7 @@ val sub = on<AttackEvent>(ignoreCancelled = true) { e -> chat.print(e.target().n
 sub.unsubscribe()
 ```
 
-## Subscribing
+## Registering a handler
 
 | Method | Type | Description |
 |---|---|---|
@@ -25,6 +25,8 @@ sub.unsubscribe()
 | `on(type, priority, ignoreCancelled) { }` | `Subscription` | (deprecated, drop the argument) |
 
 `ignoreCancelled = true` skips the handler when the event is already cancelled.
+
+### Events
 
 | Method | Type | Description |
 |---|---|---|
@@ -88,5 +90,5 @@ Switching the script off unsubscribes every handler; switching it on registers t
 ## Threads and budget
 
 Every event fires on the Minecraft client thread except `PacketReceiveEvent` (netty IO thread) and `PacketSendEvent` (the thread that sends the packet) — see [Packets](../actions/packets.md).
-One handler invocation has 250 ms; overrunning it switches the script off, and so do 5 consecutive throws.
+One handler invocation has 250 ms; overrunning it switches the script off, and so do 5 consecutive throws — [Sandbox and limits](../extras/limits.md#budgets).
 `Render2DEvent`, `Render3DEvent`, `PacketReceiveEvent` and `PacketSendEvent` ignore `EventOptions` entirely — both `priority` and `ignoreCancelled`.

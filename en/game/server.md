@@ -28,6 +28,8 @@ on<ClientTickEvent> {
 | `server.tabList()` | `TabList` | the player list view |
 | `server.bossBars()` | `List<BossBar>` | boss bars on the HUD, empty without an in-game HUD |
 
+### ServerType
+
 | Constant | Description |
 |---|---|
 | `SINGLEPLAYER` | integrated server, no server-list entry |
@@ -55,6 +57,8 @@ The sidebar objective is the team-colour slot matching your own team colour, fal
 | `scoreboard.display(slot)` | `Objective?` | objective in a display slot: `list`, `sidebar`, `below_name`, `sidebar.team.red` |
 | `scoreboard.holders()` | `List<String>` | every known score-holder name, empty out of world |
 
+### Objective
+
 | Method | Type | Description |
 |---|---|---|
 | `objective.name()` | `String` | internal objective name |
@@ -64,6 +68,8 @@ The sidebar objective is the team-colour slot matching your own team colour, fal
 | `objective.slots()` | `List<String>` | display slots this objective occupies, empty out of world |
 | `objective.score(holder)` | `int` | that holder's score, 0 when there is no entry |
 | `objective.entries()` | `List<ScoreEntry>` | every score entry of this objective |
+
+### ScoreEntry
 
 | Method | Type | Description |
 |---|---|---|
@@ -82,6 +88,8 @@ The sidebar objective is the team-colour slot matching your own team colour, fal
 | `scoreboard.teams()` | `List<Team>` | every team, empty out of world |
 | `scoreboard.team(name)` | `Team?` | team by internal name, null when absent |
 | `scoreboard.teamOf(holder)` | `Team?` | team that score-holder name belongs to |
+
+### Team
 
 | Method | Type | Description |
 |---|---|---|
@@ -122,6 +130,8 @@ The scoreboard is read-only; nothing written into these objects reaches the serv
 | `tab.footerContains(vararg needles)` | `boolean` | the same test against the footer |
 | `tab.players()` | `List<TabEntry>` | whole roster in vanilla tab order, empty when not connected |
 
+### TabEntry
+
 | Method | Type | Description |
 |---|---|---|
 | `row.name()` | `String` | profile name |
@@ -146,6 +156,8 @@ A row is a profile entry, not an entity: the roster holds every player the serve
 | `screen.handled()` | `boolean` | true when the screen has a screen handler |
 | `screen.syncId()` | `int` | screen handler sync id, 0 when not handled |
 | `screen.size()` | `int` | screen handler slot count, 0 when not handled |
+
+### ScreenKind
 
 | Constant | Description |
 |---|---|

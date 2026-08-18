@@ -33,6 +33,8 @@ on<ClientTickEvent> {
 
 `notifications` — это `client.notifications()`; `notify(...)` — тот же вызов из корня скрипта.
 
+### NotifyKind
+
 | Константа | Описание |
 |---|---|
 | `OK` | стиль успеха, по умолчанию |

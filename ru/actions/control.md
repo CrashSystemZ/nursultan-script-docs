@@ -21,7 +21,7 @@ on<MoveInputEvent> {
 | `control.sneaking(value)` | `void` | ставит флаг приседа локального игрока (только главный поток) |
 | `control.jump()` | `void` | прыгает, вне земли ничего не делает (только главный поток) |
 
-Любой метод бросает `ScriptThreadException` вне клиентского потока и `ScriptStateException`, когда мир не загружен.
+Любой метод бросает [`ScriptThreadException`](../extras/limits.md#исключения) вне клиентского потока и `ScriptStateException`, когда мир не загружен.
 
 ## Подмена ввода
 
@@ -42,13 +42,15 @@ on<MoveInputEvent> {
 Ни одна из настроек не возвращается назад при выключении скрипта; `scaleFactor()` — то число, на которое делят пиксели [рендера 2D](../ui/render-2d.md), чтобы получить координаты ванильного интерфейса.
 `PerspectiveEvent` приходит на каждую смену вида, кто бы её ни сделал — [Список событий](../events/reference.md#perspectiveevent).
 
-**`Perspective`**
+### Perspective
 
 | Метод | Тип | Описание |
 |---|---|---|
 | `perspective.firstPerson()` | `boolean` | true только для `FIRST_PERSON` (API 2) |
 | `perspective.thirdPerson()` | `boolean` | отрицание `firstPerson()` (API 2) |
 | `perspective.frontView()` | `boolean` | true только для `THIRD_PERSON_FRONT` (API 2) |
+
+### Константы Perspective
 
 | Константа | Описание |
 |---|---|

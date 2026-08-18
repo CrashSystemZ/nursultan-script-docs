@@ -20,7 +20,7 @@ on<PacketReceiveEvent> { e ->
 | `client.onClientThread()` | `boolean` | true when the caller already runs on the client thread — [Timers and tasks](../extras/tasks.md#getting-onto-the-client-thread) |
 
 Reading the record's accessors off the client thread is safe.
-`interaction`, `raycast`, `rotations.apply`, inventory and container writes, `world.blockEntitiesIn` and `world.removeEntity` throw `ScriptThreadException` off it; `packets.send` returns `false`.
+`interaction`, `raycast`, `rotations.apply`, inventory and container writes, `world.blockEntitiesIn` and `world.removeEntity` throw [`ScriptThreadException`](../extras/limits.md#exceptions) off it; `packets.send` returns `false`.
 
 ## Receiving
 
@@ -31,6 +31,8 @@ Reading the record's accessors off the client thread is safe.
 
 Only packets the client has a decoder for reach a handler; anything else fires nothing, and a decode failure is logged once per packet class.
 Inside a bundle each sub-packet fires separately.
+
+### Packet, S2CPacket, C2SPacket
 
 | Method | Type | Description |
 |---|---|---|

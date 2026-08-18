@@ -53,11 +53,11 @@ everyTicks(100) { chat.print("still here") }
 
 | Метод | Тип | Описание |
 |---|---|---|
-| `onClientThread(action)` | `Unit` | отдаёт действие клиентскому потоку, сразу же, если ты уже на нём |
-| `client.tasks().onClientThread(action)` | `void` | форма `onClientThread` у объекта `Tasks` |
+| `onClientThread(action)` | `Unit` | ставит действие в очередь на клиентский поток, пропускается, если скрипт к тому моменту выключен |
+| `client.tasks().onClientThread(action)` | `void` | выполняет сразу, если ты уже на клиентском потоке, иначе ставит в очередь |
 
 `PacketReceiveEvent` (IO-поток netty) и `PacketSendEvent` (поток отправки) — единственные события не на клиентском потоке, см. [Пакеты](../actions/packets.md).
-Вызовы мира, игрока, инвентаря, контейнера, взаимодействия и поворотов вне клиентского потока бросают `ScriptThreadException`.
+Вызовы мира, игрока, инвентаря, контейнера, взаимодействия и поворотов вне клиентского потока бросают [`ScriptThreadException`](limits.md#исключения).
 
 ## Время
 

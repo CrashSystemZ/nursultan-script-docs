@@ -158,6 +158,10 @@ The flag outlives the script being switched off — [`world.unhideEntities()`](w
 | `living.effects()` | `List<Effect>` | snapshots of every active status effect |
 | `living.effect(effectId)` | `Effect?` | one active effect by exact namespaced id, null when absent |
 
+Effect ids are compared exactly: `hasEffect("minecraft:speed")` matches, `hasEffect("speed")` does not.
+
+### Effect
+
 | Method | Type | Description |
 |---|---|---|
 | `effect.id()` | `String` | namespaced effect id, e.g. `minecraft:speed` |
@@ -168,8 +172,6 @@ The flag outlives the script being switched off — [`world.unhideEntities()`](w
 | `effect.infinite()` | `boolean` | effect has infinite duration |
 | `effect.beneficial()` | `boolean` | effect type is classed as beneficial |
 
-Effect ids are compared exactly: `hasEffect("minecraft:speed")` matches, `hasEffect("speed")` does not.
-
 ## Attributes
 
 | Method | Type | Description |
@@ -177,13 +179,15 @@ Effect ids are compared exactly: `hasEffect("minecraft:speed")` matches, `hasEff
 | `living.attributes()` | `Map<String, Attribute>` | unmodifiable map of every attribute present, keyed by namespaced id |
 | `living.attribute(attributeId)` | `Attribute?` | one attribute, `minecraft:` added when unqualified; null when absent |
 
+`attributes()` walks the whole attribute registry on each call.
+
+### Attribute
+
 | Method | Type | Description |
 |---|---|---|
 | `attribute.id()` | `String` | namespaced attribute id, e.g. `minecraft:movement_speed` |
 | `attribute.base()` | `double` | value before modifiers |
 | `attribute.value()` | `double` | value after every modifier |
-
-`attributes()` walks the whole attribute registry on each call.
 
 ## Players
 
@@ -192,6 +196,8 @@ Effect ids are compared exactly: `hasEffect("minecraft:speed")` matches, `hasEff
 | `player.pingMs()` | `int` | player-list latency in milliseconds, 0 without an entry |
 | `player.gameMode()` | `GameMode` | player-list game mode, `SURVIVAL` without an entry |
 | `player.skinTexture()` | [`Texture?`](../ui/render-2d.md) | body skin texture; null for non-client players and while StreamerMode hides skins |
+
+### GameMode
 
 | Constant | Description |
 |---|---|

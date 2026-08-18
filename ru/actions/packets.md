@@ -20,7 +20,7 @@ on<PacketReceiveEvent> { e ->
 | `client.onClientThread()` | `boolean` | true, когда вызов уже идёт на клиентском потоке — [Таймеры и задачи](../extras/tasks.md#перейти-на-клиентский-поток) |
 
 Читать аксессоры записи вне клиентского потока безопасно.
-`interaction`, `raycast`, `rotations.apply`, изменения инвентаря и контейнера, `world.blockEntitiesIn` и `world.removeEntity` бросают там `ScriptThreadException`, а `packets.send` возвращает `false`.
+`interaction`, `raycast`, `rotations.apply`, изменения инвентаря и контейнера, `world.blockEntitiesIn` и `world.removeEntity` бросают там [`ScriptThreadException`](../extras/limits.md#исключения), а `packets.send` возвращает `false`.
 
 ## Приём
 
@@ -31,6 +31,8 @@ on<PacketReceiveEvent> { e ->
 
 До обработчика доходят только пакеты, для которых у клиента есть декодер; остальные не порождают события вовсе, а сбой декодирования пишется в лог один раз на класс пакета.
 Внутри бандла каждый вложенный пакет приходит отдельно.
+
+### Packet, S2CPacket, C2SPacket
 
 | Метод | Тип | Описание |
 |---|---|---|

@@ -28,6 +28,8 @@ on<ClientTickEvent> {
 | `server.tabList()` | `TabList` | представление списка игроков |
 | `server.bossBars()` | `List<BossBar>` | боссбары на HUD, пусто без игрового HUD |
 
+### ServerType
+
 | Константа | Описание |
 |---|---|
 | `SINGLEPLAYER` | встроенный сервер, записи в списке нет |
@@ -55,6 +57,8 @@ on<ClientTickEvent> {
 | `scoreboard.display(slot)` | `Objective?` | цель в слоте отображения: `list`, `sidebar`, `below_name`, `sidebar.team.red` |
 | `scoreboard.holders()` | `List<String>` | все известные имена владельцев очков, пусто вне мира |
 
+### Objective
+
 | Метод | Тип | Описание |
 |---|---|---|
 | `objective.name()` | `String` | внутреннее имя цели |
@@ -64,6 +68,8 @@ on<ClientTickEvent> {
 | `objective.slots()` | `List<String>` | слоты отображения, занятые целью, пусто вне мира |
 | `objective.score(holder)` | `int` | очки этого владельца, 0 когда записи нет |
 | `objective.entries()` | `List<ScoreEntry>` | все записи очков этой цели |
+
+### ScoreEntry
 
 | Метод | Тип | Описание |
 |---|---|---|
@@ -82,6 +88,8 @@ on<ClientTickEvent> {
 | `scoreboard.teams()` | `List<Team>` | все команды, пусто вне мира |
 | `scoreboard.team(name)` | `Team?` | команда по внутреннему имени, null когда нет |
 | `scoreboard.teamOf(holder)` | `Team?` | команда, которой принадлежит это имя владельца очков |
+
+### Team
 
 | Метод | Тип | Описание |
 |---|---|---|
@@ -122,6 +130,8 @@ on<ClientTickEvent> {
 | `tab.footerContains(vararg needles)` | `boolean` | та же проверка по футеру |
 | `tab.players()` | `List<TabEntry>` | весь список в ванильном порядке таба, пусто без подключения |
 
+### TabEntry
+
 | Метод | Тип | Описание |
 |---|---|---|
 | `row.name()` | `String` | имя профиля |
@@ -146,6 +156,8 @@ on<ClientTickEvent> {
 | `screen.handled()` | `boolean` | true, когда у экрана есть обработчик слотов |
 | `screen.syncId()` | `int` | sync id обработчика экрана, 0 без обработчика |
 | `screen.size()` | `int` | число слотов обработчика, 0 без обработчика |
+
+### ScreenKind
 
 | Константа | Описание |
 |---|---|

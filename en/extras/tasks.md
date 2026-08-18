@@ -53,11 +53,11 @@ A scheduled action is skipped while the script is off or unloaded, a throw is re
 
 | Method | Type | Description |
 |---|---|---|
-| `onClientThread(action)` | `Unit` | hands the action to the client thread, inline when already on it |
-| `client.tasks().onClientThread(action)` | `void` | `Tasks` form of `onClientThread` |
+| `onClientThread(action)` | `Unit` | queues the action on the client thread, skipped when the script is off by then |
+| `client.tasks().onClientThread(action)` | `void` | runs inline when already on the client thread, otherwise queues |
 
 `PacketReceiveEvent` (netty IO thread) and `PacketSendEvent` (the sending thread) are the only events that do not fire on the client thread — see [Packets](../actions/packets.md).
-World, player, inventory, container, interaction and rotation calls throw `ScriptThreadException` off the client thread.
+World, player, inventory, container, interaction and rotation calls throw [`ScriptThreadException`](limits.md#exceptions) off the client thread.
 
 ## Time
 

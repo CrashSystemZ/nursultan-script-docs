@@ -27,11 +27,11 @@ on<ClientTickEvent> {
 | `raycast.hitOn(entity, from, to)` | `Vec?` | точка на хитбоксе, расширенном запасом наводки, `from` если отрезок начинается внутри |
 
 Зрителей и сущностей, по которым нельзя попасть, луч не возвращает никогда, с фильтром или без.
-Вне клиентского потока любой метод бросает `ScriptThreadException`; без игрока или мира — `ScriptStateException`. `Vec` и `Rotation` — на странице [Векторы, коробки, углы](math.md).
+Вне клиентского потока любой метод бросает [`ScriptThreadException`](../extras/limits.md#исключения); без игрока или мира — `ScriptStateException`. `Vec` и `Rotation` — на странице [Векторы, коробки, углы](math.md).
 
 ## Попадание
 
-**`Hit`**
+### Hit
 
 | Метод | Тип | Описание |
 |---|---|---|
@@ -43,7 +43,7 @@ on<ClientTickEvent> {
 
 При промахе `blocks(...)` `position()` равна `to`; если трассировка из прицела не вернула ничего — это начало луча, а `distance()` равна 0.
 
-**`Hit.OnBlock`, `Hit.OnEntity`**
+### Hit.OnBlock, Hit.OnEntity
 
 | Метод | Тип | Описание |
 |---|---|---|
@@ -57,7 +57,7 @@ on<ClientTickEvent> {
 
 ## Какая форма
 
-**`RaycastShape`**
+### RaycastShape
 
 | Константа | Описание |
 |---|---|
@@ -65,7 +65,7 @@ on<ClientTickEvent> {
 | `OUTLINE` | форма контура, та же что у выделения |
 | `VISUAL` | видимая форма |
 
-**`FluidHandling`**
+### FluidHandling
 
 | Константа | Описание |
 |---|---|
@@ -75,7 +75,7 @@ on<ClientTickEvent> {
 
 ## Стороны
 
-**`Side`**
+### Side
 
 | Константа | Описание |
 |---|---|
@@ -85,6 +85,8 @@ on<ClientTickEvent> {
 | `SOUTH` | грань +Z |
 | `WEST` | грань -X |
 | `EAST` | грань +X |
+
+### Методы Side
 
 | Метод | Тип | Описание |
 |---|---|---|

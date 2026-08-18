@@ -42,11 +42,11 @@ val mesh = gpu.indexedMesh(format)
 | `Item.buildable()` | [Инвентарь и предметы](../game/inventory.md) |
 | `Item.cooldownProgress()`, `cooldownProgress(tickDelta)`, `setCooldown(ticks)`, `removeCooldown()` | [Инвентарь и предметы](../game/inventory.md) |
 | `TabEntry.pingMs(value)` | [Сервер, табло, таблист](../game/server.md) |
-| `input(name, value, placeholder)` | [Виды настроек](../settings/types.md) |
+| `input(name, value, placeholder)`, `input(parent, name, value, placeholder)` | [Виды настроек](../settings/types.md) |
 | `Gpu` и 11 типов GPU | [Своя геометрия](../ui/gpu.md) |
 | `Weight` и перегрузки `Render` с насыщенностью | [Рендер 2D](../ui/render-2d.md) |
 | `blur(x, y, width, height, radius, argb, tl, tr, bl, br)` | [Рендер 2D](../ui/render-2d.md) |
-| `Shader.setMat4`, `Shader.set(uniform, texture, filter, wrap)` | [Шейдеры](../ui/shaders.md) |
+| `Shader.setMat4(uniform, float[])`, `Shader.set(uniform, texture, filter, wrap)` | [Шейдеры](../ui/shaders.md) |
 | `EventOptions(ignoreCancelled)` | [Подписка на события](../events/basics.md) |
 | `FireworkEntitySpeedEvent` | [Список событий](../events/reference.md) |
 | `PerspectiveEvent` | [Список событий](../events/reference.md) |
@@ -67,18 +67,20 @@ val mesh = gpu.indexedMesh(format)
 `@Retention(CLASS)` — виден в IDE и в jar SDK, но не через рефлексию.
 Цели: тип, метод, поле, параметр, компонент записи.
 
+### Что помечено
+
 | Элемент | Тип | Описание |
 |---|---|---|
-| `Priority` | `enum` | помечен весь тип, пять констант оставлены ради старых скриптов (ничего не делает: все обработчики скриптов срабатывают в один момент) |
-| `EventOptions.priority` | `Priority` | компонент записи и его аксессор (устарело) (ничего не делает: все обработчики скриптов срабатывают в один момент) |
-| `EventOptions.priority(priority)` | `EventOptions` | копия `DEFAULT` с этим значением (устарело) (ничего не делает: все обработчики скриптов срабатывают в один момент) |
+| `Priority` | `enum` | помечен весь тип, пять констант оставлены ради старых скриптов (ничего не делает: порядок вызова не меняется) |
+| `EventOptions.priority()` | `Priority` | компонент записи и его аксессор (устарело) (ничего не делает: значение нигде не читается) |
+| `EventOptions.priority(priority)` | `EventOptions` | копия `DEFAULT` с этим значением (устарело) (ничего не делает: значение нигде не читается) |
 | `ScriptScope.on<E>(priority, ignoreCancelled) { }` | `Subscription` | аргумент выбрасывается (устарело, убери аргумент) |
 | `ScriptScope.on(type, priority, ignoreCancelled) { }` | `Subscription` | аргумент выбрасывается (устарело, убери аргумент) |
 | `EntryScope.on<E>(priority, ignoreCancelled) { }` | `Subscription` | аргумент выбрасывается (устарело, убери аргумент) |
 | `EntryScope.on(type, priority, ignoreCancelled) { }` | `Subscription` | аргумент выбрасывается (устарело, убери аргумент) |
-| `RotationOptions.clientSide` | `boolean` | компонент записи и его аксессор (устарело) (ничего не делает: поворот всегда уходит на сервер) |
+| `RotationOptions.clientSide()` | `boolean` | компонент записи и его аксессор (устарело) (ничего не делает: поворот всегда уходит на сервер) |
 | `RotationOptions.clientSide(value)` | `RotationOptions` | копия с этим значением (устарело) (ничего не делает: поворот всегда уходит на сервер) |
-| `RotationOptions.normalizeMouseMovement` | `boolean` | компонент записи и его аксессор (устарело) (ничего не делает: угол всегда снапится к шагу мыши) |
+| `RotationOptions.normalizeMouseMovement()` | `boolean` | компонент записи и его аксессор (устарело) (ничего не делает: угол всегда снапится к шагу мыши) |
 | `RotationOptions.normalizeMouseMovement(value)` | `RotationOptions` | копия с этим значением (устарело) (ничего не делает: угол всегда снапится к шагу мыши) |
 
 Все одиннадцать компилируются и хранят то, что ты передал; сохранённое значение никто не читает.

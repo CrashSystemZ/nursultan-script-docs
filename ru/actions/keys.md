@@ -31,7 +31,7 @@ on<ClientTickEvent> {
 
 ## Бинд
 
-**`Bind`**
+### Bind
 
 | Метод | Тип | Описание |
 |---|---|---|
@@ -46,7 +46,7 @@ on<ClientTickEvent> {
 | `bind.set(key, mods, type)` | `Bind` | перепривязывает клавишу, маску и тип, сохраняя видимость; применяется в клиентском потоке |
 | `bind.clear()` | `Bind` | ставит `Key.UNKNOWN` без модификаторов, тип сохраняется |
 
-**`BindType`**
+### BindType
 
 | Константа | Описание |
 |---|---|
@@ -58,7 +58,7 @@ on<ClientTickEvent> {
 
 ## Модификаторы
 
-**`KeyMods`**
+### KeyMods
 
 | Метод | Тип | Описание |
 |---|---|---|
@@ -75,7 +75,7 @@ on<ClientTickEvent> {
 
 ## Фазы нажатия
 
-**`KeyAction`**
+### KeyAction
 
 | Константа | Описание |
 |---|---|
@@ -94,6 +94,8 @@ on<ClientTickEvent> {
 | `key.isMouse()` | `boolean` | true для констант `MOUSE_*` |
 | `Key.byName(name)` | `Key` | сначала имя константы, потом подпись, без учёта регистра; иначе `UNKNOWN` |
 | `key.toString()` | `String` | возвращает `displayName()`, а не имя константы |
+
+### Key
 
 129 констант, в порядке объявления:
 

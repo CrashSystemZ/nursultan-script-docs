@@ -31,7 +31,7 @@ on<ClientTickEvent> {
 
 ## The bind
 
-**`Bind`**
+### Bind
 
 | Method | Type | Description |
 |---|---|---|
@@ -46,7 +46,7 @@ on<ClientTickEvent> {
 | `bind.set(key, mods, type)` | `Bind` | rebinds key, mods and type, keeping visibility; applied on the client thread |
 | `bind.clear()` | `Bind` | rebinds to `Key.UNKNOWN` with no mods, keeping the type |
 
-**`BindType`**
+### BindType
 
 | Constant | Description |
 |---|---|
@@ -58,7 +58,7 @@ Writes are queued onto the client thread, so `key()` can still report the old va
 
 ## Modifiers
 
-**`KeyMods`**
+### KeyMods
 
 | Method | Type | Description |
 |---|---|---|
@@ -75,7 +75,7 @@ A modifier key bound on its own has its own bit stripped from the mask.
 
 ## Key actions
 
-**`KeyAction`**
+### KeyAction
 
 | Constant | Description |
 |---|---|
@@ -94,6 +94,8 @@ A modifier key bound on its own has its own bit stripped from the mask.
 | `key.isMouse()` | `boolean` | true for the `MOUSE_*` constants |
 | `Key.byName(name)` | `Key` | enum name, then display name, both case-insensitive; `UNKNOWN` on no match |
 | `key.toString()` | `String` | returns `displayName()`, not the enum name |
+
+### Key
 
 129 constants, in declaration order:
 

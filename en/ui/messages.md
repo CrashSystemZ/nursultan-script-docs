@@ -33,6 +33,8 @@ A `Text` argument to `print`/`printPrefixed` keeps its styling, anything else go
 
 `notifications` is `client.notifications()`; `notify(...)` is the same call from the script root.
 
+### NotifyKind
+
 | Constant | Description |
 |---|---|
 | `OK` | success styling, the default |

@@ -24,6 +24,10 @@ on<ClientTickEvent> {
 | `container.open()` | `boolean` | true when the sync id is non-zero, i.e. not the plain player inventory |
 | `container.playerSlot(slot)` | `Slot` | handler index as an inventory slot; `Slot.NONE` outside the player section |
 
+`playerSlot` maps the first 27 slots of the player section to `Slot.inventory(9..35)` and the last 9 to `Slot.hotbar(0..8)`.
+
+### ContainerSlot
+
 | Method | Type | Description |
 |---|---|---|
 | `ContainerSlot.NONE` | `ContainerSlot` | constant with index -1, meaning not found |
@@ -34,7 +38,6 @@ on<ClientTickEvent> {
 | `slot.hashCode()` | `int` | the index itself |
 | `slot.toString()` | `String` | `none` or `container <index>` |
 
-`playerSlot` maps the first 27 slots of the player section to `Slot.inventory(9..35)` and the last 9 to `Slot.hotbar(0..8)`.
 `Slot` and `Item` are documented on [Inventory and items](inventory.md).
 
 ## Reading
@@ -69,6 +72,10 @@ Item ids default to the `minecraft:` namespace; a blank id throws `ScriptExcepti
 | `container.clickButton(button)` | `void` | screen-handler button: stonecutter, loom, villager trade (main thread only) |
 | `container.busy()` | `boolean` | true while the client's inventory move queue still has actions |
 
+`busy()` also covers the client's own inventory moves, not only a script's.
+
+### SlotAction
+
 | Constant | Description |
 |---|---|
 | `PICKUP` | normal left/right click; also the fallback when the action is null |
@@ -79,13 +86,13 @@ Item ids default to the `minecraft:` namespace; a blank id throws `ScriptExcepti
 | `QUICK_CRAFT` | drag-craft / drag-distribute |
 | `PICKUP_ALL` | double-click collect-all |
 
-`busy()` also covers the client's own inventory moves, not only a script's.
-
 ## Sequences
 
 | Method | Type | Description |
 |---|---|---|
 | `container.batch(actions)` | `void` | queues the steps onto the inventory move queue, drained over following ticks (main thread only) (throws `ScriptException` when actions is null) |
+
+### Container.Batch
 
 | Method | Type | Description |
 |---|---|---|
@@ -123,6 +130,8 @@ A batch that queued no click or delay is discarded, and its `onFinish` callbacks
 | `entry.height()` | `int` | grid height; 0 for non-`SHAPED` kinds (API 2) |
 | `entry.station()` | `String` | registry id of the crafting station item; `""` when none was sent (API 2) |
 | `entry.ingredients()` | `List<List<Item>>` | per slot, the accepted items; empty inner list for an empty cell (API 2) |
+
+### RecipeKind
 
 | Constant | Description |
 |---|---|

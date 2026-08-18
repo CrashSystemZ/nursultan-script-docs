@@ -26,7 +26,7 @@ on<ClientTickEvent> {
 | `rangeSlider(name, from, to, min, max, step)` | `RangeSlider` | two-handle slider (throws ScriptException when from..to does not fit min..max) |
 | `rangeSlider(parent, name, from, to, min, max, step)` | `RangeSlider` | nested two-handle slider, same validation |
 | `input(name, value, placeholder)` | `Input` | text field; `placeholder` is literal text shown while empty (API 2) |
-| `input(parent, name, value, placeholder)` | `Input` | nested text field |
+| `input(parent, name, value, placeholder)` | `Input` | nested text field (API 2) |
 | `selectable(name, vararg entries: Entry)` | `Selectable` | one-of-N from `entry()` objects, first auto-selected when none is |
 | `selectable(parent, name, vararg entries: Entry)` | `Selectable` | nested one-of-N from entries |
 | `selectable(name, vararg options: String, selected)` | `Selectable` | one-of-N from strings, `selected` defaults to the first option |
@@ -43,7 +43,7 @@ on<ClientTickEvent> {
 | `hotkey(parent, name, key, action)` | `Hotkey` | nested key setting |
 | `button(name, action)` | `Button` | menu button; throws inside `action` are logged, not propagated |
 | `button(parent, name, action)` | `Button` | nested menu button |
-| `entry(name, selected) { }` | `Entry` | one option for a `selectable` or `combo`, see [Entries](entries.md) |
+| `entry(name, selected, body)` | `Entry` | one option for a `selectable` or `combo`, see [Entries](entries.md) |
 
 Two settings with the same name under the same parent throw `IllegalArgumentException`; every creator throws `ScriptStateException` once the script is unloaded.
 `hotkey` takes a `Key` from [Keys and binds](../actions/keys.md).

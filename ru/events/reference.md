@@ -337,6 +337,8 @@ on<BlockHitEvent> {
 | `added()` | `boolean` | true, когда действие `ADD` |
 | `removed()` | `boolean` | true, когда действие `REMOVE` |
 
+### EffectEvent.Action
+
 | Константа | Описание |
 |---|---|
 | `ADD` | эффект впервые попал в карту эффектов игрока |

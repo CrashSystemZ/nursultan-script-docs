@@ -36,6 +36,8 @@ At GUI Scale 2 a 1920×1080 window still reports `width()` = 1920. Divide by [`g
 | `r.ring(centerX, centerY, radius, thickness, argb)` | `void` | thickness clamped 0..radius |
 | `r.triangle(x1, y1, x2, y2, x3, y3, argb)` | `void` | filled triangle, bounding quad padded 2 px |
 
+### StrokeAlign
+
 | Constant | Description |
 |---|---|
 | `StrokeAlign.INSIDE` | stroke inside the rect edge, used when align is null |
@@ -101,12 +103,14 @@ Blur reads the framebuffer at its own place in the queue, so it only blurs comma
 | Method | Type | Description |
 |---|---|---|
 | `font(name, ttfFileInAssetsFolder)` | `void` | registers a TTF from `scripts/assets` under that family name |
-| `font(name, ttf)` | `void` | registers a family from TTF bytes, rejected above 8 MiB (API 2) |
+| `font(name, ttf)` | `void` | registers a family from TTF bytes, ignored when the name is taken, the array is empty or over 8 MiB (API 2) |
 | `client.fonts().register(name, ttfFileInAssetsFolder)` | `void` | what `font(name, file)` calls, applied on the next render frame |
 | `client.fonts().register(name, ttf)` | `void` | what `font(name, bytes)` calls, the array is cloned (API 2) |
 | `client.fonts().registered(name)` | `boolean` | true when a live family has that name, a queued font is not visible yet |
 
 A name that already exists — including the client's own `inter`, `jetbrains-mono` and `minecraft` — is ignored, and script families are dropped when the script unloads. The byte form pairs with `base64(...)`: see [assets inside the script](../extras/assets.md#assets-inside-the-script).
+
+### Weight
 
 | Constant | Description |
 |---|---|

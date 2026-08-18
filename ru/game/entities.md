@@ -158,6 +158,10 @@ on<ClientTickEvent> {
 | `living.effects()` | `List<Effect>` | снимки всех активных эффектов |
 | `living.effect(effectId)` | `Effect?` | активный эффект по точному полному id, null если его нет |
 
+Id эффектов сравниваются точно: `hasEffect("minecraft:speed")` попадает, `hasEffect("speed")` — нет.
+
+### Effect
+
 | Метод | Тип | Описание |
 |---|---|---|
 | `effect.id()` | `String` | id эффекта с пространством имён, напр. `minecraft:speed` |
@@ -168,8 +172,6 @@ on<ClientTickEvent> {
 | `effect.infinite()` | `boolean` | длительность бесконечная |
 | `effect.beneficial()` | `boolean` | тип эффекта считается полезным |
 
-Id эффектов сравниваются точно: `hasEffect("minecraft:speed")` попадает, `hasEffect("speed")` — нет.
-
 ## Атрибуты
 
 | Метод | Тип | Описание |
@@ -177,13 +179,15 @@ Id эффектов сравниваются точно: `hasEffect("minecraft:s
 | `living.attributes()` | `Map<String, Attribute>` | неизменяемая карта всех имеющихся атрибутов по полному id |
 | `living.attribute(attributeId)` | `Attribute?` | один атрибут, `minecraft:` добавится сам; null если атрибута нет |
 
+`attributes()` на каждый вызов обходит весь реестр атрибутов.
+
+### Attribute
+
 | Метод | Тип | Описание |
 |---|---|---|
 | `attribute.id()` | `String` | id атрибута с пространством имён, напр. `minecraft:movement_speed` |
 | `attribute.base()` | `double` | значение до модификаторов |
 | `attribute.value()` | `double` | значение после всех модификаторов |
-
-`attributes()` на каждый вызов обходит весь реестр атрибутов.
 
 ## Игроки
 
@@ -192,6 +196,8 @@ Id эффектов сравниваются точно: `hasEffect("minecraft:s
 | `player.pingMs()` | `int` | пинг из списка игроков в миллисекундах, 0 без записи |
 | `player.gameMode()` | `GameMode` | режим игры из списка игроков, `SURVIVAL` без записи |
 | `player.skinTexture()` | [`Texture?`](../ui/render-2d.md) | текстура скина; null у неклиентских игроков и пока StreamerMode прячет скины |
+
+### GameMode
 
 | Константа | Описание |
 |---|---|

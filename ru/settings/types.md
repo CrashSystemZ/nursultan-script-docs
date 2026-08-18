@@ -26,7 +26,7 @@ on<ClientTickEvent> {
 | `rangeSlider(name, from, to, min, max, step)` | `RangeSlider` | слайдер с двумя ручками (бросает ScriptException, если from..to не влезает в min..max) |
 | `rangeSlider(parent, name, from, to, min, max, step)` | `RangeSlider` | вложенный слайдер с двумя ручками, та же проверка |
 | `input(name, value, placeholder)` | `Input` | поле ввода; `placeholder` — буквальный текст, виден пока пусто (API 2) |
-| `input(parent, name, value, placeholder)` | `Input` | вложенное поле ввода |
+| `input(parent, name, value, placeholder)` | `Input` | вложенное поле ввода (API 2) |
 | `selectable(name, vararg entries: Entry)` | `Selectable` | один из N по объектам `entry()`, первый выбирается сам, если не выбран никто |
 | `selectable(parent, name, vararg entries: Entry)` | `Selectable` | вложенный выбор одного по entry |
 | `selectable(name, vararg options: String, selected)` | `Selectable` | один из N по строкам, `selected` по умолчанию первый вариант |
@@ -43,7 +43,7 @@ on<ClientTickEvent> {
 | `hotkey(parent, name, key, action)` | `Hotkey` | вложенная клавиша |
 | `button(name, action)` | `Button` | кнопка в меню; исключения внутри `action` логируются, а не пробрасываются |
 | `button(parent, name, action)` | `Button` | вложенная кнопка |
-| `entry(name, selected) { }` | `Entry` | один вариант для `selectable` или `combo`, см. [Entry](entries.md) |
+| `entry(name, selected, body)` | `Entry` | один вариант для `selectable` или `combo`, см. [Entry](entries.md) |
 
 Две настройки с одинаковым именем под одним родителем бросают `IllegalArgumentException`; любой создатель бросает `ScriptStateException` после выгрузки скрипта.
 `hotkey` принимает `Key` из [Клавиши и бинды](../actions/keys.md).

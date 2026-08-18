@@ -66,7 +66,7 @@ The four deprecated members are indexed under [Things that no longer do anything
 
 ## Order inside a tick
 
-**`RotationPriority`**
+### RotationPriority
 
 | Constant | Description |
 |---|---|
@@ -74,11 +74,11 @@ The four deprecated members are indexed under [Things that no longer do anything
 | `NORMAL` | weight 0, the value in `DEFAULT` |
 | `LATER` | weight -200, applied first |
 
-**`BackRotation`**
+Rotations queued in one tick are applied `LATER` → `NORMAL` → `NOW`, so the highest priority is written last.
+
+### BackRotation
 
 | Constant | Description |
 |---|---|
 | `FAST` | 50% lerp per tick toward the camera, snaps after 20 ticks |
 | `SMOOTH` | up to 12 degrees per tick per axis, snaps after 26 ticks |
-
-Rotations queued in one tick are applied `LATER` → `NORMAL` → `NOW`, so the highest priority is written last.

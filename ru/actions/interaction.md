@@ -34,6 +34,8 @@ on<ClientTickEvent> {
 Null в `mode` считается за `NEAREST`; обе перегрузки `attackPoint` бросают `ScriptStateException`, когда сущность покинула мир.
 `markTarget` бросает `ScriptStateException`, если цель не живая сущность.
 
+### AttackPoint
+
 | Константа | Описание |
 |---|---|
 | `CENTER` | геометрический центр коробки |

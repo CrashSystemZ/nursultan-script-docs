@@ -72,6 +72,8 @@ All six need a world and the client thread (main thread only); an out-of-range `
 Origin is the last sent position plus eye height, the launch velocity includes the player's current movement, and `aim` is a [`Rotation`](../game/math.md#rotation).
 All three need a world and the client thread (main thread only); a null `kind` or `power` at or below 0 throws `ScriptException`.
 
+### ProjectileKind
+
 | Constant | Description |
 |---|---|
 | `ARROW` | arrow physics, default power 3.0 |

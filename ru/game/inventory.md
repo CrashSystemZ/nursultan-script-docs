@@ -33,7 +33,7 @@ on<PrePlayerTickEvent> {
 | `slot.armorSlot()` | `ArmorSlot?` | слот брони, null если вид не ARMOR |
 | `slot.toString()` | `String` | `none`, `hotbar N`, `inventory N`, `armor HELMET` или `offhand` |
 
-`Slot.Kind`:
+### Slot.Kind
 
 | Константа | Описание |
 |---|---|
@@ -43,7 +43,7 @@ on<PrePlayerTickEvent> {
 | `ARMOR` | слот брони, индекс — порядковый номер `ArmorSlot` |
 | `OFFHAND` | вторая рука, индекс 0 |
 
-`ArmorSlot`:
+### ArmorSlot
 
 | Константа | Описание |
 |---|---|
@@ -94,7 +94,7 @@ on<PrePlayerTickEvent> {
 | `inventory.batch(actions)` | `void` | ставит собранные действия одной последовательностью (только главный поток) |
 | `inventory.busy()` | `boolean` | очередь перекладывания клиента не пуста |
 
-`Inventory.Batch`:
+### Inventory.Batch
 
 | Метод | Тип | Описание |
 |---|---|---|
@@ -143,7 +143,7 @@ on<PrePlayerTickEvent> {
 | `item.attributeModifiers()` | `List<AttributeModifier>` | записи ATTRIBUTE_MODIFIERS, пусто если компонента нет |
 | `item.containerItems()` | `List<Item>` | содержимое CONTAINER, иначе BUNDLE_CONTENTS, иначе пусто |
 
-`AttributeModifier`:
+### AttributeModifier
 
 | Метод | Тип | Описание |
 |---|---|---|
@@ -158,8 +158,8 @@ on<PrePlayerTickEvent> {
 | Метод | Тип | Описание |
 |---|---|---|
 | `item.onCooldown()` | `boolean` | группа отката этого стака в откате, false вне мира |
-| `item.cooldownProgress()` | `float` | остаток отката при tickDelta 0, считает вниз 1..0 |
-| `item.cooldownProgress(tickDelta)` | `float` | тот же остаток, сглаженный по tickDelta, 1..0 |
+| `item.cooldownProgress()` | `float` | остаток отката при tickDelta 0, считает вниз 1..0 (API 2) |
+| `item.cooldownProgress(tickDelta)` | `float` | тот же остаток, сглаженный по tickDelta, 1..0 (API 2) |
 | `item.setCooldown(ticks)` | `void` | клиентский откат на столько тиков, 0 и меньше снимает его (API 2) (только главный поток) (бросает ScriptStateException вне мира) |
 | `item.removeCooldown()` | `void` | снимает клиентский откат этой группы (API 2) (только главный поток) (бросает ScriptStateException вне мира) |
 
@@ -193,14 +193,14 @@ on<PrePlayerTickEvent> {
 
 ## Руки
 
-`Hand`:
+### Hand
 
 | Константа | Описание |
 |---|---|
 | `MAIN_HAND` | основная рука |
 | `OFF_HAND` | вторая рука |
 
-`Arm`:
+### Arm
 
 | Константа | Описание |
 |---|---|

@@ -73,7 +73,7 @@ on<PacketReceiveEvent> { e ->
 | `entityId()` | `int` | сетевой id сущности |
 | `attributes()` | `List<Attribute>` | записи атрибутов |
 
-`S2CEntityAttributesPacket.Attribute`
+### S2CEntityAttributesPacket.Attribute
 
 | Поле | Тип | Описание |
 |---|---|---|
@@ -81,7 +81,7 @@ on<PacketReceiveEvent> { e ->
 | `base()` | `double` | базовое значение до модификаторов |
 | `modifiers()` | `List<Modifier>` | модификаторы этого атрибута |
 
-`S2CEntityAttributesPacket.Modifier`
+### S2CEntityAttributesPacket.Modifier
 
 | Поле | Тип | Описание |
 |---|---|---|
@@ -111,7 +111,7 @@ on<PacketReceiveEvent> { e ->
 | `entityId()` | `int` | сетевой id сущности |
 | `equipment()` | `List<Equipment>` | изменившиеся слоты экипировки |
 
-`S2CEntityEquipmentUpdatePacket.Equipment`
+### S2CEntityEquipmentUpdatePacket.Equipment
 
 | Поле | Тип | Описание |
 |---|---|---|
@@ -257,7 +257,7 @@ on<PacketReceiveEvent> { e ->
 | `id()` | `int` | сетевой id сущности |
 | `values()` | `List<TrackedValue>` | изменившиеся записи, пусто когда пакет их не несёт |
 
-`S2CEntityTrackerUpdatePacket.TrackedValue`
+### S2CEntityTrackerUpdatePacket.TrackedValue
 
 | Поле | Тип | Описание |
 |---|---|---|

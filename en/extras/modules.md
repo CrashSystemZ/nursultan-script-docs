@@ -14,7 +14,7 @@ if (!aura.enabled()) {
 
 ## Finding a module
 
-**`Modules`**
+### Modules
 
 | Method | Type | Description |
 |---|---|---|
@@ -28,7 +28,7 @@ The wrapper is cached on the module, so every lookup of the same module hands ba
 
 ## The module
 
-**`Module`**
+### Module
 
 | Method | Type | Description |
 |---|---|---|
@@ -44,7 +44,7 @@ Every state change dispatches `ModuleToggleEvent` — [Event list](../events/ref
 
 ## Its settings
 
-**`Module`**
+### Module settings
 
 | Method | Type | Description |
 |---|---|---|

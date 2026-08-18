@@ -61,10 +61,14 @@ on<Render2DEvent> { e ->
 | `set(uniform, texture)` | `Shader` | привязывает `sampler2D` к следующему юниту, чужой `Texture` удаляет униформу |
 | `set(uniform, texture, filter, wrap)` | `Shader` | то же плюс GL-сэмплер, только на пути `gpu` render type — под `render.shader` текстура вообще не привязывается (API 2) |
 
+### TextureFilter
+
 | Константа | Описание |
 | --- | --- |
 | `TextureFilter.NEAREST` | `GL_NEAREST` на min и mag |
 | `TextureFilter.LINEAR` | `GL_LINEAR` на min и mag |
+
+### TextureWrap
 
 | Константа | Описание |
 | --- | --- |
@@ -77,11 +81,15 @@ on<Render2DEvent> { e ->
 
 Берётся всегда, когда `vertexSource` равен null или пуст.
 
+### Атрибуты
+
 | Атрибут | Тип | Описание |
 | --- | --- | --- |
 | `pos` | `vec3` | location 0, позиция угла в пикселях фреймбуфера, z — ноль |
 | `uv` | `vec2` | location 1, UV по нарисованному прямоугольнику, 0..1 |
 | `color` | `vec4` | location 2, цвет вершины в порядке BGRA |
+
+### Выходы
 
 | Выход | Тип | Описание |
 | --- | --- | --- |
@@ -89,6 +97,8 @@ on<Render2DEvent> { e ->
 | `in_screen_pos` | `vec2` | `pos.xy`, пиксели фреймбуфера |
 | `in_uv` | `vec2` | `uv`, 0..1 по прямоугольнику |
 | `in_color` | `vec4` | `color.bgra`, то есть RGBA |
+
+### Встроенные униформы
 
 | Униформа | Тип | Описание |
 | --- | --- | --- |

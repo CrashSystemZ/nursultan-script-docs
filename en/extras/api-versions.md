@@ -42,11 +42,11 @@ The client appends `this client provides v2` to every `Unresolved reference` com
 | `Item.buildable()` | [Inventory and items](../game/inventory.md) |
 | `Item.cooldownProgress()`, `cooldownProgress(tickDelta)`, `setCooldown(ticks)`, `removeCooldown()` | [Inventory and items](../game/inventory.md) |
 | `TabEntry.pingMs(value)` | [Server, scoreboard, tab list](../game/server.md) |
-| `input(name, value, placeholder)` | [Kinds of settings](../settings/types.md) |
+| `input(name, value, placeholder)`, `input(parent, name, value, placeholder)` | [Kinds of settings](../settings/types.md) |
 | `Gpu` and the 11 GPU types | [Your own geometry](../ui/gpu.md) |
 | `Weight` and the weight overloads on `Render` | [2D render](../ui/render-2d.md) |
 | `blur(x, y, width, height, radius, argb, tl, tr, bl, br)` | [2D render](../ui/render-2d.md) |
-| `Shader.setMat4`, `Shader.set(uniform, texture, filter, wrap)` | [Shaders](../ui/shaders.md) |
+| `Shader.setMat4(uniform, float[])`, `Shader.set(uniform, texture, filter, wrap)` | [Shaders](../ui/shaders.md) |
 | `EventOptions(ignoreCancelled)` | [Subscribing](../events/basics.md) |
 | `FireworkEntitySpeedEvent` | [Event list](../events/reference.md) |
 | `PerspectiveEvent` | [Event list](../events/reference.md) |
@@ -67,18 +67,20 @@ Packet records follow the Minecraft version, not this number — see [Packets](.
 `@Retention(CLASS)` — visible in the IDE and in the SDK jar, never through reflection.
 Targets: type, method, field, parameter, record component.
 
+### What is marked
+
 | Member | Type | Description |
 |---|---|---|
-| `Priority` | `enum` | whole type marked, five constants kept so old scripts compile (no effect: every script handler runs at the same moment) |
-| `EventOptions.priority` | `Priority` | record component and its accessor (deprecated) (no effect: every script handler runs at the same moment) |
-| `EventOptions.priority(priority)` | `EventOptions` | copy of `DEFAULT` carrying the value (deprecated) (no effect: every script handler runs at the same moment) |
+| `Priority` | `enum` | whole type marked, five constants kept so old scripts compile (no effect on dispatch order) |
+| `EventOptions.priority()` | `Priority` | record component and its accessor (deprecated) (no effect: the value is never read) |
+| `EventOptions.priority(priority)` | `EventOptions` | copy of `DEFAULT` carrying the value (deprecated) (no effect: the value is never read) |
 | `ScriptScope.on<E>(priority, ignoreCancelled) { }` | `Subscription` | discards the argument (deprecated, drop the argument) |
 | `ScriptScope.on(type, priority, ignoreCancelled) { }` | `Subscription` | discards the argument (deprecated, drop the argument) |
 | `EntryScope.on<E>(priority, ignoreCancelled) { }` | `Subscription` | discards the argument (deprecated, drop the argument) |
 | `EntryScope.on(type, priority, ignoreCancelled) { }` | `Subscription` | discards the argument (deprecated, drop the argument) |
-| `RotationOptions.clientSide` | `boolean` | record component and its accessor (deprecated) (no effect: the rotation always reaches the server) |
+| `RotationOptions.clientSide()` | `boolean` | record component and its accessor (deprecated) (no effect: the rotation always reaches the server) |
 | `RotationOptions.clientSide(value)` | `RotationOptions` | copy carrying the value (deprecated) (no effect: the rotation always reaches the server) |
-| `RotationOptions.normalizeMouseMovement` | `boolean` | record component and its accessor (deprecated) (no effect: the angle is always snapped to a mouse step) |
+| `RotationOptions.normalizeMouseMovement()` | `boolean` | record component and its accessor (deprecated) (no effect: the angle is always snapped to a mouse step) |
 | `RotationOptions.normalizeMouseMovement(value)` | `RotationOptions` | copy carrying the value (deprecated) (no effect: the angle is always snapped to a mouse step) |
 
 All eleven still compile and still store what you give them; nothing reads the stored value.

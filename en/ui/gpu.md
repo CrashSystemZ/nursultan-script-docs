@@ -49,11 +49,15 @@ Every method throws `IllegalStateException` once the script session is closed. M
 | `VertexAttribute.color()` | `VertexAttribute` | static, 4 normalized unsigned bytes, per-vertex |
 | `attribute.perInstance()` | `VertexAttribute` | copy with `instanced = true` |
 
+### AttributeType
+
 | Constant | Description |
 |---|---|
 | `AttributeType.FLOAT` | 32-bit float components |
 | `AttributeType.INT` | 32-bit signed integer components |
 | `AttributeType.UNSIGNED_BYTE` | 4 normalized bytes regardless of the declared count |
+
+### The format itself
 
 | Method | Type | Description |
 |---|---|---|
@@ -73,6 +77,8 @@ Attributes map to the shader's `layout(location = N)` inputs in declaration orde
 | `mesh.clear()` | `void` | resets both writers, no-op if the mesh was never used |
 
 The GL buffer is created on first use, and that first write must happen on the render thread. `draw()` uploads both writers and empties them, so each frame writes its geometry from scratch.
+
+### The vertex writer
 
 | Method | Type | Description |
 |---|---|---|
@@ -102,6 +108,8 @@ The GL buffer is created on first use, and that first write must happen on the r
 | `pipeline.shader()` | `Shader` | the shader this pipeline draws with — [Shaders](shaders.md) |
 | `pipeline.drawMode()` | `DrawMode` | primitive topology |
 
+### DrawMode
+
 | Constant | Description |
 |---|---|
 | `DrawMode.TRIANGLES` | `GL_TRIANGLES`, also the fallback for a null mode |
@@ -111,12 +119,16 @@ The GL buffer is created on first use, and that first write must happen on the r
 | `DrawMode.LINE_STRIP` | `GL_LINE_STRIP` |
 | `DrawMode.POINTS` | `GL_POINTS` |
 
+### BlendMode
+
 | Constant | Description |
 |---|---|
 | `BlendMode.OFF` | blending disabled |
 | `BlendMode.ALPHA` | `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`, the fallback for a null mode |
 | `BlendMode.PREMULTIPLIED` | `ONE, ONE_MINUS_SRC_ALPHA` on colour and alpha |
 | `BlendMode.ADDITIVE` | `SRC_ALPHA, ONE` on colour and alpha |
+
+### DepthMode
 
 | Constant | Description |
 |---|---|
@@ -140,7 +152,9 @@ No built-in uniforms are supplied, unlike `Render.shader`: `u_view`, `u_projecti
 | Limit | Value |
 |---|---|
 | live gpu resources per script | 64 meshes, pipelines and render types together |
-| attributes per format | 16 |
+| attributes per vertex format | 16 |
 | vertices per mesh | 1 048 576 |
 | indices per mesh | 4 194 304 |
 | embedded font or PNG | 8 MiB |
+
+The exception each limit throws: [Sandbox and limits](../extras/limits.md#resource-limits).

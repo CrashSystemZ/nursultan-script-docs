@@ -61,10 +61,14 @@ Values are stored on the handle, not uploaded; a null `uniform` name is ignored.
 | `set(uniform, texture)` | `Shader` | binds a `sampler2D` to the next unit, a non-script `Texture` removes the uniform |
 | `set(uniform, texture, filter, wrap)` | `Shader` | same plus a GL sampler object, `gpu` render-type path only — under `render.shader` the texture is not bound at all (API 2) |
 
+### TextureFilter
+
 | Constant | Description |
 | --- | --- |
 | `TextureFilter.NEAREST` | `GL_NEAREST` for min and mag |
 | `TextureFilter.LINEAR` | `GL_LINEAR` for min and mag |
+
+### TextureWrap
 
 | Constant | Description |
 | --- | --- |
@@ -77,11 +81,15 @@ Sampler units are handed out in the order the textures were set, starting at 0; 
 
 Used whenever `vertexSource` is null or blank.
 
+### Attributes
+
 | Attribute | Type | Description |
 | --- | --- | --- |
 | `pos` | `vec3` | location 0, corner position in framebuffer pixels, z is 0 |
 | `uv` | `vec2` | location 1, UV across the drawn rect, 0..1 |
 | `color` | `vec4` | location 2, vertex colour in BGRA order |
+
+### Outputs
 
 | Output | Type | Description |
 | --- | --- | --- |
@@ -89,6 +97,8 @@ Used whenever `vertexSource` is null or blank.
 | `in_screen_pos` | `vec2` | `pos.xy`, framebuffer pixels |
 | `in_uv` | `vec2` | `uv`, 0..1 across the rect |
 | `in_color` | `vec4` | `color.bgra`, i.e. RGBA |
+
+### Built-in uniforms
 
 | Uniform | Type | Description |
 | --- | --- | --- |

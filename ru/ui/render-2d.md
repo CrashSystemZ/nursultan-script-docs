@@ -36,6 +36,8 @@ on<Render2DEvent> { e ->
 | `r.ring(centerX, centerY, radius, thickness, argb)` | `void` | толщина зажата в 0..radius |
 | `r.triangle(x1, y1, x2, y2, x3, y3, argb)` | `void` | залитый треугольник, габаритный квад с запасом в 2 px |
 
+### StrokeAlign
+
 | Константа | Описание |
 |---|---|
 | `StrokeAlign.INSIDE` | обводка внутри границы, берётся при null |
@@ -101,12 +103,14 @@ on<Render2DEvent> { e ->
 | Метод | Тип | Описание |
 |---|---|---|
 | `font(name, ttfFileInAssetsFolder)` | `void` | регистрирует TTF из `scripts/assets` под именем семейства |
-| `font(name, ttf)` | `void` | регистрирует семейство из байтов TTF, свыше 8 МиБ отклоняется (API 2) |
+| `font(name, ttf)` | `void` | регистрирует семейство из байтов TTF, игнорируется при занятом имени, пустом массиве и размере больше 8 МиБ (API 2) |
 | `client.fonts().register(name, ttfFileInAssetsFolder)` | `void` | то, что зовёт `font(name, file)`, применяется на следующем кадре |
 | `client.fonts().register(name, ttf)` | `void` | то, что зовёт `font(name, bytes)`, массив копируется (API 2) |
 | `client.fonts().registered(name)` | `boolean` | true, если живое семейство с таким именем есть, шрифт в очереди ещё не виден |
 
 Уже занятое имя — включая клиентские `inter`, `jetbrains-mono` и `minecraft` — игнорируется, а семейства скрипта снимаются при его выгрузке. Байтовая форма идёт в паре с `base64(...)`: смотри [ассеты внутри скрипта](../extras/assets.md#ассеты-внутри-скрипта).
+
+### Weight
 
 | Константа | Описание |
 |---|---|

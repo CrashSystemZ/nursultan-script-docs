@@ -27,11 +27,11 @@ on<ClientTickEvent> {
 | `raycast.hitOn(entity, from, to)` | `Vec?` | impact point on the hitbox expanded by its targeting margin, `from` when the segment starts inside |
 
 Spectators and entities that cannot be hit are never returned, filter or not.
-Off the client thread every method throws `ScriptThreadException`; with no player or world, `ScriptStateException`. `Vec` and `Rotation` are on [Vectors, boxes, angles](math.md).
+Off the client thread every method throws [`ScriptThreadException`](../extras/limits.md#exceptions); with no player or world, `ScriptStateException`. `Vec` and `Rotation` are on [Vectors, boxes, angles](math.md).
 
 ## The hit
 
-**`Hit`**
+### Hit
 
 | Method | Type | Description |
 |---|---|---|
@@ -43,7 +43,7 @@ Off the client thread every method throws `ScriptThreadException`; with no playe
 
 On a `blocks(...)` miss `position()` is `to`; when a crosshair trace returns nothing it is the ray origin and `distance()` is 0.
 
-**`Hit.OnBlock`, `Hit.OnEntity`**
+### Hit.OnBlock, Hit.OnEntity
 
 | Method | Type | Description |
 |---|---|---|
@@ -57,7 +57,7 @@ On a `blocks(...)` miss `position()` is `to`; when a crosshair trace returns not
 
 ## Which shape
 
-**`RaycastShape`**
+### RaycastShape
 
 | Constant | Description |
 |---|---|
@@ -65,7 +65,7 @@ On a `blocks(...)` miss `position()` is `to`; when a crosshair trace returns not
 | `OUTLINE` | outline shape, the one used for highlighting |
 | `VISUAL` | visual shape |
 
-**`FluidHandling`**
+### FluidHandling
 
 | Constant | Description |
 |---|---|
@@ -75,7 +75,7 @@ On a `blocks(...)` miss `position()` is `to`; when a crosshair trace returns not
 
 ## Sides
 
-**`Side`**
+### Side
 
 | Constant | Description |
 |---|---|
@@ -85,6 +85,8 @@ On a `blocks(...)` miss `position()` is `to`; when a crosshair trace returns not
 | `SOUTH` | +Z face |
 | `WEST` | -X face |
 | `EAST` | +X face |
+
+### Side methods
 
 | Method | Type | Description |
 |---|---|---|

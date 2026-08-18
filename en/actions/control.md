@@ -21,7 +21,7 @@ on<MoveInputEvent> {
 | `control.sneaking(value)` | `void` | sets the local player's sneak flag (main thread only) |
 | `control.jump()` | `void` | jumps, no-op while not on the ground (main thread only) |
 
-Every method throws `ScriptThreadException` off the client thread and `ScriptStateException` with no world loaded.
+Every method throws [`ScriptThreadException`](../extras/limits.md#exceptions) off the client thread and `ScriptStateException` with no world loaded.
 
 ## Rewriting input
 
@@ -42,13 +42,15 @@ What is physically held right now, independent of the tick's input, is [Keys and
 Neither setting is restored when the script switches off; `scaleFactor()` is the number [2D render](../ui/render-2d.md) pixels are divided by to get vanilla interface coordinates.
 `PerspectiveEvent` fires on every point-of-view change, whoever caused it — [Event list](../events/reference.md#perspectiveevent).
 
-**`Perspective`**
+### Perspective
 
 | Method | Type | Description |
 |---|---|---|
 | `perspective.firstPerson()` | `boolean` | true only for `FIRST_PERSON` (API 2) |
 | `perspective.thirdPerson()` | `boolean` | negation of `firstPerson()` (API 2) |
 | `perspective.frontView()` | `boolean` | true only for `THIRD_PERSON_FRONT` (API 2) |
+
+### Perspective constants
 
 | Constant | Description |
 |---|---|

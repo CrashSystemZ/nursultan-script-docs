@@ -189,7 +189,9 @@ on<PacketReceiveEvent> { e ->
 | `cursorItem()` | `String` | id предмета на курсоре, `minecraft:air` для пустого |
 | `cursorCount()` | `int` | размер стака на курсоре |
 
-`S2CInventoryPacket.Stack` — одна запись из `contents()`:
+### S2CInventoryPacket.Stack
+
+Одна запись из `contents()`.
 
 | Поле | Тип | Описание |
 |---|---|---|
@@ -453,7 +455,9 @@ Keep-alive; клиент возвращает id в `C2SKeepAlivePacket`.
 | `refreshable()` | `boolean` | сделки со временем восстанавливаются |
 | `offers()` | `List<Offer>` | сделки в порядке отображения |
 
-`S2CSetTradeOffersPacket.Offer` — одна сделка:
+### S2CSetTradeOffersPacket.Offer
+
+Одна сделка.
 
 | Поле | Тип | Описание |
 |---|---|---|
@@ -490,7 +494,9 @@ Keep-alive; клиент возвращает id в `C2SKeepAlivePacket`.
 |---|---|---|
 | `stats()` | `List<Stat>` | записи статистики |
 
-`S2CStatisticsPacket.Stat` — одна статистика:
+### S2CStatisticsPacket.Stat
+
+Одна статистика.
 
 | Поле | Тип | Описание |
 |---|---|---|
