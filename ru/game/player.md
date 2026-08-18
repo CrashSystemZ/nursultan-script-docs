@@ -22,6 +22,7 @@ on<ClientTickEvent> {
 | `player.z()` | `double` | текущий Z в блоках |
 | `player.previousPosition()` | `Vec` | позиция на прошлом тике |
 | `player.renderPosition()` | `Vec` | позиция с интерполяцией тика, для отрисовки |
+| `player.eyePosition()` | [`Vec`](math.md#vec) | позиция глаз в мировых координатах |
 | `player.box()` | [`Box`](math.md#box) | хитбокс в координатах мира |
 | `player.width()` | `float` | ширина хитбокса в блоках |
 | `player.height()` | `float` | высота хитбокса в блоках |
@@ -34,17 +35,30 @@ on<ClientTickEvent> {
 | `player.movementSpeed()` | `float` | атрибут скорости в блоках за тик |
 | `player.distanceTo(other)` | `double` | расстояние между позициями в блоках (бросает `ScriptStateException`, если `other` не сущность мира) |
 | `player.distanceTo(point)` | `double` | расстояние от позиции до точки в блоках |
+| `player.fallDistanceBlocks()` | `double` | накопленная высота падения в блоках |
+
+## Состояние
+
+| Метод | Тип | Описание |
+|---|---|---|
 | `player.onGround()` | `boolean` | стоит на земле |
 | `player.sneaking()` | `boolean` | флаг приседания |
 | `player.sprinting()` | `boolean` | флаг спринта |
+| `player.wasSprinting()` | `boolean` | состояние спринта в прошлом тике |
+| `player.hasMovementInput()` | `boolean` | клавиши движения дают ввод в этом тике |
 | `player.swimming()` | `boolean` | флаг плавания |
 | `player.crawling()` | `boolean` | ползёт в щели высотой в один блок |
 | `player.sleeping()` | `boolean` | спит |
+| `player.climbing()` | `boolean` | стоит на лазаемом блоке |
+| `player.gliding()` | `boolean` | планирует на элитрах |
+| `player.riding()` | `boolean` | сидит в транспорте |
+| `player.flying()` | `boolean` | включён креативный полёт |
+| `player.creative()` | `boolean` | выставлены креативные права |
 | `player.usingRiptide()` | `boolean` | в риптайд-вращении трезубца |
-| `player.wet()` | `boolean` | в воде или стоит под дождём |
-| `player.submerged()` | `boolean` | глаза под водой |
 | `player.inWater()` | `boolean` | касается воды |
 | `player.inLava()` | `boolean` | стоит в лаве |
+| `player.wet()` | `boolean` | в воде или стоит под дождём |
+| `player.submerged()` | `boolean` | глаза под водой |
 | `player.onFire()` | `boolean` | горит |
 | `player.fireImmune()` | `boolean` | тип сущности не боится огня |
 | `player.frozen()` | `boolean` | заморозка снегом применена полностью |
@@ -53,7 +67,6 @@ on<ClientTickEvent> {
 | `player.pose()` | [`Pose`](entities.md#позы) | текущая поза |
 | `player.airTicks()` | `int` | остаток воздуха в тиках |
 | `player.maxAirTicks()` | `int` | максимум воздуха в тиках |
-| `player.fallDistanceBlocks()` | `double` | накопленная высота падения в блоках |
 | `player.baby()` | `boolean` | детёныш |
 | `player.scale()` | `float` | множитель размера, по умолчанию 1.0 |
 | `player.silent()` | `boolean` | флаг беззвучности |
@@ -91,6 +104,34 @@ on<ClientTickEvent> {
 `bypassedHealth()` равен `health()` в одиночной игре и всегда, когда BypassHealth выключен.
 Id эффектов сравниваются точно: `hasEffect("minecraft:speed")` попадает, `hasEffect("speed")` — нет.
 
+## Голод
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `player.food()` | `int` | уровень голода, 0..20 |
+| `player.saturation()` | `float` | сатурация, 0..food |
+| `player.hunger()` | `Hunger` | общий живой вид на голод (API 2) |
+
+### Объект Hunger
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `hunger.food()` | `int` | уровень голода, 0..20 |
+| `hunger.maxFood()` | `int` | константа 20 |
+| `hunger.saturation()` | `float` | сатурация, 0..food |
+| `hunger.full()` | `boolean` | голод на максимуме |
+| `hunger.canSprint()` | `boolean` | голода хватает на спринт, больше 6 |
+
+Все методы `Hunger` — API 2.
+Exhaustion и тиковый счётчик хила и урона от голода живут на сервере, на клиенте лежат нулями и не открыты.
+
+## Опыт
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `player.xpLevel()` | `int` | уровень опыта |
+| `player.xpProgress()` | `float` | прогресс до следующего уровня, 0..1 |
+
 ## Кто это
 
 | Метод | Тип | Описание |
@@ -118,7 +159,7 @@ Id эффектов сравниваются точно: `hasEffect("minecraft:s
 | `player.asPlayer()` | [`PlayerEntity?`](entities.md#игроки) | та же сущность как `PlayerEntity`, иначе null |
 | `player.asTextDisplay()` | [`TextDisplay?`](entities.md#текстовые-дисплеи) | та же сущность как `TextDisplay`, иначе null |
 
-## Экипировка
+## Экипировка и использование предмета
 
 | Метод | Тип | Описание |
 |---|---|---|
@@ -129,63 +170,19 @@ Id эффектов сравниваются точно: `hasEffect("minecraft:s
 | `player.isNaked()` | `boolean` | ни в одном из четырёх слотов брони ничего нет |
 | `player.activeItem()` | `Item?` | используемый стак, null если ничего |
 | `player.usingItem()` | `boolean` | сейчас использует предмет |
+| `player.usingHand()` | [`Hand`](inventory.md#руки) | активная рука, `MAIN_HAND`, если не занята вторая |
 | `player.blocking()` | `boolean` | блокирует щитом |
+| `player.itemUseTicks()` | `int` | сколько тиков используется текущий предмет |
 | `player.itemUseTicksLeft()` | `int` | сколько тиков осталось до конца использования |
 | `player.swinging()` | `boolean` | идёт анимация замаха (API 2) |
 | `player.swingTicks()` | `int` | текущий тик анимации замаха (API 2) |
 
-## Позиция и досягаемость
+## Досягаемость и откат атаки
 
 | Метод | Тип | Описание |
 |---|---|---|
-| `player.eyePosition()` | [`Vec`](math.md#vec) | позиция глаз в мировых координатах |
 | `player.entityReachBlocks()` | `double` | дальность взаимодействия с сущностями в блоках |
 | `player.blockReachBlocks()` | `double` | дальность взаимодействия с блоками в блоках |
-
-## Состояние
-
-| Метод | Тип | Описание |
-|---|---|---|
-| `player.flying()` | `boolean` | включён креативный полёт |
-| `player.creative()` | `boolean` | выставлены креативные права |
-| `player.wasSprinting()` | `boolean` | состояние спринта в прошлом тике |
-| `player.hasMovementInput()` | `boolean` | клавиши движения дают ввод в этом тике |
-| `player.climbing()` | `boolean` | стоит на лазаемом блоке |
-| `player.gliding()` | `boolean` | планирует на элитрах |
-| `player.riding()` | `boolean` | сидит в транспорте |
-| `player.usingHand()` | [`Hand`](inventory.md#руки) | активная рука, `MAIN_HAND`, если не занята вторая |
-| `player.itemUseTicks()` | `int` | сколько тиков используется текущий предмет |
-
-## Голод
-
-| Метод | Тип | Описание |
-|---|---|---|
-| `player.food()` | `int` | уровень голода, 0..20 |
-| `player.saturation()` | `float` | сатурация, 0..food |
-| `player.hunger()` | `Hunger` | общий живой вид на голод (API 2) |
-
-| Метод | Тип | Описание |
-|---|---|---|
-| `hunger.food()` | `int` | уровень голода, 0..20 |
-| `hunger.maxFood()` | `int` | константа 20 |
-| `hunger.saturation()` | `float` | сатурация, 0..food |
-| `hunger.full()` | `boolean` | голод на максимуме |
-| `hunger.canSprint()` | `boolean` | голода хватает на спринт, больше 6 |
-
-Все методы `Hunger` — API 2.
-Exhaustion и тиковый счётчик хила и урона от голода живут на сервере, на клиенте лежат нулями и не открыты.
-
-## Опыт
-
-| Метод | Тип | Описание |
-|---|---|---|
-| `player.xpLevel()` | `int` | уровень опыта |
-| `player.xpProgress()` | `float` | прогресс до следующего уровня, 0..1 |
-
-## Откат атаки
-
-| Метод | Тип | Описание |
-|---|---|---|
 | `player.attackCooldown()` | `float` | заряд атаки на границе тика, 0..1 |
 | `player.attackCooldown(tickDelta)` | `float` | заряд атаки, сглаженный по `tickDelta`, 0..1 (API 2) |
 | `player.cooldownPeriod()` | `float` | полная длина отката в тиках для предмета в руке (API 2) |
