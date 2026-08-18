@@ -1,262 +1,159 @@
 # World and blocks
 
-`world` is the current world. It only works while you are in a game, so wrap things in `whenInGame` or check `inGame`.
-
-## Which world
+`world` is `game.world()`. Every call throws `ScriptStateException` when there is no world loaded; a block read is a snapshot taken at call time.
 
 ```kotlin
-world.dimension()        // "minecraft:overworld" and friends
-world.timeTicks()        // how long the world has existed
-world.dayTimeTicks()     // time of day, 0..24000
-world.raining()
-world.thundering()
-world.rainGradient()     // 0..1, how hard it is raining right now
-world.thunderGradient()  // 0..1, the same for a thunderstorm
-```
-
-`raining()` flips the moment weather starts; the gradient climbs over a few seconds, so it is the one to fade an effect with.
-
-## Blocks
-
-A block comes from coordinates or from a point:
-
-```kotlin
-val under = world.block(player.x().toInt(), player.y().toInt() - 1, player.z().toInt())
-val here = world.block(player.position())
-```
-
-What you can ask about it:
-
-```kotlin
-under.id()               // "minecraft:stone"
-under.name()             // its in-game name
-under.x()  under.y()  under.z()
-under.position()
-under.box()              // its box in the world
-
-under.air()
-under.solid()
-under.liquid()
-under.opaque()
-under.blocksMovement()
-under.replaceable()      // your own block can go here: air, water, grass
-
-under.luminance()        // how much light it emits
-under.hardness()         // how long it takes to break
-under.blastResistance()
-under.slipperiness()     // ice is slippery
-
-under.fullCube()
-under.hasCollision()
-under.hasBlockEntity()   // a chest, a sign, a shulker
-under.emitsRedstone()
-under.toolRequired()     // breaking it bare-handed drops nothing
-under.burnable()
-under.randomTicks()
-under.pistonBehavior()   // "normal", "destroy", "block", "push_only"
-under.velocityMultiplier()      // soul sand slows you
-under.jumpVelocityMultiplier()  // honey shortens the jump
-under.opacity()          // how much light it swallows
-under.mapColor()         // its colour on a map, 0xAARRGGBB
-```
-
-## Block state and tags
-
-A block id tells you *what* it is; the state tells you *how* it is placed. That is where "is this chest open", "which way does the stair face" and "how full is this cauldron" live:
-
-```kotlin
-val block = world.block(position)
-
-block.properties()          // every property as name -> value, both strings
-block.property("facing")    // one of them, or null if the block has no such property
-```
-
-```kotlin
-if (block.property("open") == "true") {
-    chat.print("the trapdoor is open")
+on<ClientTickEvent> {
+    whenInGame {
+        val under = world.block(player.x().toInt(), player.y().toInt() - 1, player.z().toInt())
+        val fluid = under.fluid()
+        val nearby = world.entitiesNear(player.position(), 8.0, filters.attackable())
+        chat.print("${under.id()} ${fluid?.id() ?: "dry"} ${nearby.size}")
+    }
 }
 ```
 
-Values are always strings, because the set of properties depends on the block — `"true"`, `"north"`, `"5"`. Compare them as text, do not expect numbers.
+## The world itself
 
-Tags group blocks the way the game groups them:
+| Method | Type | Description |
+|---|---|---|
+| `world.dimension()` | `String` | dimension registry key, e.g. `minecraft:overworld` |
+| `world.timeTicks()` | `long` | total world age in ticks |
+| `world.dayTimeTicks()` | `long` | time of day in ticks, cycle length 24000 |
+| `world.raining()` | `boolean` | rain active in this world |
+| `world.thundering()` | `boolean` | thunderstorm active in this world |
+| `world.rainGradient()` | `float` | rain strength 0..1 |
+| `world.thunderGradient()` | `float` | thunder strength 0..1 |
+| `world.biome(position)` | `String?` | biome registry id at the floored position |
+| `world.topY(x, z)` | `int` | y above the highest non-air block, bottom y when unloaded |
 
-```kotlin
-block.tags()                     // every tag the block is in
-block.hasTag("mineable/pickaxe")
-block.hasTag("minecraft:logs")   // the prefix is optional
-```
+## Reading a block
+
+| Method | Type | Description |
+|---|---|---|
+| `world.block(x, y, z)` | `Block` | block state snapshot, `void_air` outside world limits |
+| `world.block(position)` | `Block` | same, `Vec` coordinates floored |
+| `block.id()` | `String` | block registry id, e.g. `minecraft:stone` |
+| `block.name()` | `String` | localized block name |
+| `block.x()` | `int` | block x coordinate |
+| `block.y()` | `int` | block y coordinate |
+| `block.z()` | `int` | block z coordinate |
+| `block.position()` | `Vec` | block corner coordinates |
+| `block.box()` | `Box` | the 1×1×1 cube at this position, not the block shape |
+
+`Vec` and `Box` are documented on [Vectors, boxes, angles](math.md).
+
+## Block state
+
+| Method | Type | Description |
+|---|---|---|
+| `block.air()` | `boolean` | state is air |
+| `block.solid()` | `boolean` | state is solid |
+| `block.liquid()` | `boolean` | state is a liquid block |
+| `block.opaque()` | `boolean` | state is opaque |
+| `block.blocksMovement()` | `boolean` | state blocks movement |
+| `block.replaceable()` | `boolean` | a placed block can replace this state |
+| `block.fullCube()` | `boolean` | state is a full cube at this position |
+| `block.hasCollision()` | `boolean` | collision shape at this position is non-empty |
+| `block.luminance()` | `int` | emitted light 0..15 |
+| `block.opacity()` | `int` | light attenuation 0..15 |
+| `block.hardness()` | `float` | breaking hardness at this position, -1 for unbreakable |
+| `block.blastResistance()` | `float` | explosion resistance |
+| `block.slipperiness()` | `float` | friction factor, 0.6 default, 0.98 for ice |
+| `block.velocityMultiplier()` | `float` | horizontal movement multiplier |
+| `block.jumpVelocityMultiplier()` | `float` | jump velocity multiplier |
+| `block.emitsRedstone()` | `boolean` | state emits redstone power |
+| `block.toolRequired()` | `boolean` | correct tool required for drops |
+| `block.burnable()` | `boolean` | state is burnable |
+| `block.randomTicks()` | `boolean` | state receives random ticks |
+| `block.pistonBehavior()` | `String` | lowercase: normal, destroy, block, ignore, push_only |
+| `block.mapColor()` | `int` | map colour as ARGB, alpha forced to 0xFF |
+
+## Properties and tags
+
+| Method | Type | Description |
+|---|---|---|
+| `block.properties()` | `Map<String, String>` | every state property as name -> value, unmodifiable, insertion-ordered |
+| `block.property(name)` | `String?` | one property value by case-insensitive name |
+| `block.tags()` | `List<String>` | block tag ids |
+| `block.hasTag(tagId)` | `boolean` | block is in that tag, leading `#` and namespace optional (throws `ScriptException` when tagId is blank or unparsable) |
 
 ## Block entities
 
-A chest, a sign, a vault, a shulker — those blocks carry data the block id and the state say nothing about. `blockEntity()` gets you to it, and returns `null` for an ordinary block:
+| Method | Type | Description |
+|---|---|---|
+| `block.hasBlockEntity()` | `boolean` | state declares a block entity |
+| `block.blockEntity()` | `BlockEntity?` | block entity at this position (main thread only) |
+| `world.blockEntitiesIn(box)` | `List<BlockEntity>` | block entities whose block centre is inside the box, immutable list (main thread only) (throws `ScriptException` when the box spans more than 32×32 chunks) |
+| `blockEntity.type()` | `String` | block entity type registry id, e.g. `minecraft:vault` |
+| `blockEntity.x()` | `int` | block x coordinate |
+| `blockEntity.y()` | `int` | block y coordinate |
+| `blockEntity.z()` | `int` | block z coordinate |
+| `blockEntity.position()` | `Vec` | block coordinates |
+| `blockEntity.displayItem()` | `Item?` | vault display item or brushable block item, null otherwise |
+| `blockEntity.nbt()` | `String` | client-side nbt as a string, empty without a world |
 
-```kotlin
-val vault = world.block(position).blockEntity() ?: return
-
-vault.type()          // "minecraft:vault"
-vault.x()  vault.y()  vault.z()
-vault.position()
-vault.displayItem()   // the item it is showing you, or null
-vault.nbt()           // everything the server sent about it
-```
-
-`displayItem()` is the reward spinning inside a trial vault, and the buried loot inside suspicious sand or gravel:
-
-```kotlin
-on<ClientTickEvent> {
-    whenInGame {
-        val hit = raycast.crosshair(5.0)
-        if (hit !is Hit.OnBlock) return@whenInGame
-        val loot = world.block(hit.blockX(), hit.blockY(), hit.blockZ())
-            .blockEntity()?.displayItem() ?: return@whenInGame
-        chat.print("this vault holds ${loot.name()}")
-    }
-}
-```
-
-It is an ordinary [item](inventory.md), so `id()`, `name()`, `isA("heavy_core")`, `enchantments()` and the rest all work on it.
-
-For anything else there is `nbt()` — the raw data as a string, exactly as Minecraft writes it:
-
-```kotlin
-val sign = world.block(position).blockEntity() ?: return
-if (sign.type() == "minecraft:sign") {
-    chat.print(sign.nbt())
-}
-```
-
-## Finding block entities around you
-
-Rather than walking coordinates yourself, ask for a whole volume at once:
-
-```kotlin
-val vaults = world.blockEntitiesIn(Box.around(player.position(), 16.0))
-    .filter { it.type() == "minecraft:vault" }
-
-for (vault in vaults) {
-    val loot = vault.displayItem() ?: continue
-    if (loot.isA("heavy_core")) {
-        chat.print("heavy core at ${vault.x()} ${vault.y()} ${vault.z()}")
-    }
-}
-```
-
-A block counts when its centre is inside the box. The box may not span more than 32×32 chunks — far more than you can have loaded anyway.
-
-Three things to keep in mind.
-
-**You only see what the server sent you.** A vault's spinning item is sent because your client has to draw it; a chest's contents are not sent until you open the chest, so a chest block entity is real but empty. That is a Minecraft rule, not a limit of this API — nothing in the client knows more than this.
-
-**Both calls work only on the client thread.** From a packet handler wrap them in `onClientThread { }`, or you get a `ScriptThreadException`. If all you want is the moment a block entity changes, `S2CBlockEntityUpdatePacket` carries the same data in its `nbt()` and is safe to read right there — see [Packets](../actions/packets.md).
-
-**Nothing here reaches unloaded chunks.** Outside your render distance there is no block entity to read.
+A block entity carries only what the server already sent: a vault's display item is there, a closed chest's contents are not.
+`displayItem()` returns an ordinary [item](inventory.md).
 
 ## Fluids
 
-```kotlin
-val fluid = world.block(position).fluid() ?: return
+| Method | Type | Description |
+|---|---|---|
+| `block.fluid()` | `Fluid?` | fluid state at this position, waterlogging included, null when dry |
+| `fluid.id()` | `String` | fluid registry id, e.g. `minecraft:water` |
+| `fluid.level()` | `int` | fluid level 1..8, 8 for a source block |
+| `fluid.still()` | `boolean` | source block rather than flowing |
+| `fluid.height()` | `float` | rendered fluid height 0..1 |
 
-fluid.id()        // "minecraft:water"
-fluid.level()     // 0..8, how full the block is
-fluid.still()     // a source block rather than flowing
-fluid.height()    // 0..1, what the fluid actually reaches
-```
+## Light
 
-`fluid()` is `null` for a dry block. Water inside a waterlogged stair counts — the block is `minecraft:oak_stairs` and the fluid is water.
+| Method | Type | Description |
+|---|---|---|
+| `world.lightLevel(x, y, z)` | `int` | rendered light level 0..15, ambient darkness applied |
+| `world.blockLight(x, y, z)` | `int` | block-source light 0..15 |
+| `world.skyLight(x, y, z)` | `int` | sky-source light 0..15, no time-of-day adjustment |
 
-A couple more useful things about space:
+## Entities in the world
 
-```kotlin
-world.lightLevel(x, y, z)      // light level
-world.blockLight(x, y, z)      // from torches and lamps only
-world.skyLight(x, y, z)        // from the sky only
-world.biome(position)          // "minecraft:plains"
-world.topY(x, z)               // height of the topmost block
-world.collisionsIn(box)        // every collision inside a box
-world.isFree(box)              // is it empty in there
-```
+| Method | Type | Description |
+|---|---|---|
+| `world.entityCount()` | `int` | number of loaded entities |
+| `world.entities()` | `List<Entity>` | every loaded entity, own player included, fresh mutable list |
+| `world.entities(filter)` | `List<Entity>` | loaded entities passing the filter, null filter keeps all |
+| `world.entitiesIn(box)` | `List<Entity>` | entities whose hitbox intersects the box |
+| `world.entitiesIn(box, filter)` | `List<Entity>` | same, filtered, null filter keeps all |
+| `world.entitiesNear(origin, radiusBlocks, filter)` | `List<Entity>` | entities within a spherical radius in blocks (throws `ScriptException` when radiusBlocks <= 0) |
+| `world.players()` | `List<PlayerEntity>` | loaded players, immutable list |
+| `world.players(filter)` | `List<PlayerEntity>` | loaded players passing the filter, immutable list |
+| `world.entityByName(name)` | `Entity?` | first entity whose display name matches, case-insensitive |
+| `world.entityById(entityId)` | `Entity?` | entity with that network id |
+| `world.entityByUuid(uuid)` | `Entity?` | linear scan for that uuid (throws `ScriptException` when the string is not a uuid) |
+| `world.nearestEntity(origin, radiusBlocks, filter)` | `Entity?` | closest matching entity within the radius (throws `ScriptException` when radiusBlocks <= 0) |
 
-`lightLevel` is what the game actually renders. Split it when you care *why* a spot is dark: `skyLight` is 0 underground at any time of day, `blockLight` is 0 wherever nobody put a torch.
+Entity members and the ready-made filters are on [Entities and filters](entities.md).
 
-## Boxes
+## Collisions
 
-A `Box` is a rectangular volume. Entities and blocks have one, and you can build your own:
+| Method | Type | Description |
+|---|---|---|
+| `world.collisionsIn(box)` | `List<Box>` | boxes of hard-colliding entities in the box, block collisions excluded |
+| `world.isFree(box)` | `boolean` | no colliding entity intersects the box, block collisions not checked |
 
-```kotlin
-val around = Box.around(player.position(), 8.0)
+## Removing and hiding
 
-around.center()
-around.sizeX()
-around.expand(1.0)             // grow in every direction
-around.contract(0.5)
-around.offset(0.0, 1.0, 0.0)
-around.contains(point)
-around.intersects(other)
-```
+| Method | Type | Description |
+|---|---|---|
+| `world.removeEntity(entity)` | `boolean` | client-side removal by wrapper, false when null (main thread only) |
+| `world.removeEntity(entityId)` | `boolean` | client-side removal by network id, false for own player (main thread only) |
+| `world.unhideEntities()` | `void` | clears the [hidden](entities.md#hiding-one) flag on every loaded entity |
 
-## Entities around you
-
-```kotlin
-world.entities()                                    // everything
-world.entities(filters.player())                    // with a filter
-world.entitiesIn(Box.around(player.position(), 8.0))
-world.entitiesNear(player.position(), 8.0, filters.attackable())
-world.players()
-world.entityCount()
-
-world.entityById(id)
-world.entityByUuid(uuid)
-world.entityByName("Notch")
-world.nearestEntity(player.position(), 16.0, filters.monster())
-```
-
-Anything returning a single entity can return `null` — meaning nothing matched.
-
-Filters and what you can ask an entity are in [Entities and filters](entities.md).
-
-## Removing an entity
-
-You can take an entity out of the world you are looking at:
-
-```kotlin
-world.removeEntity(entity)       // by entity
-world.removeEntity(entityId)     // by id, when that is all you have
-```
-
-It returns `true` when something was actually removed, `false` when the entity was already gone — and `false` for your own player, which is never removed.
-
-This is your copy of the world and nothing else. The server still has the entity, still sends updates about it, and other players see it exactly where it was. Anything the entity was doing to you — a hitbox in the way, an explosion, damage — keeps happening; you have only stopped drawing and tracking it locally. If the server sends the entity again, on a chunk reload or a teleport, it comes back.
-
-```kotlin
-on<ClientTickEvent> {
-    whenInGame {
-        for (entity in world.entities(filters.item())) {
-            world.removeEntity(entity)
-        }
-    }
-}
-```
-
-Two things to keep in mind. It only works on the client thread — from a packet handler wrap it in `onClientThread { }`, or you get a `ScriptThreadException`. And removing an entity fires `EntityRemoveEvent`, your own handler included, so do not remove from inside that handler unless you mean it.
-
-## Bringing hidden entities back
-
-```kotlin
-world.unhideEntities()
-```
-
-Undoes every `entity.hidden(true)` in one call — see [Hiding one](entities.md#hiding-one). Hiding is not owned by the script that did it, so this is what belongs in your `onDisable`. Nothing about the entities themselves changes: they never went anywhere, you were only not drawing them.
+Removal is local: the server keeps the entity and resends it on a chunk reload, and each removal fires `EntityRemoveEvent`.
 
 ## Sounds and particles
 
-```kotlin
-world.playSound("minecraft:entity.experience_orb.pickup", 1f, 1f)
-world.playSound("minecraft:block.anvil.land", position, 1f, 0.8f)
-
-world.spawnParticle("minecraft:flame", position, Vec.ZERO)
-```
-
-Without a position the sound plays where you are. Volume and pitch are ordinary Minecraft values: `1f` is normal, `2f` higher, `0.5f` lower.
-
-All of this is seen and heard **by you only** — the server knows nothing about it.
+| Method | Type | Description |
+|---|---|---|
+| `world.spawnParticle(particleId, position, velocity)` | `void` | client-only particle, null velocity means zero (throws `ScriptException` on an unknown particle) |
+| `world.playSound(soundId, position, volume, pitch)` | `void` | client-only sound at a position, category PLAYERS (throws `ScriptException` on an unknown sound) |
+| `world.playSound(soundId, volume, pitch)` | `void` | client-only sound at the listener, category PLAYERS (throws `ScriptException` on an unknown sound) |

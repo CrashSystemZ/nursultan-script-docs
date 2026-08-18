@@ -1,133 +1,199 @@
 # Свой игрок
 
-`player` — это ты. Всё, что есть у любой [сущности](entities.md), у него тоже есть, плюс то, что видно только про себя.
-
-Данные читаются в момент вызова: `player.health()` даёт здоровье прямо сейчас, кэшировать значения между тиками не стоит.
-
-Почти всё имеет смысл только в игре, так что начинай с проверки:
-
-```kotlin
-on<ClientTickEvent> {
-    if (!inGame) return@on
-    chat.print("здоровье " + player.health())
-}
-```
-
-или короче:
+`player` — это `game.player()`, живой вид на локального игрока: значение читается в момент вызова, а без игрока любой метод бросает `ScriptStateException`. Это `PlayerEntity`, поэтому у него есть всё, что есть у сущности: таблицы ниже — вся поверхность `player`, вместе с унаследованным, а [Сущности и фильтры](entities.md) описывают те же методы для любой сущности.
 
 ```kotlin
 on<ClientTickEvent> {
     whenInGame {
-        chat.print("здоровье " + player.health())
+        val eyes = player.eyePosition()
+        val charge = player.attackCooldown()
+        chat.print("хп ${player.health()} глаза ${eyes.y()} заряд $charge")
     }
 }
 ```
 
-## Где я и куда смотрю
+## Позиция и движение
 
-```kotlin
-player.position()            // Vec ног
-player.eyePosition()         // Vec глаз
-player.x()  player.y()  player.z()
-player.previousPosition()    // где был в прошлом тике
-player.renderPosition()      // где рисуется в этом кадре
+| Метод | Тип | Описание |
+|---|---|---|
+| `player.position()` | [`Vec`](math.md#vec) | текущая позиция ног в блоках мира |
+| `player.x()` | `double` | текущий X в блоках |
+| `player.y()` | `double` | текущий Y в блоках |
+| `player.z()` | `double` | текущий Z в блоках |
+| `player.previousPosition()` | `Vec` | позиция на прошлом тике |
+| `player.renderPosition()` | `Vec` | позиция с интерполяцией тика, для отрисовки |
+| `player.box()` | [`Box`](math.md#box) | хитбокс в координатах мира |
+| `player.width()` | `float` | ширина хитбокса в блоках |
+| `player.height()` | `float` | высота хитбокса в блоках |
+| `player.rotation()` | [`Rotation`](math.md#rotation) | yaw и pitch в градусах |
+| `player.yaw()` | `float` | yaw в градусах |
+| `player.pitch()` | `float` | pitch в градусах, -90..90 |
+| `player.bodyYaw()` | `float` | yaw тела в градусах |
+| `player.headYaw()` | `float` | yaw головы в градусах |
+| `player.velocity()` | `Vec` | скорость в блоках за тик |
+| `player.movementSpeed()` | `float` | атрибут скорости в блоках за тик |
+| `player.distanceTo(other)` | `double` | расстояние между позициями в блоках (бросает `ScriptStateException`, если `other` не сущность мира) |
+| `player.distanceTo(point)` | `double` | расстояние от позиции до точки в блоках |
+| `player.onGround()` | `boolean` | стоит на земле |
+| `player.sneaking()` | `boolean` | флаг приседания |
+| `player.sprinting()` | `boolean` | флаг спринта |
+| `player.swimming()` | `boolean` | флаг плавания |
+| `player.crawling()` | `boolean` | ползёт в щели высотой в один блок |
+| `player.sleeping()` | `boolean` | спит |
+| `player.usingRiptide()` | `boolean` | в риптайд-вращении трезубца |
+| `player.wet()` | `boolean` | в воде или стоит под дождём |
+| `player.submerged()` | `boolean` | глаза под водой |
+| `player.inWater()` | `boolean` | касается воды |
+| `player.inLava()` | `boolean` | стоит в лаве |
+| `player.onFire()` | `boolean` | горит |
+| `player.fireImmune()` | `boolean` | тип сущности не боится огня |
+| `player.frozen()` | `boolean` | заморозка снегом применена полностью |
+| `player.frozenTicks()` | `int` | прогресс заморозки снегом в тиках |
+| `player.alive()` | `boolean` | жив и не удалён из мира |
+| `player.pose()` | [`Pose`](entities.md#позы) | текущая поза |
+| `player.airTicks()` | `int` | остаток воздуха в тиках |
+| `player.maxAirTicks()` | `int` | максимум воздуха в тиках |
+| `player.fallDistanceBlocks()` | `double` | накопленная высота падения в блоках |
+| `player.baby()` | `boolean` | детёныш |
+| `player.scale()` | `float` | множитель размера, по умолчанию 1.0 |
+| `player.silent()` | `boolean` | флаг беззвучности |
+| `player.noGravity()` | `boolean` | флаг отсутствия гравитации |
+| `player.age()` | `int` | сколько тиков сущность существует на клиенте |
+| `player.glowing()` | `boolean` | флаг свечения |
+| `player.invisible()` | `boolean` | ванильный флаг невидимости |
+| `player.invisible(value)` | `void` | ставит его только на клиенте; метаданные сервера перезапишут |
+| `player.hidden()` | `boolean` | клиентский флаг подавления отрисовки; false у неотслеживаемых сущностей |
+| `player.hidden(value)` | `void` | ставит флаг; ничего не делает у неотслеживаемых сущностей |
+| `player.vehicle()` | [`Entity?`](entities.md) | на чём едет, null если едет сам |
+| `player.passengers()` | [`List<Entity>`](entities.md) | кто едет на нём, пустой список если никто |
 
-player.rotation()            // Rotation
-player.yaw()  player.pitch()
-player.velocity()            // Vec скорости
-```
+`invisible(true)` прячет модель, но не неймтег.
+`hidden(true)` переживает выключение скрипта — [`world.unhideEntities()`](world.md) снимает флаг.
 
-`renderPosition()` — то, что нужно для рисования: позиция уже сглажена между тиками. `position()` — «настоящая» позиция для логики.
+## Здоровье и эффекты
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `player.health()` | `float` | текущее здоровье в половинках сердец |
+| `player.maxHealth()` | `float` | максимум здоровья в половинках сердец |
+| `player.absorption()` | `float` | жёлтые сердца поглощения |
+| `player.armorPoints()` | `int` | очки брони, 0..20 |
+| `player.bypassedHealth()` | `float` | здоровье с табло, пока включён BypassHealth, иначе `health()` |
+| `player.dead()` | `boolean` | здоровье не выше нуля |
+| `player.deathTicks()` | `int` | тиков с момента смерти, 0 пока жив |
+| `player.hurtTicks()` | `int` | остаток тиков анимации урона |
+| `player.hasEffect(effectId)` | `boolean` | активен эффект ровно с этим полным id |
+| `player.effects()` | [`List<Effect>`](entities.md#эффекты) | снимки всех активных эффектов |
+| `player.effect(effectId)` | [`Effect?`](entities.md#эффекты) | активный эффект по точному полному id, null если его нет |
+| `player.attributes()` | [`Map<String, Attribute>`](entities.md#атрибуты) | неизменяемая карта всех имеющихся атрибутов по полному id |
+| `player.attribute(attributeId)` | [`Attribute?`](entities.md#атрибуты) | один атрибут, `minecraft:` добавится сам; null если атрибута нет |
+
+`bypassedHealth()` равен `health()` в одиночной игре и всегда, когда BypassHealth выключен.
+Id эффектов сравниваются точно: `hasEffect("minecraft:speed")` попадает, `hasEffect("speed")` — нет.
+
+## Кто это
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `player.name()` | `String` | имя сущности обычным текстом |
+| `player.uuid()` | `String` | uuid сущности строкой |
+| `player.id()` | `int` | сетевой id сущности на клиенте |
+| `player.typeId()` | `String` | id типа с пространством имён, напр. `minecraft:player` |
+| `player.displayName()` | [`Text`](../ui/text.md) | оформленное имя, несёт цвет команды и кастомное имя |
+| `player.hasCustomName()` | `boolean` | на сущности висит кастомное имя |
+| `player.customName()` | `String?` | кастомное имя текстом, null если его нет |
+| `player.team()` | `String?` | имя команды на табло, null если команды нет |
+| `player.teamColor()` | `int` | непрозрачный ARGB цвет команды, -1 без команды или цвета |
+| `player.isFriend()` | `boolean` | имя есть в списке друзей клиента |
+| `player.isParty()` | `boolean` | имя есть в пати |
+| `player.isAlly()` | `boolean` | друг, пати или тиммейт NoFriendDamage; всегда false, пока NoFriendDamage выключен |
+| `player.isBot()` | `boolean` | эвристики клиента на бота; false для себя и на FT-серверах |
+| `player.pingMs()` | `int` | свой пинг из списка игроков в миллисекундах, 0 без записи |
+| `player.gameMode()` | [`GameMode`](entities.md#игроки) | текущий режим игры, из менеджера взаимодействия |
+| `player.skinTexture()` | [`Texture?`](../ui/render-2d.md) | текстура скина; null у неклиентских игроков и пока StreamerMode прячет скины |
+| `player.isLiving()` | `boolean` | завёрнутая сущность живая |
+| `player.isPlayer()` | `boolean` | завёрнутая сущность — игрок |
+| `player.isSelf()` | `boolean` | завёрнутая сущность — локальный игрок |
+| `player.asLiving()` | [`LivingEntity?`](entities.md#живые-сущности) | та же сущность как `LivingEntity`, иначе null |
+| `player.asPlayer()` | [`PlayerEntity?`](entities.md#игроки) | та же сущность как `PlayerEntity`, иначе null |
+| `player.asTextDisplay()` | [`TextDisplay?`](entities.md#текстовые-дисплеи) | та же сущность как `TextDisplay`, иначе null |
+
+## Экипировка
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `player.mainHandItem()` | [`Item`](inventory.md) | стак в основной руке, пустой предмет если рука пуста |
+| `player.offHandItem()` | `Item` | стак во второй руке, пустой предмет если она пуста |
+| `player.armorItem(slot)` | `Item` | стак в этом [`ArmorSlot`](inventory.md), пустой предмет если слот пуст |
+| `player.armorItems()` | `List<Item>` | только непустые стаки гуманоидной брони |
+| `player.isNaked()` | `boolean` | ни в одном из четырёх слотов брони ничего нет |
+| `player.activeItem()` | `Item?` | используемый стак, null если ничего |
+| `player.usingItem()` | `boolean` | сейчас использует предмет |
+| `player.blocking()` | `boolean` | блокирует щитом |
+| `player.itemUseTicksLeft()` | `int` | сколько тиков осталось до конца использования |
+| `player.swinging()` | `boolean` | идёт анимация замаха (API 2) |
+| `player.swingTicks()` | `int` | текущий тик анимации замаха (API 2) |
+
+## Позиция и досягаемость
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `player.eyePosition()` | [`Vec`](math.md#vec) | позиция глаз в мировых координатах |
+| `player.entityReachBlocks()` | `double` | дальность взаимодействия с сущностями в блоках |
+| `player.blockReachBlocks()` | `double` | дальность взаимодействия с блоками в блоках |
 
 ## Состояние
 
-```kotlin
-player.health()              // 0..20 обычно
-player.maxHealth()
-player.absorption()          // золотые сердца
-player.armorPoints()
-player.food()
-player.saturation()
+| Метод | Тип | Описание |
+|---|---|---|
+| `player.flying()` | `boolean` | включён креативный полёт |
+| `player.creative()` | `boolean` | выставлены креативные права |
+| `player.wasSprinting()` | `boolean` | состояние спринта в прошлом тике |
+| `player.hasMovementInput()` | `boolean` | клавиши движения дают ввод в этом тике |
+| `player.climbing()` | `boolean` | стоит на лазаемом блоке |
+| `player.gliding()` | `boolean` | планирует на элитрах |
+| `player.riding()` | `boolean` | сидит в транспорте |
+| `player.usingHand()` | [`Hand`](inventory.md#руки) | активная рука, `MAIN_HAND`, если не занята вторая |
+| `player.itemUseTicks()` | `int` | сколько тиков используется текущий предмет |
 
-player.alive()
-player.onGround()
-player.sneaking()
-player.sprinting()
-player.wasSprinting()        // бежал ли в прошлом тике
-player.inWater()
-player.onFire()
-player.flying()              // летит в креативе
-player.gliding()             // элитры
-player.climbing()            // на лестнице
-player.riding()              // сидит на лошади/лодке
-player.creative()
-player.gameMode()
-player.pingMs()
-player.fallDistanceBlocks()
-player.hasMovementInput()    // жмёт ли клавиши движения
-```
+## Голод
 
-## Бой
+| Метод | Тип | Описание |
+|---|---|---|
+| `player.food()` | `int` | уровень голода, 0..20 |
+| `player.saturation()` | `float` | сатурация, 0..food |
+| `player.hunger()` | `Hunger` | общий живой вид на голод (API 2) |
 
-```kotlin
-player.attackCooldown()             // 0..1, где 1 это полный замах
-player.belowMinimumAttackCharge()   // бить сейчас смысла нет
-player.entityReachBlocks()          // до кого дотянешься
-player.blockReachBlocks()           // до какого блока дотянешься
-player.usingItem()                  // держит ПКМ
-player.usingHand()                  // какой рукой
-player.itemUseTicks()               // сколько тиков уже держит
-player.blocking()                   // блокирует щитом
-player.hurtTicks()                  // сколько тиков назад получил урон
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `hunger.food()` | `int` | уровень голода, 0..20 |
+| `hunger.maxFood()` | `int` | константа 20 |
+| `hunger.saturation()` | `float` | сатурация, 0..food |
+| `hunger.full()` | `boolean` | голод на максимуме |
+| `hunger.canSprint()` | `boolean` | голода хватает на спринт, больше 6 |
 
-Типовая проверка «можно бить»:
+Все методы `Hunger` — API 2.
+Exhaustion и тиковый счётчик хила и урона от голода живут на сервере, на клиенте лежат нулями и не открыты.
 
-```kotlin
-if (player.attackCooldown() >= 0.9f && !player.belowMinimumAttackCharge()) {
-    interaction.attack(target)
-}
-```
+## Опыт
 
-## Эффекты
+| Метод | Тип | Описание |
+|---|---|---|
+| `player.xpLevel()` | `int` | уровень опыта |
+| `player.xpProgress()` | `float` | прогресс до следующего уровня, 0..1 |
 
-```kotlin
-player.hasEffect("speed")
-player.effect("speed")?.amplifier()
-player.effects()             // все эффекты
-```
+## Откат атаки
 
-Каждый эффект несёт `id()`, `name()`, `amplifier()`, `durationTicks()`, `infinite()`, `beneficial()`.
+| Метод | Тип | Описание |
+|---|---|---|
+| `player.attackCooldown()` | `float` | заряд атаки на границе тика, 0..1 |
+| `player.attackCooldown(tickDelta)` | `float` | заряд атаки, сглаженный по `tickDelta`, 0..1 (API 2) |
+| `player.cooldownPeriod()` | `float` | полная длина отката в тиках для предмета в руке (API 2) |
+| `player.ticksSinceLastAttack()` | `int` | сколько тиков прошло с последней атаки (API 2) |
+| `player.belowMinimumAttackCharge()` | `boolean` | заряд основной руки ниже ванильного минимума, при `tickDelta` 0 |
 
-## Предметы на себе
+## Действия
 
-```kotlin
-player.mainHandItem()
-player.offHandItem()
-player.armorItem(ArmorSlot.HELMET)
-player.armorItems()
-player.isNaked()             // брони нет вообще
-```
-
-Инвентарь целиком — в [Инвентаре](inventory.md).
-
-## Разное
-
-```kotlin
-player.respawn()             // нажать «Возродиться»
-player.xpLevel()
-player.xpProgress()
-player.airTicks()
-```
-
-## Векторы
-
-Позиции — это `Vec` с обычной арифметикой:
-
-```kotlin
-val target = player.position().add(0.0, 1.0, 0.0)
-val distance = player.position().distanceTo(target)
-val direction = target.subtract(player.position()).normalize()
-```
-
-`squaredDistanceTo` дешевле, чем `distanceTo` — если надо только сравнить расстояния, бери его.
+| Метод | Тип | Описание |
+|---|---|---|
+| `player.respawn()` | `void` | шлёт запрос на возрождение, ставится в очередь клиентского потока |

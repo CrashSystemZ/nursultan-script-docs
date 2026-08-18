@@ -1,110 +1,93 @@
 # Лучи и прицел
 
-`raycast` отвечает на вопрос «что там впереди». Им же проверяют, видно ли точку, и куда именно попадёт удар.
-
-## Что под прицелом
-
-Самое частое — взять сущность, на которую смотришь:
+`raycast` — это `game.raycast()`. Любой метод требует клиентского потока, игрока и мира; расстояния — в блоках от начала луча.
 
 ```kotlin
-val target = raycast.entityAtCrosshair(player.entityReachBlocks()) ?: return@on
+on<ClientTickEvent> {
+    val hit = raycast.crosshair(4.5)
+    when {
+        hit.isBlock() -> chat.print("block " + (hit as Hit.OnBlock).side())
+        hit.isEntity() -> chat.print("entity " + (hit as Hit.OnEntity).entity().name())
+        hit.isMiss() -> chat.print("miss")
+    }
+}
 ```
 
-Можно сразу отсеять ненужных:
+## Бросить луч
 
-```kotlin
-val target = raycast.entityAtCrosshair(6.0) { !it.isAlly() && it.alive() } ?: return@on
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `raycast.crosshair(maxDistanceBlocks)` | `Hit` | луч из прицела по блокам и всем задеваемым сущностям (бросает `ScriptException`, если `maxDistanceBlocks <= 0`) |
+| `raycast.crosshair(maxDistanceBlocks, includeBlocks, entityFilter)` | `Hit` | то же с переключателем блоков и фильтром; null-фильтр пропускает всех (бросает `ScriptException`, если `maxDistanceBlocks <= 0`) |
+| `raycast.entityAtCrosshair(maxDistanceBlocks)` | `Entity?` | сущность под прицелом, блоки перекрывают |
+| `raycast.entityAtCrosshair(maxDistanceBlocks, filter)` | `Entity?` | то же с фильтром сущностей |
+| `raycast.from(rotation, maxDistanceBlocks, includeBlocks, entityFilter)` | `Hit` | тот же луч из глаз, но вдоль произвольного поворота (бросает `ScriptException`, если `rotation` null или `maxDistanceBlocks <= 0`) |
+| `raycast.blocks(from, to, shape, fluids)` | `Hit` | луч только по блокам между двумя точками; null-форма — `COLLIDER`, null-жидкости — `NONE` |
+| `raycast.canSee(from, to)` | `boolean` | true, когда отрезок не перекрыт ни одним `COLLIDER`-блоком, жидкости игнорируются |
+| `raycast.hitOn(entity, from, to)` | `Vec?` | точка на хитбоксе, расширенном запасом наводки, `from` если отрезок начинается внутри |
 
-Вернётся `null`, если ничего подходящего под прицелом нет.
+Зрителей и сущностей, по которым нельзя попасть, луч не возвращает никогда, с фильтром или без.
+Вне клиентского потока любой метод бросает `ScriptThreadException`; без игрока или мира — `ScriptStateException`. `Vec` и `Rotation` — на странице [Векторы, коробки, углы](math.md).
 
 ## Попадание
 
-Более общий вариант — `crosshair(...)`, он говорит, во что упёрся луч: в блок, в сущность или ни во что.
+**`Hit`**
 
-```kotlin
-val hit = raycast.crosshair(player.blockReachBlocks())
+| Метод | Тип | Описание |
+|---|---|---|
+| `hit.position()` | `Vec` | точка попадания в мировых координатах |
+| `hit.distance()` | `double` | расстояние в блоках от начала луча до `position()` |
+| `hit.isBlock()` | `boolean` | результат — `Hit.OnBlock` |
+| `hit.isEntity()` | `boolean` | результат — `Hit.OnEntity` |
+| `hit.isMiss()` | `boolean` | результат — `Hit.None` |
 
-hit.position()            // точка попадания
-hit.distance()            // сколько до неё
+При промахе `blocks(...)` `position()` равна `to`; если трассировка из прицела не вернула ничего — это начало луча, а `distance()` равна 0.
 
-when {
-    hit.isBlock() -> {
-        val block = hit as Hit.OnBlock
-        chat.print("блок " + block.blockX() + " " + block.blockY() + " " + block.blockZ())
-        chat.print("сторона " + block.side())
-    }
-    hit.isEntity() -> {
-        val entity = (hit as Hit.OnEntity).entity()
-        chat.print("сущность " + entity.name())
-    }
-    hit.isMiss() -> chat.print("мимо")
-}
-```
+**`Hit.OnBlock`, `Hit.OnEntity`**
 
-В Kotlin это удобнее писать через `when` по типу:
+| Метод | Тип | Описание |
+|---|---|---|
+| `Hit.OnBlock.blockX()` | `int` | координата x задетого блока |
+| `Hit.OnBlock.blockY()` | `int` | координата y задетого блока |
+| `Hit.OnBlock.blockZ()` | `int` | координата z задетого блока |
+| `Hit.OnBlock.side()` | `Side` | задетая грань блока |
+| `Hit.OnEntity.entity()` | `Entity` | сущность, в которую попал луч |
 
-```kotlin
-when (val hit = raycast.crosshair(5.0)) {
-    is Hit.OnBlock -> chat.print("блок " + hit.side())
-    is Hit.OnEntity -> chat.print("сущность " + hit.entity().name())
-    is Hit.None -> {}
-}
-```
+`Hit` запечатан над `OnBlock`, `OnEntity` и `None`; у `Hit.None` своих методов нет.
 
-Развёрнутая форма даёт больше контроля:
+## Какая форма
 
-```kotlin
-raycast.crosshair(6.0, true) { it.isPlayer() }   // true — учитывать блоки
-```
+**`RaycastShape`**
 
-## Луч не из прицела
-
-Иногда нужно посмотреть не туда, куда смотришь, а туда, куда собираешься:
-
-```kotlin
-val aim = rotations.lookAt(target.position())
-val hit = raycast.from(aim, 6.0, true) { !it.isAlly() }
-```
-
-Так проверяют, не мешает ли блок ударить по цели, до того как поворачивать голову.
-
-## Только блоки
-
-```kotlin
-val hit = raycast.blocks(from, to, RaycastShape.COLLIDER, FluidHandling.NONE)
-```
-
-| Форма | Что учитывается |
+| Константа | Описание |
 |---|---|
-| `COLLIDER` | форма для столкновений |
-| `OUTLINE` | контур, как для выделения |
+| `COLLIDER` | форма столкновений |
+| `OUTLINE` | форма контура, та же что у выделения |
 | `VISUAL` | видимая форма |
 
-| Жидкости | Что считается препятствием |
+**`FluidHandling`**
+
+| Константа | Описание |
 |---|---|
-| `NONE` | вода и лава не мешают |
-| `SOURCE_ONLY` | только источники |
-| `ANY` | любая жидкость |
+| `NONE` | жидкости никогда не останавливают луч |
+| `SOURCE_ONLY` | луч останавливают только источники |
+| `ANY` | останавливает любая жидкость, включая текущую |
 
-## Видно ли точку
+## Стороны
 
-```kotlin
-if (raycast.canSee(player.eyePosition(), target.position())) {
-    // между нами нет блоков
-}
-```
+**`Side`**
 
-## Куда именно попаду
+| Константа | Описание |
+|---|---|
+| `DOWN` | грань -Y |
+| `UP` | грань +Y |
+| `NORTH` | грань -Z |
+| `SOUTH` | грань +Z |
+| `WEST` | грань -X |
+| `EAST` | грань +X |
 
-`hitOn` возвращает точку на коробке сущности, в которую упрётся луч, или `null`, если промах:
+| Метод | Тип | Описание |
+|---|---|---|
+| `side.opposite()` | `Side` | грань на другом конце той же оси |
 
-```kotlin
-val point = raycast.hitOn(target, player.eyePosition(), aimPoint)
-```
-
-Готовый способ выбрать хорошую точку удара — [`combat.attackPoint`](../actions/interaction.md).
-
-## Про производительность
-
-Лучи не бесплатны. Один-два на тик — нормально, десятки по всем сущностям каждый тик — уже нет. Сначала отсеивай по расстоянию через `world.entitiesNear(...)`, и только потом стреляй лучом в оставшихся.
+`Side` — это то же значение, которое принимают [`interaction.useBlock` / `placeBlock` / `startBreaking`](../actions/interaction.md).

@@ -1,184 +1,134 @@
 # Контейнеры
 
-`container` — это экран, который сервер открыл перед тобой: сундук, шалкер, житель, меню магазина. Через него можно прочитать, что там лежит, и понажимать.
+`container` — это `game.container()`: открытый хэндлер экрана как один плоский список слотов. Индексы `0..storage()-1` — слоты самого контейнера, дальше 27 слотов инвентаря, дальше 9 слотов хотбара; любой метод бросает `ScriptStateException`, когда нет мира или нет хэндлера экрана.
 
 ```kotlin
 on<ClientTickEvent> {
-    val screen = game.screen() ?: return@on
-    if (screen.title().string() != "Продажа") return@on
-
-    val slot = container.find("minecraft:cobblestone")
-    if (slot.found()) {
-        container.shiftClick(slot)
+    if (!container.open() || container.busy()) return@on
+    val slot = container.find("minecraft:diamond", 0, container.storage())
+    if (!slot.found()) return@on
+    container.batch {
+        it.shiftClick(slot)      // по одному шагу за тик
+        it.delay(2)
     }
 }
 ```
 
-## Нумерация слотов не такая, как в инвентаре
+## Нумерация слотов
 
-[`inventory`](inventory.md) адресует **твои собственные** ячейки — `Slot.hotbar(3)`, `Slot.armor(...)`. `container` адресует **открытый хэндлер**: это плоский список слотов, который разложил сервер, и в нём обычные индексы, завёрнутые в `ContainerSlot`.
+| Метод | Тип | Описание |
+|---|---|---|
+| `container.syncId()` | `int` | sync id открытого хэндлера экрана |
+| `container.size()` | `int` | всего слотов в открытом хэндлере |
+| `container.storage()` | `int` | `size() - 36`, не меньше 0 — слоты самого контейнера |
+| `container.open()` | `boolean` | true, когда sync id не ноль, то есть открыт не свой инвентарь |
+| `container.playerSlot(slot)` | `Slot` | индекс хэндлера как слот инвентаря; `Slot.NONE` вне игроцкой части |
 
-Хэндлер всегда кладёт слоты самого контейнера первыми, а твой инвентарь после них:
+| Метод | Тип | Описание |
+|---|---|---|
+| `ContainerSlot.NONE` | `ContainerSlot` | константа с индексом -1, значит «не найдено» |
+| `ContainerSlot.of(index)` | `ContainerSlot` | оборачивает сырой индекс хэндлера (бросает `ScriptException` при index < 0) |
+| `slot.index()` | `int` | сырой индекс слота хэндлера, -1 у `NONE` |
+| `slot.found()` | `boolean` | индекс 0 или больше |
+| `slot.equals(other)` | `boolean` | true, когда у другого `ContainerSlot` тот же индекс |
+| `slot.hashCode()` | `int` | сам индекс |
+| `slot.toString()` | `String` | `none` или `container <index>` |
 
-| Диапазон | Что это |
-|---|---|
-| `0` … `storage() - 1` | контейнер — 54 слота у шестирядного сундука |
-| `storage()` … `storage() + 26` | ряды твоего основного инвентаря |
-| `storage() + 27` … `size() - 1` | твой хотбар |
-
-```kotlin
-container.syncId()      // идентификатор, который сервер выдал меню
-container.size()        // все слоты, контейнер и твой инвентарь вместе
-container.storage()     // сколько ведущих слотов принадлежат контейнеру
-container.open()        // false, когда открыт только твой собственный инвентарь
-```
-
-Когда контейнер не открыт, это твой собственный инвентарный хэндлер, и `storage()` — это результат крафта и сетка.
-
-`playerSlot(...)` переводит обратно, чтобы слот можно было отдать остальному API:
-
-```kotlin
-val slot = container.find("minecraft:totem_of_undying")
-val mine = container.playerSlot(slot)      // Slot.NONE, если он в самом контейнере
-if (mine.found()) {
-    slots.using(mine) { interaction.useItem(Hand.MAIN_HAND) }
-}
-```
+`playerSlot` переводит первые 27 слотов игроцкой части в `Slot.inventory(9..35)`, последние 9 — в `Slot.hotbar(0..8)`.
+`Slot` и `Item` описаны на странице [Инвентарь и предметы](inventory.md).
 
 ## Чтение
 
-```kotlin
-container.item(0)                          // по сырому индексу
-container.item(slot)                       // по ContainerSlot
-container.items()                          // всё, в порядке хэндлера
+| Метод | Тип | Описание |
+|---|---|---|
+| `container.item(slot)` | `Item` | стак в этом `ContainerSlot`; пустой предмет при null или вне диапазона |
+| `container.item(index)` | `Item` | стак по сырому индексу; пустой предмет вне диапазона |
+| `container.items()` | `List<Item>` | все слоты в порядке хэндлера |
+| `container.find(itemId)` | `ContainerSlot` | первый слот с этим id предмета; `NONE`, если нет |
+| `container.find(itemId, from, to)` | `ContainerSlot` | то же, но в границах диапазона индексов |
+| `container.find(filter)` | `ContainerSlot` | первый слот, прошедший фильтр; `NONE` при null-фильтре |
+| `container.find(from, to, filter)` | `ContainerSlot` | первый подходящий слот внутри диапазона |
+| `container.findAfter(from, filter)` | `ContainerSlot` | первый подходящий слот от этого индекса до конца |
+| `container.findAll(filter)` | `List<ContainerSlot>` | все подходящие слоты; пусто при null-фильтре |
+| `container.count(itemId)` | `int` | сумма размеров стаков этого предмета по хэндлеру |
+| `container.count(itemId, from, to)` | `int` | то же, но по диапазону индексов |
+| `container.empty()` | `ContainerSlot` | первый пустой слот или `NONE` |
+| `container.empty(from, to)` | `ContainerSlot` | первый пустой слот внутри диапазона |
 
-container.find("minecraft:diamond")        // первый слот, где он лежит
-container.find("diamond", 0, container.storage())   // только внутри контейнера
-container.find { it.enchantmentLevel("sharpness") >= 4 }
-container.findAfter(10) { !it.empty() }
-container.findAll { it.hasTag("swords") }
-
-container.count("minecraft:emerald")
-container.empty()                          // первый свободный слот, или NONE
-container.empty(0, container.storage())
-```
-
-`item(...)` никогда не возвращает `null`: у пустого слота ты получишь пустой предмет, так что проверяй `empty()`.
+Диапазоны индексов полуоткрытые и зажимаются в `0..size()`.
+Id предметов по умолчанию получают неймспейс `minecraft:`; пустой id бросает `ScriptException`.
 
 ## Клики
 
-```kotlin
-container.click(slot)                          // левая кнопка
-container.click(slot, 1)                       // правая
-container.click(slot, 0, SlotAction.QUICK_MOVE)
-container.shiftClick(slot)                     // то же самое, короче
-container.clickButton(0)                       // кнопка экрана: резчик, ткацкий станок, сделка жителя
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `container.click(slot)` | `void` | левый клик, кнопка 0, `PICKUP` (только главный поток) (бросает `ScriptException`, если слот `NONE` или вне хэндлера) |
+| `container.click(slot, button)` | `void` | клик указанной кнопкой мыши, `PICKUP` (только главный поток) |
+| `container.click(slot, button, action)` | `void` | клик с явным действием слота (только главный поток) |
+| `container.shiftClick(slot)` | `void` | клик кнопкой 0 и `QUICK_MOVE` (только главный поток) |
+| `container.clickButton(button)` | `void` | кнопка хэндлера: резчик, ткацкий станок, сделка жителя (только главный поток) |
+| `container.busy()` | `boolean` | true, пока в клиентской очереди перекладывания есть действия |
 
-| Действие | Что делает |
+| Константа | Описание |
 |---|---|
-| `PICKUP` | взять стак / положить — по умолчанию |
-| `QUICK_MOVE` | shift-клик: одним пакетом перекидывает весь стак на другую сторону |
-| `SWAP` | обмен со слотом хотбара, `button` — это `0..8` |
-| `THROW` | выбросить наружу |
-| `PICKUP_ALL` | двойной клик, собирает одинаковые стаки |
-| `QUICK_CRAFT` | жест протаскивания по слотам |
-| `CLONE` | средняя кнопка, только креатив — в выживании бросает ошибку |
+| `PICKUP` | обычный левый/правый клик; он же подстановка при null-действии |
+| `QUICK_MOVE` | перенос shift-кликом |
+| `SWAP` | обмен с хотбаром, button — индекс хотбара 0..8 |
+| `CLONE` | клон средней кнопкой (бросает `ScriptException` вне креатива) |
+| `THROW` | выброс; кнопка 1 выбрасывает весь стак, 0 — один предмет |
+| `QUICK_CRAFT` | протаскивание по слотам |
+| `PICKUP_ALL` | двойной клик, собирает всё одинаковое |
 
-`QUICK_MOVE` — то, что нужно для перекладывания: один клик двигает весь стак вместо того, чтобы взять и положить дважды.
+`busy()` учитывает и собственные перекладывания клиента, не только скриптовые.
+
+## Последовательности
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `container.batch(actions)` | `void` | ставит шаги в очередь перекладывания, она досылается в следующие тики (только главный поток) (бросает `ScriptException` при null) |
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `it.click(slot)` | `Batch` | ставит в очередь кнопку 0 / `PICKUP` |
+| `it.click(slot, button)` | `Batch` | ставит клик этой кнопкой мыши / `PICKUP` |
+| `it.click(slot, button, action)` | `Batch` | ставит клик с явным действием слота |
+| `it.shiftClick(slot)` | `Batch` | ставит кнопку 0 / `QUICK_MOVE` |
+| `it.swap(slot, hotbarIndex)` | `Batch` | ставит `SWAP` на слот хотбара (бросает `ScriptException`, если hotbarIndex вне 0..8) |
+| `it.drop(slot, wholeStack)` | `Batch` | ставит `THROW`; кнопка 1 — весь стак, 0 — один предмет |
+| `it.delay(ticks)` | `Batch` | ставит ожидание в игровых тиках (бросает `ScriptException` при ticks <= 0) |
+| `it.onFinish(action)` | `Batch` | вызов на хуке закрытия очереди; ванильный процессор зовёт сразу (API 2) (бросает `ScriptException` при null) |
+
+Батч, в который не поставили ни клика, ни задержки, отбрасывается, и его `onFinish` не сработает.
 
 ## Рецепты
 
-`recipes` — это книга рецептов: записи, которые прислал сервер. У каждой — числовой id на эту сессию, и по нему сервер **сам раскладывает ингредиенты по сетке**, как клик по рецепту в зелёной книжке:
+| Метод | Тип | Описание |
+|---|---|---|
+| `recipes.all()` | `List<RecipeEntry>` | все записи книги рецептов в порядке книги (API 2) (только главный поток) |
+| `recipes.find(resultItemId)` | `List<RecipeEntry>` | записи, чей результат — этот id предмета (API 2) (только главный поток) |
+| `recipes.craft(recipeId)` | `void` | кликает рецепт в открытом экране крафта, craftAll false (API 2) (только главный поток) |
+| `recipes.craft(recipeId, craftAll)` | `void` | сервер раскладывает ингредиенты в открытую сетку; craftAll — на полный стак (API 2) (только главный поток) |
 
-```kotlin
-val entry = recipes.find("experience_bottle").firstOrNull()
-if (entry != null && container.open()) {
-    recipes.craft(entry.id(), true)    // true — крафтить сразу стак
-}
-```
+## Запись рецепта
 
-| | |
+| Метод | Тип | Описание |
+|---|---|---|
+| `entry.id()` | `int` | сетевой id рецепта, действителен только для текущего подключения (API 2) |
+| `entry.resultId()` | `String` | registry id показанного предмета-результата (API 2) |
+| `entry.resultCount()` | `int` | размер стака показанного результата (API 2) |
+| `entry.category()` | `String` | registry id категории книги рецептов; `""`, если неизвестна (API 2) |
+| `entry.craftable()` | `boolean` | ингредиенты сейчас есть в инвентаре (API 2) |
+| `entry.kind()` | `RecipeKind` | по какой форме разложен `ingredients()` (API 2) |
+| `entry.width()` | `int` | ширина сетки; 0 у видов кроме `SHAPED` (API 2) |
+| `entry.height()` | `int` | высота сетки; 0 у видов кроме `SHAPED` (API 2) |
+| `entry.station()` | `String` | registry id предмета-станции крафта; `""`, если не прислан (API 2) |
+| `entry.ingredients()` | `List<List<Item>>` | по слоту — список допустимых предметов; пустой список у пустой клетки (API 2) |
+
+| Константа | Описание |
 |---|---|
-| `all()` | все записи книги рецептов |
-| `find(itemId)` | записи, чей результат — этот предмет |
-| `craft(id[, craftAll])` | попросить сервер разложить ингредиенты; `craftAll = true` — на полный стак |
-
-У записи есть `id()`, `resultId()`, `resultCount()`, `category()` и `craftable()` — хватает ли ингредиентов в твоём инвентаре прямо сейчас.
-
-### Сетка и ингредиенты
-
-Что и куда класть, тоже видно — `kind()`, `width()`, `height()`, `station()` и `ingredients()`:
-
-```kotlin
-val entry = recipes.find("crafting_table").first()
-for (row in 0 until entry.height()) {
-    val line = (0 until entry.width()).joinToString(" | ") { column ->
-        entry.ingredients()[row * entry.width() + column].firstOrNull()?.id() ?: "-"
-    }
-    chat.print(line)
-}
-```
-
-`ingredients()` — список слотов, и в каждом слоте список допустимых предметов: рецепт с тегом («любые доски») даёт все варианты, пустой слот сетки — пустой список.
-
-| `kind()` | Что в `ingredients()` |
-|---|---|
-| `SHAPED` | сетка построчно, `width() * height()` слотов, пустые включены |
-| `SHAPELESS` | ингредиенты без позиций, `width()` и `height()` — 0 |
-| `FURNACE` | один слот — что переплавляется |
-| `STONECUTTER` | один слот — что режется |
-| `SMITHING` | три слота: шаблон, основа, добавка |
-| `OTHER` | пусто |
-
-`station()` — на каком блоке это крафтится: `"minecraft:crafting_table"`, `"minecraft:furnace"`, … Пустая строка, если сервер блок не прислал.
-
-* `craft` кликает по рецепту в **открытом сейчас** хэндлере: сначала открой верстак — или свой инвентарь для рецептов 2×2. Результат сервер кладёт в слот результата, забирай его сам — `shiftClick`.
-* `id` живёт одну сессию: сервер раздаёт индексы при входе. Не сохраняй его между заходами — ищи запись заново по `resultId()`.
-* Сервер разложит только рецепт, который сам знает и прислал в книгу. Кастомные крафты плагинов, которых в книге рецептов нет, так не крафтятся.
-
-## Последовательности и задержки
-
-Одиночный клик уходит сразу. Когда нужно несколько по порядку — и серверу нужен тик между ними, чтобы успеть, — ставь их одной очередью:
-
-```kotlin
-container.batch {
-    it.click(from, 0, SlotAction.SWAP)
-    it.delay(1)
-    it.click(to, 0, SlotAction.SWAP)
-    it.delay(1)
-    it.click(from, 0, SlotAction.SWAP)
-}
-```
-
-Весь батч — одна очередь: клиент отправляет первый клик, ждёт задержку в **игровых тиках**, отправляет следующий. Ничего не блокируется — твой обработчик возвращается сразу, а очередь досылается сама в следующие тики.
-
-| | |
-|---|---|
-| `click(slot[, button[, action]])` | как выше |
-| `shiftClick(slot)` | |
-| `swap(slot, hotbarIndex)` | `hotbarIndex` — это `0..8` |
-| `drop(slot, wholeStack)` | |
-| `delay(ticks)` | подождать перед следующим шагом, от 1 тика |
-
-`container.busy()` — `true`, пока очередь ещё досылается: твоя или собственная клиентская. Дождись её, прежде чем начинать новую:
-
-```kotlin
-on<ClientTickEvent> {
-    if (container.busy()) return@on
-    val slot = container.find { !it.empty() }
-    if (slot.found()) {
-        container.shiftClick(slot)
-    }
-}
-```
-
-Клиент не замедляет твои клики за тебя. Что безопасно, зависит от сервера, так что дозируй сам через `delay` и `busy()` — мгновенный ChestStealer это самый быстрый способ подставить своих пользователей под бан.
-
-## Что учесть
-
-* **Экран может закрыться между чтением и кликом.** Слота, который ты нашёл тик назад, может уже не быть; клик проверяется по тому хэндлеру, который открыт прямо сейчас, и бросает ошибку, если индекс вне диапазона.
-* Клики работают **только на клиентском потоке**. Из обработчика пакетов оборачивай в `onClientThread { }`.
-* Брони и второй руки в чужом хэндлере нет. `inventory.click(Slot.armor(...))` при открытом сундуке скажет об этом, а не кликнет наугад.
-* Закрыть экран — `game.closeScreen()`.
-* Серверы переставляют свои меню между тиками. Ищи по предмету, а не по индексу, который видел в прошлый раз.
+| `SHAPED` | сетка построчно, `width() * height()` клеток, пустые включены (API 2) |
+| `SHAPELESS` | ингредиенты без позиций, width и height равны 0 (API 2) |
+| `FURNACE` | один слот ингредиента, вход переплавки (API 2) |
+| `STONECUTTER` | один слот ингредиента, вход резки (API 2) |
+| `SMITHING` | три слота ингредиентов: шаблон, основа, добавка (API 2) |
+| `OTHER` | нераспознанное отображение; `ingredients()` пуст (API 2) |

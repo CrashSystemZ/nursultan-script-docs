@@ -1,277 +1,253 @@
 # Entities and filters
 
-An entity is anything living in the world: players, mobs, boats, dropped items, arrows. You get them from the [world](world.md), from a [ray](raycast.md), or from an event.
-
-## What any entity can tell you
+Every entity you get from [the world](world.md), a [ray](raycast.md) or an event is a live wrapper: each getter reads the wrapped Minecraft entity at call time, and it keeps reading it after the entity leaves the world, so `alive()` is what tells you it is gone. `LivingEntity`, `PlayerEntity` and `TextDisplay` add members on top of `Entity`; the local player is a [`SelfPlayer`](player.md).
 
 ```kotlin
-entity.id()              // numeric id in this world
-entity.uuid()
-entity.name()
-entity.typeId()          // "minecraft:zombie"
+on<ClientTickEvent> {
+    val nearby = filters.player().and(filters.attackable())
+    val target = world.nearestEntity(player.position(), 6.0, nearby)?.asLiving() ?: return@on
 
-entity.position()
-entity.renderPosition()  // smoothed, for drawing
-entity.previousPosition()
-entity.box()
-entity.width()  entity.height()
-
-entity.rotation()
-entity.yaw()  entity.pitch()
-entity.velocity()
-
-entity.alive()
-entity.onGround()
-entity.sneaking()
-entity.sprinting()
-entity.invisible()
-entity.glowing()
-entity.onFire()
-entity.inWater()
-entity.pose()
-entity.fallDistanceBlocks()
-
-entity.swimming()
-entity.crawling()
-entity.wet()             // in water or standing in the rain
-entity.submerged()       // head under water
-entity.inLava()
-entity.frozen()  entity.frozenTicks()
-entity.fireImmune()
-entity.silent()
-entity.noGravity()
-entity.age()             // ticks since it appeared
-
-entity.distanceTo(other)
-entity.distanceTo(point)
+    chat.print("${target.name()} ${target.health()} / ${target.maxHealth()}")
+    chat.print("box height ${target.box().sizeY()}")
+}
 ```
 
-## Names and teams
+## Identity
 
-```kotlin
-entity.name()            // plain text, always something
-entity.displayName()     // Text: what the nametag actually draws
-entity.hasCustomName()
-entity.customName()      // the nametag someone set, or null
+| Method | Type | Description |
+|---|---|---|
+| `entity.id()` | `int` | client network entity id |
+| `entity.uuid()` | `String` | entity uuid in string form |
+| `entity.name()` | `String` | plain text of the entity name |
+| `entity.typeId()` | `String` | namespaced entity-type id, e.g. `minecraft:zombie` |
+| `entity.displayName()` | [`Text`](../ui/text.md) | styled name, carries team colour and custom name |
+| `entity.hasCustomName()` | `boolean` | entity carries a custom name |
+| `entity.customName()` | `String?` | plain custom name, null when there is none |
+| `entity.isLiving()` | `boolean` | wrapped entity is a living entity |
+| `entity.isPlayer()` | `boolean` | wrapped entity is a player |
+| `entity.isSelf()` | `boolean` | wrapped entity is the local player |
+| `entity.asLiving()` | `LivingEntity?` | same entity as `LivingEntity`, null otherwise |
+| `entity.asPlayer()` | `PlayerEntity?` | same entity as `PlayerEntity`, null otherwise |
+| `entity.asTextDisplay()` | `TextDisplay?` | same entity as `TextDisplay`, null otherwise |
 
-entity.team()            // scoreboard team name, or null
-entity.teamColor()       // its colour as 0xAARRGGBB, or -1
-```
+## Position and size
 
-On a server that puts players in coloured teams, `teamColor()` is how you tell friend from foe without a friends list:
+| Method | Type | Description |
+|---|---|---|
+| `entity.position()` | [`Vec`](math.md#vec) | current feet position in world blocks |
+| `entity.x()` | `double` | current world X in blocks |
+| `entity.y()` | `double` | current world Y in blocks |
+| `entity.z()` | `double` | current world Z in blocks |
+| `entity.previousPosition()` | `Vec` | position at the previous tick |
+| `entity.renderPosition()` | `Vec` | tick-interpolated position used for drawing |
+| `entity.box()` | [`Box`](math.md#box) | bounding box in world coordinates |
+| `entity.width()` | `float` | hitbox width in blocks |
+| `entity.height()` | `float` | hitbox height in blocks |
+| `entity.rotation()` | [`Rotation`](math.md#rotation) | yaw and pitch in degrees |
+| `entity.yaw()` | `float` | yaw in degrees |
+| `entity.pitch()` | `float` | pitch in degrees, -90..90 |
+| `entity.velocity()` | `Vec` | velocity in blocks per tick |
+| `entity.distanceTo(other)` | `double` | distance between positions in blocks (throws `ScriptStateException` when `other` is not a world entity) |
+| `entity.distanceTo(point)` | `double` | distance from the position to a point in blocks |
 
-```kotlin
-val mine = player.teamColor()
+## State
 
-val enemies = world.players().filter { it.teamColor() != mine }
-```
+| Method | Type | Description |
+|---|---|---|
+| `entity.onGround()` | `boolean` | standing on ground |
+| `entity.sneaking()` | `boolean` | sneak flag |
+| `entity.sprinting()` | `boolean` | sprint flag |
+| `entity.swimming()` | `boolean` | swimming flag |
+| `entity.crawling()` | `boolean` | crawling in a 1-block gap |
+| `entity.wet()` | `boolean` | touching water or standing in rain |
+| `entity.submerged()` | `boolean` | eyes are under water |
+| `entity.inWater()` | `boolean` | touching water |
+| `entity.inLava()` | `boolean` | standing in lava |
+| `entity.onFire()` | `boolean` | entity is burning |
+| `entity.fireImmune()` | `boolean` | entity type is immune to fire |
+| `entity.frozen()` | `boolean` | powder-snow freeze is fully applied |
+| `entity.frozenTicks()` | `int` | powder-snow freeze progress in ticks |
+| `entity.glowing()` | `boolean` | glowing flag |
+| `entity.invisible()` | `boolean` | vanilla invisibility flag |
+| `entity.invisible(value)` | `void` | sets it client-side; server metadata overwrites it |
+| `entity.alive()` | `boolean` | alive and not removed from the world |
+| `entity.pose()` | `Pose` | current entity pose |
+| `entity.airTicks()` | `int` | remaining air in ticks |
+| `entity.maxAirTicks()` | `int` | maximum air in ticks |
+| `entity.fallDistanceBlocks()` | `double` | accumulated fall distance in blocks |
+| `entity.silent()` | `boolean` | silent flag |
+| `entity.noGravity()` | `boolean` | no-gravity flag |
+| `entity.age()` | `int` | ticks the entity has existed on the client |
 
-`displayName()` is [styled text](../ui/text.md) — it carries the team prefix and colour the server sent.
+`invisible(true)` hides the model and not the nametag, and display entities ignore the flag entirely.
+
+## Teams and relations
+
+| Method | Type | Description |
+|---|---|---|
+| `entity.team()` | `String?` | scoreboard team name, null when in no team |
+| `entity.teamColor()` | `int` | opaque ARGB team colour, -1 without team or colour |
+| `entity.isFriend()` | `boolean` | name is in the client friend list |
+| `entity.isParty()` | `boolean` | name is a party member |
+| `entity.isAlly()` | `boolean` | friend, party or NoFriendDamage teammate; always false while NoFriendDamage is off |
+| `entity.isBot()` | `boolean` | client bot heuristics; false for self and on FT servers |
 
 ## Riding
 
-```kotlin
-entity.vehicle()         // what it is riding, or null
-entity.passengers()      // who is riding it
-```
-
-A player on a horse has the horse as their `vehicle()`, and hitting the player means aiming at the player, not the horse.
-
-## Who it is
-
-```kotlin
-entity.isSelf()          // that is me
-entity.isPlayer()
-entity.isLiving()
-entity.isBot()           // looks like a bot
-entity.isFriend()        // on the friends list
-entity.isParty()         // in my party
-entity.isAlly()          // friend or party
-```
-
-`isAlly()` is usually the one you want so you do not hit your own people.
-
-## Living entities
-
-If an entity is alive it has health, effects and items. The cast returns `null` when it is, say, a boat:
-
-```kotlin
-val living = entity.asLiving() ?: return
-
-living.health()
-living.maxHealth()
-living.absorption()
-living.armorPoints()
-living.bypassedHealth()   // health accounting for armor and resistance
-living.dead()
-living.hurtTicks()
-
-living.blocking()         // holding a shield
-living.usingItem()
-living.isNaked()          // no armor
-
-living.headYaw()
-living.bodyYaw()
-
-living.hasEffect("speed")
-living.effect("speed")?.amplifier()
-living.effects()
-
-living.mainHandItem()
-living.offHandItem()
-living.activeItem()       // what it is using right now, or null
-living.armorItem(ArmorSlot.HELMET)
-living.armorItems()
-
-living.baby()
-living.scale()
-living.climbing()
-living.gliding()
-living.sleeping()
-living.usingRiptide()
-living.itemUseTicks()     // for how long it has been using it
-living.itemUseTicksLeft()
-living.movementSpeed()
-living.deathTicks()       // the death animation, 0 while alive
-```
-
-Attributes are the numbers behind all of that — speed, reach, knockback resistance, whatever the server has tweaked:
-
-```kotlin
-living.attribute("movement_speed")?.value()
-living.attribute("minecraft:movement_speed")?.base()   // the namespace is optional
-
-for ((id, attribute) in living.attributes()) {
-    chat.print(id + " = " + attribute.value())
-}
-```
-
-The ids: `movement_speed`, `attack_damage`, `max_health`, `block_interaction_range` and so on.
-
-`base()` is the number before modifiers, `value()` is after them — the one that actually applies. `attributes()` walks every attribute the game knows, so call it once and keep the result rather than asking inside a loop.
-
-Players have their own cast, which adds ping, game mode and the skin:
-
-```kotlin
-val target = entity.asPlayer() ?: return
-target.pingMs()
-target.gameMode()
-target.skinTexture()         // the skin, or null
-```
-
-`skinTexture()` hands back a [texture](../ui/render-2d.md) you can draw pieces of or feed to a shader of your own — a head, a hat layer, anything cut out of the skin. It is `null` when the skin has not arrived yet and whenever Streamer Mode is hiding skins; draw nothing in that case rather than reaching for a fallback.
-
-## Text displays
-
-A text display is the other thing servers hang in the air. It is not an armor stand wearing a name — the label *is* the entity, so `hasCustomName()` is `false` and `customName()` is `null`. The text sits on its own cast:
-
-```kotlin
-val display = entity.asTextDisplay() ?: return
-
-display.text()         // plain text
-display.styledText()   // the same thing as styled text
-```
-
-`asTextDisplay()` is `null` for everything that is not one, exactly like `asLiving()`. A server may use either kind for the same job, so read whichever the entity actually has:
-
-```kotlin
-val label = when (entity.typeId()) {
-    "minecraft:armor_stand" -> entity.customName()
-    "minecraft:text_display" -> entity.asTextDisplay()?.text()
-    else -> null
-} ?: return@on
-```
+| Method | Type | Description |
+|---|---|---|
+| `entity.vehicle()` | `Entity?` | entity being ridden, null when on foot |
+| `entity.passengers()` | `List<Entity>` | entities riding this one, empty when none |
 
 ## Hiding one
 
-You cannot stop the server from sending an entity, but you can stop your client from drawing it:
+| Method | Type | Description |
+|---|---|---|
+| `entity.hidden()` | `boolean` | client render-suppression flag; false for untracked entities |
+| `entity.hidden(value)` | `void` | sets the flag; no-op for untracked entities |
 
-```kotlin
-entity.hidden(true)
-entity.hidden()          // is it hidden right now
-```
+Hiding drops the nametag of any entity and a text display in full; the entity keeps ticking and stays readable.
+The flag outlives the script being switched off — [`world.unhideEntities()`](world.md) clears every one of them.
 
-That drops the nametag of any entity, and a display entity in full — a text display is nothing *but* its label, so nothing is left of it. Everything else carries on: the entity still ticks, its text still updates, and you can still read it. That is what separates this from `world.removeEntity(...)`, which throws your copy away and the updates with it.
+## Living entities
 
-Hiding lasts until you undo it or the chunk unloads, and it does not belong to your script — switch the script off and the entity stays hidden. Undo the lot in one call:
+| Method | Type | Description |
+|---|---|---|
+| `living.health()` | `float` | current health in half-hearts |
+| `living.maxHealth()` | `float` | maximum health in half-hearts |
+| `living.absorption()` | `float` | absorption (yellow) hearts |
+| `living.armorPoints()` | `int` | armor points, 0..20 |
+| `living.bypassedHealth()` | `float` | scoreboard health while BypassHealth is on, else `health()` |
+| `living.dead()` | `boolean` | health is at or below zero |
+| `living.deathTicks()` | `int` | ticks since death, 0 while alive |
+| `living.hurtTicks()` | `int` | remaining hurt-animation ticks |
+| `living.bodyYaw()` | `float` | body yaw in degrees |
+| `living.headYaw()` | `float` | head yaw in degrees |
+| `living.blocking()` | `boolean` | blocking with a shield |
+| `living.usingItem()` | `boolean` | currently using an item |
+| `living.activeItem()` | `Item?` | stack being used, null when none |
+| `living.itemUseTicks()` | `int` | ticks the current item has been used for |
+| `living.itemUseTicksLeft()` | `int` | ticks left before the use completes |
+| `living.swinging()` | `boolean` | hand-swing animation is running (API 2) |
+| `living.swingTicks()` | `int` | current hand-swing animation tick (API 2) |
+| `living.baby()` | `boolean` | entity is a baby |
+| `living.scale()` | `float` | scale multiplier, 1.0 by default |
+| `living.climbing()` | `boolean` | on a climbable block |
+| `living.gliding()` | `boolean` | elytra-gliding |
+| `living.sleeping()` | `boolean` | entity is sleeping |
+| `living.usingRiptide()` | `boolean` | in a riptide spin attack |
+| `living.movementSpeed()` | `float` | movement-speed attribute in blocks per tick |
+| `living.isNaked()` | `boolean` | no armor in any of the four humanoid slots |
 
-```kotlin
-onDisable { world.unhideEntities() }
-```
+`bypassedHealth()` equals `health()` in singleplayer and whenever the BypassHealth module is off.
 
-The vanilla invisibility flag is a separate thing, and the one `invisible()` reads:
+## Equipment
 
-```kotlin
-entity.invisible(true)
-```
+| Method | Type | Description |
+|---|---|---|
+| `living.mainHandItem()` | [`Item`](inventory.md) | main-hand stack, empty item when nothing is held |
+| `living.offHandItem()` | `Item` | off-hand stack, empty item when nothing is held |
+| `living.armorItem(slot)` | `Item` | stack in that [`ArmorSlot`](inventory.md), empty item when none |
+| `living.armorItems()` | `List<Item>` | non-empty humanoid armor stacks only |
 
-It hides the *model* — an armor stand, a mob — and not the nametag above it. Like everything else here it is yours alone, so the server overwrites it the next time it sends that entity's metadata; set it again when you need it to hold. Display entities ignore the flag completely, which is why `hidden(...)` is the one that works on holograms.
+## Effects
+
+| Method | Type | Description |
+|---|---|---|
+| `living.hasEffect(effectId)` | `boolean` | an effect with that exact namespaced id is active |
+| `living.effects()` | `List<Effect>` | snapshots of every active status effect |
+| `living.effect(effectId)` | `Effect?` | one active effect by exact namespaced id, null when absent |
+
+| Method | Type | Description |
+|---|---|---|
+| `effect.id()` | `String` | namespaced effect id, e.g. `minecraft:speed` |
+| `effect.name()` | `String` | client-localized effect name |
+| `effect.amplifier()` | `int` | amplifier, 0 = level I |
+| `effect.durationTicks()` | `int` | remaining duration in ticks |
+| `effect.ambient()` | `boolean` | effect came from a beacon or conduit |
+| `effect.infinite()` | `boolean` | effect has infinite duration |
+| `effect.beneficial()` | `boolean` | effect type is classed as beneficial |
+
+Effect ids are compared exactly: `hasEffect("minecraft:speed")` matches, `hasEffect("speed")` does not.
+
+## Attributes
+
+| Method | Type | Description |
+|---|---|---|
+| `living.attributes()` | `Map<String, Attribute>` | unmodifiable map of every attribute present, keyed by namespaced id |
+| `living.attribute(attributeId)` | `Attribute?` | one attribute, `minecraft:` added when unqualified; null when absent |
+
+| Method | Type | Description |
+|---|---|---|
+| `attribute.id()` | `String` | namespaced attribute id, e.g. `minecraft:movement_speed` |
+| `attribute.base()` | `double` | value before modifiers |
+| `attribute.value()` | `double` | value after every modifier |
+
+`attributes()` walks the whole attribute registry on each call.
+
+## Players
+
+| Method | Type | Description |
+|---|---|---|
+| `player.pingMs()` | `int` | player-list latency in milliseconds, 0 without an entry |
+| `player.gameMode()` | `GameMode` | player-list game mode, `SURVIVAL` without an entry |
+| `player.skinTexture()` | [`Texture?`](../ui/render-2d.md) | body skin texture; null for non-client players and while StreamerMode hides skins |
+
+| Constant | Description |
+|---|---|
+| `SURVIVAL` | survival mode; also the fallback when the mode is unknown |
+| `CREATIVE` | creative mode |
+| `ADVENTURE` | adventure mode |
+| `SPECTATOR` | spectator mode |
+
+## Text displays
+
+| Method | Type | Description |
+|---|---|---|
+| `display.text()` | `String` | plain text of the display |
+| `display.styledText()` | `Text` | styled text of the display |
+
+A text display has no custom name: `hasCustomName()` is false and `customName()` is null on it.
+
+## Poses
+
+| Constant | Description |
+|---|---|
+| `STANDING` | default upright pose |
+| `GLIDING` | elytra flight |
+| `SLEEPING` | lying in a bed |
+| `SWIMMING` | swimming or crawling posture |
+| `SPIN_ATTACK` | trident riptide spin |
+| `CROUCHING` | sneaking |
+| `LONG_JUMPING` | goat long jump |
+| `DYING` | death animation |
+| `CROAKING` | frog croak |
+| `USING_TONGUE` | frog tongue |
+| `SITTING` | sitting, camel and the like |
+| `ROARING` | warden roar |
+| `SNIFFING` | warden or sniffer sniff |
+| `EMERGING` | warden emerging |
+| `DIGGING` | warden digging |
+| `SLIDING` | breeze slide |
+| `SHOOTING` | breeze shooting |
+| `INHALING` | breeze inhaling |
 
 ## Filters
 
-`filters` is a convenient way to pick entities by the traits you care about instead of writing the conditions out by hand:
+| Method | Type | Description |
+|---|---|---|
+| `filters.alive()` | `Predicate<Entity>` | entity is alive |
+| `filters.self()` | `Predicate<Entity>` | entity is the local player |
+| `filters.player()` | `Predicate<Entity>` | entity type is `minecraft:player` |
+| `filters.mob()` | `Predicate<Entity>` | entity is a mob |
+| `filters.monster()` | `Predicate<Entity>` | entity is hostile |
+| `filters.animal()` | `Predicate<Entity>` | mob that is not hostile |
+| `filters.villager()` | `Predicate<Entity>` | entity type is `minecraft:villager` |
+| `filters.item()` | `Predicate<Entity>` | entity type is `minecraft:item` |
+| `filters.friend()` | `Predicate<Entity>` | entity is flagged as a friend |
+| `filters.party()` | `Predicate<Entity>` | entity is flagged as a party member |
+| `filters.ally()` | `Predicate<Entity>` | friend, party or NoFriendDamage teammate; always false while NoFriendDamage is off |
+| `filters.bot()` | `Predicate<Entity>` | entity is flagged as a bot |
+| `filters.attackable()` | `Predicate<Entity>` | alive, not the local player and not an ally |
 
-| Filter | What it picks |
-|---|---|
-| `alive()` | living ones |
-| `self()` | you |
-| `player()` | players |
-| `mob()` | mobs |
-| `monster()` | hostile ones |
-| `animal()` | animals |
-| `villager()` | villagers |
-| `item()` | dropped items |
-| `friend()` | friends |
-| `party()` | party members |
-| `ally()` | friends and party |
-| `bot()` | bots |
-| `attackable()` | anything worth hitting |
-
-Every filter is an ordinary `Predicate<Entity>`, so you can combine them:
-
-```kotlin
-val targets = world.entitiesNear(
-    player.position(), 6.0,
-    filters.player().and(filters.ally().negate())
-)
-```
-
-And mix in your own conditions:
-
-```kotlin
-val weak = filters.attackable().and { it.asLiving()?.health() ?: 0f < 8f }
-
-val victim = world.nearestEntity(player.position(), 5.0, weak)
-```
-
-## Spawning and despawning
-
-```kotlin
-on<EntitySpawnEvent> { e ->
-    if (filters.monster().test(e.entity())) {
-        notify("mob nearby", NotifyKind.WARN)
-    }
-}
-
-on<EntityRemoveEvent> { e ->
-    chat.print(e.entity().name() + " went away")
-}
-```
-
-## Careful with holding on to them
-
-Entities come and go. If you keep a reference across ticks, check it is still alive:
-
-```kotlin
-var target: Entity? = null
-
-on<ClientTickEvent> {
-    val current = target
-    if (current == null || !current.alive()) {
-        target = world.nearestEntity(player.position(), 6.0, filters.attackable())
-        return@on
-    }
-}
-```
-
-Keeping the `id()` and looking the entity up again with `world.entityById(...)` is safer.
+Every filter returns false for an entity object the script did not get from the world.

@@ -1,253 +1,163 @@
 # Сервер, табло, таблист
 
-## Куда я подключён
+`game.server()` описывает подключение и даёт доступ к табло, таблисту и боссбарам. Кидает `ScriptStateException`, когда клиент не подключён.
 
 ```kotlin
-game.connected()             // есть подключение
-game.inGame()                // мир загружен и игрок есть
+on<ClientTickEvent> {
+    val board = game.server().scoreboard()
+    if (!board.visible()) return@on
+    log.info(board.title())
+    board.lines().forEach { log.info(it) }
 
-val server = game.server()
-
-server.name()
-server.address()             // "mc.example.com:25565"
-server.type()                // SINGLEPLAYER, LAN, REALM, MULTIPLAYER
-server.protocolVersion()
-server.pingMs()
-server.tps()                 // сколько тиков в секунду тянет сервер
-```
-
-`tps()` считается по тому, как часто приходят тики — полезно, чтобы не молотить действиями, когда сервер лагает.
-
-Отключиться можно из кода:
-
-```kotlin
-if (player.health() < 4f) {
-    game.disconnect()
+    val me = game.server().tabList().players().firstOrNull { it.uuid() == player.uuid() }
+    log.info("ping ${me?.pingMs() ?: -1} ms")
 }
 ```
+
+## Подключение
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `server.name()` | `String` | имя записи из списка серверов, `"singleplayer"` без записи |
+| `server.address()` | `String` | адрес `host:port` из списка серверов, `"singleplayer"` без записи |
+| `server.type()` | `ServerType` | тип подключения, MULTIPLAYER при неизвестном |
+| `server.protocolVersion()` | `int` | версия протокола из записи списка серверов, 0 без записи |
+| `server.pingMs()` | `int` | твоя задержка из таблиста в мс, 0 когда недоступна |
+| `server.tps()` | `float` | измеренный тикрейт сервера, округление до 0.1, 20.0 вне мира |
+| `server.scoreboard()` | `Scoreboard` | клиентское представление табло |
+| `server.tabList()` | `TabList` | представление списка игроков |
+| `server.bossBars()` | `List<BossBar>` | боссбары на HUD, пусто без игрового HUD |
+
+| Константа | Описание |
+|---|---|
+| `SINGLEPLAYER` | встроенный сервер, записи в списке нет |
+| `LAN` | сервер, найденный по LAN |
+| `REALM` | Minecraft Realm |
+| `MULTIPLAYER` | любой другой удалённый сервер, а также запасной вариант |
 
 ## Табло сбоку
 
-```kotlin
-val board = game.server().scoreboard()
+| Метод | Тип | Описание |
+|---|---|---|
+| `scoreboard.visible()` | `boolean` | true, когда цель сайдбара найдена |
+| `scoreboard.title()` | `String` | обычный текст заголовка сайдбара, `""` когда нет |
+| `scoreboard.lines()` | `List<String>` | обычный текст нескрытых строк сайдбара, в порядке табло |
+| `scoreboard.contains(vararg needles)` | `boolean` | подстрока без учёта регистра только по заголовку, не по строкам |
 
-board.visible()
-board.title()                // заголовок
-board.lines()                // строки сверху вниз
-```
+Цель сайдбара — слот цвета твоей команды, с откатом на обычный слот `sidebar`.
 
-Часто нужно просто понять, на каком ты режиме:
+## Цели и очки
 
-```kotlin
-if (board.contains("BedWars", "Бедвары")) {
-    // мы на бедварах
-}
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `scoreboard.objectives()` | `List<Objective>` | все цели, известные клиенту, пусто вне мира |
+| `scoreboard.objective(name)` | `Objective?` | цель по внутреннему имени, null когда нет |
+| `scoreboard.display(slot)` | `Objective?` | цель в слоте отображения: `list`, `sidebar`, `below_name`, `sidebar.team.red` |
+| `scoreboard.holders()` | `List<String>` | все известные имена владельцев очков, пусто вне мира |
 
-`contains` проверяет заголовок и строки на любое из переданных слов и не мучает регистром.
+| Метод | Тип | Описание |
+|---|---|---|
+| `objective.name()` | `String` | внутреннее имя цели |
+| `objective.displayName()` | `Text` | оформленное отображаемое имя |
+| `objective.criterion()` | `String` | имя критерия, например `dummy`, `health`, `playerKillCount` |
+| `objective.renderType()` | `String` | `integer` или `hearts` |
+| `objective.slots()` | `List<String>` | слоты отображения, занятые целью, пусто вне мира |
+| `objective.score(holder)` | `int` | очки этого владельца, 0 когда записи нет |
+| `objective.entries()` | `List<ScoreEntry>` | все записи очков этой цели |
 
-### Цели и очки
+| Метод | Тип | Описание |
+|---|---|---|
+| `entry.owner()` | `String` | имя владельца очков |
+| `entry.value()` | `int` | числовое значение очков |
+| `entry.hidden()` | `boolean` | true, когда сервер пометил запись как не отображаемую |
+| `entry.name()` | `Text` | оформленное имя так, как рисуется на сайдбаре |
+| `entry.formattedValue()` | `Text` | оформленное значение в собственном числовом формате записи |
 
-`lines()` — это сайдбар, сплющенный в строки. Когда нужны числа или цель, которой на сайдбаре нет, иди через цели:
+`Text` описан на странице [Оформленный текст](../ui/text.md).
 
-```kotlin
-val board = game.server().scoreboard()
+## Команды
 
-board.objectives()               // все цели, которые прислал сервер
-board.objective("kills")         // одна по внутреннему имени
-board.display("sidebar")         // та, что стоит в слоте отображения
-board.holders()                  // все имена, у которых где-то есть очки
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `scoreboard.teams()` | `List<Team>` | все команды, пусто вне мира |
+| `scoreboard.team(name)` | `Team?` | команда по внутреннему имени, null когда нет |
+| `scoreboard.teamOf(holder)` | `Team?` | команда, которой принадлежит это имя владельца очков |
 
-```kotlin
-val kills = board.objective("kills") ?: return
-kills.displayName().string()
-kills.criterion()                // "dummy", "health", "playerKillCount"...
-kills.renderType()               // "integer" или "hearts"
-kills.score(player.name())
+| Метод | Тип | Описание |
+|---|---|---|
+| `team.name()` | `String` | внутреннее имя команды |
+| `team.displayName()` | `Text` | оформленное отображаемое имя команды |
+| `team.prefix()` | `Text` | оформленный префикс перед именами участников |
+| `team.suffix()` | `Text` | оформленный суффикс после имён участников |
+| `team.color()` | `String` | имя цвета форматирования, например `red`, `aqua` |
+| `team.colorRgb()` | `int` | ARGB с альфой 0xFF, -1 когда у цвета нет RGB |
+| `team.members()` | `List<String>` | имена участников, неизменяемая копия |
+| `team.friendlyFire()` | `boolean` | ванильный флаг урона по своим |
+| `team.showFriendlyInvisibles()` | `boolean` | ванильный флаг видимости невидимых союзников |
+| `team.nametagVisibility()` | `String` | `always`, `never`, `hide_for_other_teams`, `hide_for_own_team` |
+| `team.deathMessageVisibility()` | `String` | те же четыре значения, для сообщений о смерти |
+| `team.collisionRule()` | `String` | `always`, `never`, `push_other_teams`, `push_own_team` |
+| `team.decorate(value)` | `Text` | префикс + значение + суффикс с форматированием команды, null это `""` |
+| `team.contains(holder)` | `boolean` | проверка членства, false для null |
 
-for (entry in kills.entries()) {
-    entry.owner()                // чьи это очки
-    entry.value()
-    entry.hidden()
-    entry.name()                 // Text, как нарисовано
-}
-```
-
-### Команды
-
-```kotlin
-board.teams()
-board.team("red")
-board.teamOf(player.name())      // в какой команде это имя
-```
-
-```kotlin
-val team = board.teamOf(target.name()) ?: return
-
-team.displayName().string()
-team.prefix()                    // Text
-team.suffix()
-team.color()                     // "red", "aqua"...
-team.colorRgb()                  // 0xAARRGGBB, или -1, если у команды нет цвета
-team.members()
-team.friendlyFire()
-team.nametagVisibility()         // "always", "never", "hide_for_other_teams"...
-team.collisionRule()
-team.contains(player.name())
-```
-
-Табло целиком только на чтение: запись рассинхронизировала бы твою картинку, а сервер о ней всё равно не узнал бы.
+Табло только на чтение; ничего из записанного в эти объекты до сервера не доходит.
 
 ## Боссбары
 
-```kotlin
-for (bar in game.server().bossBars()) {
-    bar.name()                   // Text
-    bar.percent()                // 0..1
-    bar.color()                  // "pink", "blue", "red", "green", "yellow", "purple", "white"
-    bar.style()                  // "progress", "notched_6", "notched_10", "notched_12", "notched_20"
-    bar.uuid()
-}
-```
-
-Серверы вешают на боссбары таймеры раундов, обратный отсчёт ивентов и названия регионов, так что это часто самый быстрый способ прочитать состояние игры:
-
-```kotlin
-val timer = game.server().bossBars()
-    .firstOrNull { it.name().string().contains("Раунд") }
-```
-
-## Переводы
-
-```kotlin
-game.translate("block.minecraft.stone")           // «Камень», на языке игрока
-game.translate("chat.type.text", "Notch", "hi")   // подставит в %s
-game.hasTranslation("mymod.key")
-game.language()                                    // "ru_ru"
-```
-
-Пригодится, чтобы сравнивать с тем, что игрок реально видит, а не зашивать английский.
-
-Ещё можно собрать предмет по идентификатору, не имея его в инвентаре:
-
-```kotlin
-val apple = game.item("golden_apple")
-apple.name()
-apple.nutrition()
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `bar.uuid()` | `String` | строка UUID боссбара |
+| `bar.name()` | `Text` | оформленный заголовок боссбара |
+| `bar.percent()` | `float` | доля заполнения, 0..1 |
+| `bar.color()` | `String` | `pink`, `blue`, `red`, `green`, `yellow`, `purple`, `white` |
+| `bar.style()` | `String` | `progress`, `notched_6`, `notched_10`, `notched_12`, `notched_20` |
 
 ## Таблист
 
-```kotlin
-val tab = game.server().tabList()
+| Метод | Тип | Описание |
+|---|---|---|
+| `tab.header()` | `String` | обычный текст шапки таба, `""` когда нет |
+| `tab.footer()` | `String` | обычный текст футера таба, `""` когда нет |
+| `tab.headerContains(vararg needles)` | `boolean` | подстрока без учёта регистра по обрезанной шапке |
+| `tab.footerContains(vararg needles)` | `boolean` | та же проверка по футеру |
+| `tab.players()` | `List<TabEntry>` | весь список в ванильном порядке таба, пусто без подключения |
 
-tab.header()
-tab.footer()
-tab.players()                // список, в том порядке, в каком его показывает таб
+| Метод | Тип | Описание |
+|---|---|---|
+| `row.name()` | `String` | имя профиля |
+| `row.uuid()` | `String` | строка UUID профиля |
+| `row.displayName()` | `String` | обычный текст имени в табе, откат на `name()` |
+| `row.pingMs()` | `int` | задержка этой записи в миллисекундах |
+| `row.pingMs(value)` | `void` | запись задержки только на клиенте, следующее обновление сервера затирает (API 2) |
+| `row.gameMode()` | `GameMode` | SURVIVAL, CREATIVE, ADVENTURE, SPECTATOR; SURVIVAL когда не задан |
+| `row.listed()` | `boolean` | true, когда таб реально рисует эту строку |
+| `row.skinTexture()` | `Texture?` | текстура тела скина, null без скинов или в StreamerMode |
+| `row.player()` | `PlayerEntity?` | прогруженная сущность с этим UUID, null вне мира или без прогрузки |
 
-tab.headerContains("anarchy")
-tab.footerContains("сезон")
-```
-
-`players()` — это список, который прислал сервер, а не игроки, прогруженные вокруг тебя: в нём все, включая тех, кто на другом конце карты, в другом мире или вообще спрятан из таба. Каждая строка — `TabEntry`:
-
-```kotlin
-for (row in tab.players()) {
-    row.name()               // имя профиля
-    row.uuid()
-    row.displayName()        // то, что рисует таб, обычным текстом
-    row.pingMs()
-    row.gameMode()
-    row.listed()             // false для строк, которые таб не рисует
-    row.skinTexture()        // скин или null
-    row.player()             // сущность или null, если игрок не прогружен
-}
-```
-
-Строка — это не сущность. Позиция, здоровье и всё остальное про тело живёт на `player()` — это [сущность игрока](entities.md) — и там `null`, когда игрок вне прогрузки, а на большом сервере это почти весь список:
-
-```kotlin
-val nearby = tab.players().mapNotNull { it.player() }
-```
-
-Фильтруй по `listed()`, когда нужно только то, что таб реально рисует: сервера гасят его, чтобы держать NPC и админов вне списка, но всё равно присылать их скины.
-
-`skinTexture()` работает на весь список, есть сущность или нет, так что таблисту с головами сбоку ничего прогружать не нужно — см. [кусок текстуры](../ui/render-2d.md).
-
-### Записать пинг обратно
-
-`pingMs()` принимает и значение — оно пишется прямо в запись, которую держит клиент:
-
-```kotlin
-val pingRegex = Regex("""(\d+)\s*ms""")
-var parsed = -1
-
-on<PacketReceiveEvent> { event ->
-    val packet = event.packet()
-    if (packet !is S2CPlayerListHeaderPacket) return@on
-    parsed = pingRegex.find(packet.footer())?.groupValues?.get(1)?.toIntOrNull() ?: parsed
-}
-
-on<ClientTickEvent> {
-    if (!inGame || parsed < 0) return@on
-    val uuid = player.uuid()
-    tab.players().firstOrNull { it.uuid() == uuid }?.pingMs(parsed)
-}
-```
-
-Это для серверов, которые вообще не присылают настоящую задержку, а пишут число где-то ещё — в футере, в шапке, в отображаемом имени. Вытащи его из текста, запиши в строку — и пинг увидят все, кто его читает: ванильный таб, таб клиента, `pingMs()` в любом другом скрипте.
-
-Что учесть. Сервер продолжает слать обновления задержки, и каждое затирает записанное, поэтому ставь значение на тике, а не один раз. И не пиши его прямо в обработчике пакета: он срабатывает до того, как клиент применит пакет, так что твоё значение исчезнет через мгновение.
+Строка — это запись профиля, а не сущность: в списке все игроки, которых прислал сервер, прогружены они или нет.
+`Texture` описана на странице [Рендер 2D](../ui/render-2d.md), `PlayerEntity` и `GameMode` — на [Сущности и фильтры](entities.md).
 
 ## Экраны
 
-```kotlin
-game.screenOpen()            // открыт ли какой-нибудь экран
-game.screenKind()            // NONE, INVENTORY, CREATIVE, CONTAINER, CHAT, OTHER
-game.closeScreen()
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `screen.kind()` | `ScreenKind` | классификация открытого экрана |
+| `screen.title()` | `Text` | оформленный заголовок экрана |
+| `screen.handled()` | `boolean` | true, когда у экрана есть обработчик слотов |
+| `screen.syncId()` | `int` | sync id обработчика экрана, 0 без обработчика |
+| `screen.size()` | `int` | число слотов обработчика, 0 без обработчика |
 
-Пригодится, чтобы не действовать, пока игрок копается в сундуке:
+| Константа | Описание |
+|---|---|
+| `NONE` | ни один экран не открыт |
+| `INVENTORY` | ванильный экран инвентаря |
+| `CREATIVE` | экран креативного инвентаря |
+| `CONTAINER` | любой другой экран со слотами: сундук, житель, меню магазина |
+| `CHAT` | экран ввода чата |
+| `OTHER` | любой другой экран: меню, настройки |
 
-```kotlin
-if (game.screenKind() == ScreenKind.CONTAINER) return@on
-```
+`game.screen()` возвращает null, когда ничего не открыто; `game.screenOpen()`, `game.screenKind()` и `game.closeScreen()` — на странице [Как устроен скрипт](../start/lifecycle.md). На закрытие экрана срабатывает `ScreenCloseEvent`.
 
-За подробностями — прежде всего за заголовком — спрашивай сам экран. Он `null`, когда ничего не открыто:
+## Переводы
 
-```kotlin
-val screen = game.screen() ?: return
-
-screen.kind()
-screen.title()               // Text: как сервер назвал это меню
-screen.handled()             // true у всего, где есть слоты
-screen.syncId()              // идентификатор, который сервер выдал меню
-screen.size()                // сколько в нём слотов
-```
-
-Серверы дают своим меню имена, так что заголовок — это способ отличить одно от другого:
-
-```kotlin
-if (game.screen()?.title()?.string() == "Магазин") {
-    // мы смотрим в магазин
-}
-```
-
-Есть и событие закрытия экрана — `ScreenCloseEvent`.
-
-## Определить сервер один раз
-
-Проверять табло каждый тик незачем. Достаточно один раз при заходе в мир:
-
-```kotlin
-var bedwars = false
-
-on<WorldLoadEvent> {
-    afterTicks(40) {
-        bedwars = game.server().scoreboard().contains("BedWars")
-    }
-}
-```
-
-Задержка нужна потому, что табло приходит не сразу после загрузки мира.
+`game.translate(key, args)`, `game.hasTranslation(key)` и `game.language()` — на странице [Как устроен скрипт](../start/lifecycle.md).

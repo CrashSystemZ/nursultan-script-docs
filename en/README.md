@@ -28,7 +28,7 @@ on<ClientTickEvent> {
 
 `%APPDATA%\Nursultan\scripts`
 
-That folder holds **only** finished `.kts` files. Writing scripts is nicer in a separate project folder — see [The project in your IDE](start/ide.md).
+That folder holds **only** finished `.kts` files — see [The project in your IDE](start/ide.md).
 
 Everything a script reads — fonts, images, data — goes one folder down, into `scripts\assets`. See [The assets folder](extras/assets.md).
 

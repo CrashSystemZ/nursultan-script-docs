@@ -1,162 +1,88 @@
 # Packets
 
-A packet is a message between the client and the server. Packets show you things nothing else does: the exact moment of a knockback, system messages, what other players did.
+A packet event hands you one Minecraft protocol packet decoded into a Java record. Packet events fire on the network thread, not the client thread, and the record is a flat snapshot: only what its accessors expose survived the decode.
+
+```kotlin
+on<PacketReceiveEvent> { e ->
+    val packet = e.packet()
+    if (packet !is S2CGameMessagePacket || packet.overlay()) return@on
+    if (!packet.content().contains("duel")) return@on
+
+    onClientThread { chat.sendToServer("/next") }
+}
+```
 
 ## Two threads
 
-Packets do **not** arrive on the client thread. Reading the packet's fields there is fine and expected; touching the world, the player or the inventory is not. Hop over first:
+| Method | Type | Description |
+|---|---|---|
+| `onClientThread(action)` | `Unit` | queues the action on the client thread, skipped when the script is off by then — [Timers and tasks](../extras/tasks.md#getting-onto-the-client-thread) |
+| `client.onClientThread()` | `boolean` | true when the caller already runs on the client thread — [Timers and tasks](../extras/tasks.md#getting-onto-the-client-thread) |
 
-```kotlin
-on<PacketReceiveEvent> { e ->
-    val packet = e.packet()
-    if (packet !is S2CEntityVelocityPacket) return@on
-    if (packet.entityId() != player.id()) return@on
+Reading the record's accessors off the client thread is safe.
+`interaction`, `raycast`, `rotations.apply`, inventory and container writes, `world.blockEntitiesIn` and `world.removeEntity` throw `ScriptThreadException` off it; `packets.send` returns `false`.
 
-    onClientThread {
-        control.jump()
-    }
-}
-```
+## Receiving
 
-Forget `onClientThread` and you get rare, strange bugs that are painful to catch.
+| Method | Type | Description |
+|---|---|---|
+| `PacketReceiveEvent.packet()` | `S2CPacket` | decoded clientbound packet, never null in a handler — [Event list](../events/reference.md) |
+| `PacketSendEvent.packet()` | `C2SPacket` | decoded serverbound packet, never null in a handler — [Event list](../events/reference.md) |
 
-## What arrives
+Only packets the client has a decoder for reach a handler; anything else fires nothing, and a decode failure is logged once per packet class.
+Inside a bundle each sub-packet fires separately.
 
-```kotlin
-on<PacketReceiveEvent> { e -> e.packet() }   // from the server, S2CPacket
-on<PacketSendEvent> { e -> e.packet() }      // from the client, C2SPacket
-```
+| Method | Type | Description |
+|---|---|---|
+| `Packet` | `interface` | root marker of every packet record, declares no members |
+| `S2CPacket` | `interface` | server-to-client marker, extends `Packet` |
+| `C2SPacket` | `interface` | client-to-server marker, extends `Packet`; the type `send` takes |
 
-Packets are Kotlin records, so a `when` is the nicest way to take them apart:
-
-```kotlin
-on<PacketReceiveEvent> { e ->
-    val text = when (val packet = e.packet()) {
-        is S2CGameMessagePacket -> if (packet.overlay()) null else packet.content()
-        is S2CProfilelessChatMessagePacket -> packet.message()
-        is S2CChatMessagePacket -> packet.unsignedContent()
-        else -> null
-    }
-    if (text != null && text.contains("duel")) {
-        onClientThread { chat.sendToServer("/next") }
-    }
-}
-```
+`nursultan.packet.*`, `nursultan.packet.c2s.*` and `nursultan.packet.s2c.*` are default imports, so record and enum names need no `import` line.
 
 ## Cancelling
 
-Both incoming and outgoing packets can be cancelled:
-
-```kotlin
-on<PacketSendEvent> { e ->
-    if (e.packet() is C2SClientTickEndPacket) {
-        e.cancel()
-    }
-}
-```
-
-Cancel carefully: the server expects certain behaviour from a client, and getting too creative ends in a kick.
-
-## Sending your own
-
-```kotlin
-game.packets().send(C2SChatMessagePacket("hi", 0L, 0L))
-game.packets().send(C2SUpdateBeaconPacket("minecraft:speed", "minecraft:haste"))
-game.packets().send(C2SSpectatorTeleportPacket(target.uuid()))
-game.packets().sendSequenced(C2SPlayerActionPacket(...))
-```
-
-`send` returns `false` when it could not go out — no connection, for instance.
-
-`sendSequenced` is for packets the server numbers: block and item interactions. When in doubt, plain `send`.
-
-## Holding a packet back and sending it later
-
-Cancelling a packet and sending the same object later is how you delay your own stream — the client keeps playing, the server hears about it a moment afterwards:
-
-```kotlin
-val held = mutableListOf<C2SPacket>()
-var releasing = false
-
-on<PacketSendEvent> { e ->
-    if (releasing) return@on
-    held.add(e.packet())
-    e.cancel()
-}
-
-fun release() {
-    releasing = true
-    for (packet in held) {
-        game.packets().send(packet)
-    }
-    held.clear()
-    releasing = false
-}
-```
-
-The `releasing` flag matters: what you send comes back through `PacketSendEvent`, and without the guard you would queue it forever.
-
-Two things to keep in mind. Sequenced packets carry the number they were sent with — `send` reuses it, so a replayed block break stays in step with the client's own prediction. And packets that name an entity, `C2SPlayerInteractEntityPacket` above all, are rebuilt by looking the id up in the world: if the target died while the packet sat in your list, `send` returns `false` and the packet is gone.
-
-Not everything can be resent. Signed chat, inventory clicks and plugin messages carry data the script record does not (a signature, item stacks, raw bytes), so `send` refuses them and says so in the script console. Let those through instead of holding them.
-
-## How packets are named
-
-Names follow the vanilla ones: the `C2S` prefix is client to server, `S2C` is server to client.
-
-The ones you will want most:
-
-| Packet | What it is about |
-|---|---|
-| `S2CEntityVelocityPacket` | someone got knocked back |
-| `S2CGameMessagePacket`, `S2CChatMessagePacket`, `S2CProfilelessChatMessagePacket` | chat messages |
-| `S2CEntityDamagePacket` | someone took damage |
-| `S2CEntityStatusEffectPacket` | someone got an effect — `effect()` says which |
-| `S2CEntityEquipmentUpdatePacket` | someone changed what they hold or wear |
-| `S2CEntityAttributesPacket` | someone's max health, speed or damage changed |
-| `S2CInventoryPacket`, `S2CScreenHandlerSlotUpdatePacket` | the inventory changed |
-| `S2CExplosionPacket` | an explosion |
-| `S2CBlockEntityUpdatePacket` | a block entity changed — its `nbt()` is the new data |
-| `S2CSetTradeOffersPacket` | a villager's trades |
-| `S2CEntityPositionPacket`, `S2CEntityMoveRelativePacket` | an entity moved |
-| `C2SMoveFullPacket`, `C2SMoveLookPacket`, `C2SMoveOnGroundPacket` | our movement |
-| `C2SChatMessagePacket`, `C2SCommandExecutionPacket` | what we type |
-| `C2SPlayerInteractEntityPacket`, `C2SPlayerActionPacket` | our actions |
-
-The full list is in your IDE's autocompletion: type `S2C` or `C2S` and look at what comes up. They are all pre-imported, so you never write an `import`.
-
-## Packets that carry a list
-
-Some packets bring more than plain numbers — a list of items, of attributes, of trades. Those arrive as a nested record you read with an ordinary loop:
-
-```kotlin
-on<PacketReceiveEvent> { e ->
-    val packet = e.packet()
-    if (packet !is S2CEntityEquipmentUpdatePacket) return@on
-
-    for (slot in packet.equipment()) {
-        log.info("${slot.slot()} = ${slot.item()} x${slot.count()}")
-    }
-}
-```
-
-`slot()` uses the vanilla names — `mainhand`, `offhand`, `head`, `chest`, `legs`, `feet`, `body`, `saddle`. This is how you see someone switch weapons the moment they do it, without waiting for a swing.
-
-The same shape elsewhere:
-
-| Packet | The list | One entry |
+| Method | Type | Description |
 |---|---|---|
-| `S2CEntityEquipmentUpdatePacket` | `equipment()` | `slot()`, `item()`, `count()` |
-| `S2CInventoryPacket` | `contents()` | `item()`, `count()` |
-| `S2CEntityAttributesPacket` | `attributes()` | `attribute()`, `base()`, `modifiers()` |
-| `S2CSetTradeOffersPacket` | `offers()` | what the villager takes and gives, plus `uses()`, `maxUses()`, `disabled()` |
-| `S2CStatisticsPacket` | `stats()` | `stat()`, `value()` |
-| `S2CEntityTrackerUpdatePacket` | `values()` | `id()`, `value()` |
+| `PacketReceiveEvent.cancel()` | `void` | Minecraft never handles that packet |
+| `PacketSendEvent.cancel()` | `void` | the packet never leaves the client |
 
-Two caveats. Items here are an id and a count, not full [items](../game/inventory.md) — a packet is what came over the wire, so there are no enchantments or lore on it; look the slot or the entity up in the world when you need those. And `S2CEntityTrackerUpdatePacket` gives you whatever the game tracked — pose, health, flags — rendered as text, with a numeric `id()` that means nothing on its own. It is good for noticing that something changed, not for parsing.
+Cancelling a received sub-packet inside a bundle removes it from the bundle.
+Both events ignore `EventOptions` — `priority` and `ignoreCancelled` alike.
 
-## Tied to the Minecraft version
+## Sending
 
-Packets are the only part of the API tied to the game version. When Minecraft updates, packet names and fields can change. If your script uses them, ship it alongside the matching client version and replace the packets jar in `.sdk/` when you update.
+| Method | Type | Description |
+|---|---|---|
+| `packets.send(packet)` | `boolean` | sends the record as a vanilla packet; false off the client thread, without a player or network handler, on a null or observe-only record, or when a field could not be converted (main thread only) |
+| `packets.sendSequenced(packet)` | `boolean` | sends through the interaction manager, which fills in the server sequence number; same false conditions plus a missing world or interaction manager (main thread only) |
 
-Scripts that never touch packets survive a Minecraft update untouched.
+`packets` is `game.packets()`; a refused send warns once per packet class in the script console. `send` reuses the record's own `sequence` field, `sendSequenced` replaces it.
+A packet sent from a script goes out through the same connection call, so it fires `PacketSendEvent` again.
+
+## Fidelity
+
+| Minecraft type | In the record | Note |
+|---|---|---|
+| `ItemStack` | `String` + `int` | registry id and count; enchantments, components and NBT are gone |
+| `Text` | `String` | plain text from `getString()`, no colours, styles or click events |
+| `Identifier` | `String` | `namespace:path` |
+| `UUID` | `String` | `toString()` |
+| `NbtCompound` | `String` | SNBT text, `""` when the packet carried none |
+| enum constant | script enum | matched by constant name — [Packet enums](packets/enums.md) |
+
+A vanilla constant with no script twin decodes to `null` and logs one warning; a script constant with no vanilla twin makes the whole send fail.
+Full items, components and signatures are reachable only through the world and [Inventory and items](../game/inventory.md), never off a packet.
+
+## The reference
+
+| Page | Contents |
+|---|---|
+| [Packets you can send](packets/c2s.md) | 65 client-to-server records; 51 sendable, 14 observe-only |
+| [Entity packets](packets/s2c-entities.md) | spawning, movement, rotation, velocity, damage, effects, equipment, attributes, tracked data |
+| [World packets](packets/s2c-world.md) | blocks, chunks, light, world border, time, weather, sounds, particles, explosions |
+| [Screen and chat packets](packets/s2c-screens.md) | screen handlers, inventories, trades, recipe book, chat, titles, tab list, scoreboard |
+| [Packet enums](packets/enums.md) | 34 enums, 180 constants used as record field types |
+
+Packet records mirror the Minecraft protocol of the client they ship with (1.21.11) — the only part of the API tied to the game version; a Minecraft update can rename or reshape a record.
+The client rewrites `.sdk/` on every launch, so the packets jar follows the client you develop against.

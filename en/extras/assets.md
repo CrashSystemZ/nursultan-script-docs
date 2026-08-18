@@ -1,96 +1,60 @@
 # The assets folder
 
-Fonts, images and any other file a script reads live in one place: `%APPDATA%\Nursultan\scripts\assets`. The client creates the folder next to the scripts themselves, and every path the API takes is relative to it.
+`assets` is `client.assets()` and reads files under `%APPDATA%\Nursultan\scripts\assets`. `base64(...)` is the alternative: it turns string literals in the `.kts` itself into bytes a font or an image can be built from. Everything on this page is API 2.
 
 ```kotlin
-font("myfont", "fonts/my-font.ttf")          // scripts/assets/fonts/my-font.ttf
-val logo = image("images/logo.png")          // scripts/assets/images/logo.png
+val greeting = assets.text("messages/hello.txt") ?: "no file"
 
-val greeting = assets.text("messages.txt")
-val palette = assets.bytes("palette.bin")
+val FONT = base64(
+    "AAEAAAAOAIAAAwBgT1MvMg…",
+    "…AAAAAAAAAAAAAAAAAAAA=",
+)
+font("myfont", FONT)
 
-if (assets.exists("images/logo.png")) {
-    // ...
-}
-
-for (name in assets.list("images")) {
-    // "logo.png", "mark.png", …
+on<Render2DEvent> { e ->
+    e.render().text(greeting, 10f, 10f, 12f, Colors.WHITE, "myfont")
 }
 ```
-
-Subfolders are yours to invent — the client only ever creates `assets` itself.
 
 ## Reading a file
 
-| Call | What you get |
+| Method | Type | Description |
+|---|---|---|
+| `assets.exists(path)` | `boolean` | true when the path resolves inside `scripts/assets` and is a regular file (API 2) |
+| `assets.bytes(path)` | `byte[]?` | whole file, null when rejected, missing, over 8 MiB or unreadable (API 2) |
+| `assets.text(path)` | `String?` | the same bytes decoded as UTF-8, null under the same conditions (API 2) |
+| `assets.list()` | `List<String>` | sorted file names directly in the assets root, capped at 1024 (API 2) |
+| `assets.list(directory)` | `List<String>` | same for one subfolder, empty when it does not resolve or is not a directory; null, blank or `"."` means the root (API 2) |
+
+Paths are relative to `scripts/assets`, forward or backslash separated. Nothing here throws: a rejected, missing or oversized file gives `null` or an empty list plus one warning in the script console.
+`list` returns file names only — no paths, no directories, no recursion.
+
+## What is rejected
+
+| Rejected | What you get |
 |---|---|
-| `assets.exists("data.json")` | `true` if the file is there |
-| `assets.text("data.json")` | the file as a `String` (UTF-8), or `null` |
-| `assets.bytes("logo.png")` | the file as a `ByteArray`, or `null` |
-| `assets.list()` | file names in `assets` |
-| `assets.list("images")` | file names in `assets/images` |
+| `..` in any path segment | `null` / empty list |
+| absolute path, drive letter or UNC path | `null` / empty list |
+| empty, blank or malformed path | `null` / empty list |
+| a path whose real target leaves `scripts/assets` | `null` / empty list |
+| a file larger than 8 MiB | `null` from `bytes` and `text` |
+| more than 1024 files in one folder | the first 1024 names, the rest skipped |
 
-Nothing throws. A missing file, a folder that is not there, a path the client refuses — you get `null` or an empty list, plus one line in the script console naming the file.
-
-`list()` gives you names, not paths, and only of files: no subfolders, nothing from deeper down. Hand a name back together with the folder you asked about:
-
-```kotlin
-val icons = assets.list("images").filter { it.endsWith(".png") }
-val first = image("images/" + icons.first())
-```
-
-Reading is not free — the file goes off the disk on every call. Read it once at the top of the script or on enable, keep it in a variable, and stay away from reading inside a tick or render handler.
-
-## What the client will not read
-
-The path is relative to `assets` and it stays inside `assets`:
-
-* `..` in any shape, an absolute path, a drive letter, a network path — refused;
-* a link pointing out of `assets` — refused, even though the path itself looks innocent;
-* a file over 8 MiB — refused by `text()` and `bytes()`;
-* a folder with more than 1024 files — `list()` returns the first 1024 names and says so.
-
-The rest of the disk does not exist for a script: there is no way to open a file by full path, and nothing in the API writes files. For your own data use [configs](../settings/storage.md).
+Each case warns once per path in the script console. There is no way to open a file by absolute path and nothing in the API writes files — for a script's own data see [Saving data](../settings/storage.md).
 
 ## Assets inside the script
 
-A script that ships as a single `.kts` can carry its files with it, encoded as base64 — the user downloads nothing extra:
+| Method | Type | Description |
+|---|---|---|
+| `base64(vararg parts)` | `ByteArray` | joins the parts and MIME-decodes them, empty vararg gives an empty array (API 2) (throws `ScriptApiException` when the payload is not valid base64) |
+| `base64Encode(bytes)` | `String` | standard base64 on one line, the other direction (API 2) |
+| `font(name, ttf)` | `void` | registers a TTF family from bytes, ignored when the name is taken, the array is empty or over 8 MiB (API 2) |
+| `image(name, png)` | `Texture?` | PNG from bytes cached under `name`, null for a blank name, empty bytes or over 8 MiB (API 2) |
 
-```kotlin
-val LOGO = base64(
-    "0YXRg9C5INGF0YPQuSDRhdGD0Lkg0YXRg9C5INGF0YPQuSDRhdGD0Lk=",
-    "0LbQvtC/0LAg0LbQvtC/0LAg0LbQvtC/0LAg0LbQvtC/0LA=",
-)
-
-val logo = image("logo", LOGO)               // decoded once, then cached
-font("myfont", base64(FONT_PART1, FONT_PART2))
-
-on<Render2DEvent> { e ->
-    e.render().texture(logo ?: return@on, 10f, 10f, 59f, 105f)
-}
-```
-
-The text comes from any encoder — [base64encode.org](https://www.base64encode.org/), for instance: pick the file, copy the result.
-
-| Call | What you get |
-|---|---|
-| `base64(vararg parts)` | `ByteArray`; if the text is not base64 the script fails to load, with the file and line |
-| `base64Encode(bytes)` | `String` — the other direction, handy for putting your own data into a [config](../settings/storage.md) |
-| `image(name, png)` | `Texture?`, decoded once and cached under `name` |
-| `font(name, ttf)` | a font family registered from the bytes, same as `font(name, file)` |
-
-**Split a long blob into several strings.** A single string literal in a compiled class cannot exceed 64 KB, and Kotlin folds `"a" + "b"` back into one literal — so a font or a large PNG has to arrive as separate arguments, and `base64(part1, part2, part3)` joins them at runtime. Inside a part, whitespace and line breaks are ignored and a `data:image/png;base64,` prefix is stripped, so you can paste whatever the encoder gave you.
-
-The `name` in `image(name, png)` is a cache key, not a path: the same name gives back the same texture without decoding again, names are private to your script, and the texture is freed when the script unloads. Decode at the top level of the script or in `onEnable` — never in a render or tick handler.
-
-The 8 MiB per-asset cap applies here too. And remember that everything you embed lives in the source: a 200 KB font is 270 KB of text in the `.kts`.
+The joined text may be a `data:` URL: everything up to and including `;base64,` is dropped, and a `data:` prefix without that marker throws `ScriptApiException`. Whitespace and line breaks inside a part are ignored.
+A single string literal in a class file cannot exceed 64 KB, and Kotlin folds `"a" + "b"` back into one — that is why `base64` takes a vararg. `name` in `image(name, png)` is a per-script cache key, not a path; both byte overloads are also listed on [2D render](../ui/render-2d.md).
 
 ## Files from older scripts
 
-Before `assets` existed, fonts and images sat in the scripts folder itself. That still works: if the file is not in `assets`, the client looks next to the script and asks you once, in the console, to move it. New scripts should ship their files in `assets` — `exists()`, `text()`, `bytes()` and `list()` never look anywhere else.
-
-## Worth remembering
-
-* The client creates `assets` on start, empty; the subfolders inside it are up to you.
-* Somebody else has to find these files: if your script ships more than a file or two, put them in a subfolder named after the script.
-* `null` from `text()` or `bytes()` is a normal answer, not a crash — handle it and tell the user what is missing.
+`font(name, file)`, `image(file)`, `client.fonts().register(name, file)`, `client.textures().image(file)` and `Render.image(file, …)` fall back to the scripts root when the file is not in `scripts/assets`, and warn once in the console.
+`exists`, `bytes`, `text` and `list` have no fallback — they only ever read `scripts/assets`. `texture(identifier)` takes a Minecraft resource id, not a file, and touches neither folder.

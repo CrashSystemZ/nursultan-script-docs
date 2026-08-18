@@ -1,88 +1,143 @@
 # How a script works
 
-A script is a single togglable thing, exactly like a built-in client module. It has its own bind, its own settings and its own switch in the Scripts tab.
-
-## Loaded and on are different things
-
-| State | What it means |
-|---|---|
-| **Loaded** | the file is compiled, the top level has run, settings and commands are declared |
-| **On** | handlers are subscribed, commands answer, the script is working |
-
-Loading happens when the client starts, or when you drop a file into the folder. Turning it on is the switch in the menu, or the bind.
-
-While a script is **off** nothing of it runs: event handlers are unsubscribed and commands stop answering. Turning it on re-arms them, but the file is **not** executed again — top-level variables keep their values.
-
-Which gives you a simple rule: reset whatever should start fresh in `onEnable`.
+A loaded script is not a running script: the top level of the file runs at load, handlers and commands run only while the script is switched on. Everything the API offers hangs off the implicit receiver of the file, so every member on this page is callable unqualified.
 
 ```kotlin
-var ticks = 0
-var target: Entity? = null
+name("Auto jump")
+description("Jumps for you")
+key(Key.G)
 
-onEnable {
-    ticks = 0
-    target = null
-}
+onEnable { chat.print("$id on") }
+onDisable { chat.print("$id off") }
+onUnload { storage.save() }
 
-onDisable {
-    chat.print("off")
-}
+whenInGame { enabled = true }
 ```
+
+## Loaded and switched on
+
+| Method | Type | Description |
+|---|---|---|
+| `id` | `String` | script id = `.kts` file name without the extension |
+| `enabled` | `Boolean` | on/off state, read and write; the write marshals to the client thread |
+| `toggle()` | `Unit` | flips `enabled` |
+| `onEnable(action)` | `Unit` | enable callback, several allowed, throws are logged |
+| `onDisable(action)` | `Unit` | disable callback, several allowed, throws are logged |
+| `onUnload(action)` | `Unit` | runs once on unload or reload (throws `ScriptStateException` when already unloaded) |
+| `whenInGame(body)` | `Unit` | runs `body` only when player and world exist |
+
+The top level runs once, at load. While the script is off its handlers, commands, hotkeys and scheduled tasks are unsubscribed; switching it back on re-arms them without re-running the file.
 
 ## Name, description, bind
 
-```kotlin
-name("AutoJump")
-description("Jumps for you")
-key(Key.G)
-```
+| Method | Type | Description |
+|---|---|---|
+| `name(value)` | `Unit` | menu display name, trimmed (throws `ScriptException` when blank or over 32 chars) |
+| `description(value)` | `Unit` | menu description, null becomes `""` |
+| `key(key)` | `Unit` | default toggle key, written only while the bind is still empty |
+| `bind` | `Bind` | the script's own toggle keybind — [Keys and binds](../actions/keys.md) |
 
-`key` sets the **default** bind — only if no key is assigned yet. If the player rebound it by hand, reloading the script keeps their choice.
+## What you can reach
 
-You can read and change the bind from code too:
+| Method | Type | Description |
+|---|---|---|
+| `client` | `Client` | client-side services, table below |
+| `game` | `Game` | the running game session, table below |
+| `user` | `User` | Nursultan account of the local user — [Your account](../extras/user.md) (API 2) |
+| `chat` | `Chat` | chat printing and sending — [Messages](../ui/messages.md) |
+| `text` | `Texts` | text component factory — [Styled text](../ui/text.md) |
+| `log` | `Logger` | script console logger — [Messages](../ui/messages.md) |
+| `storage` | `Config` | the script's default config — [Saving data](../settings/storage.md) |
+| `configs` | `Configs` | this script's named configs — [Saving data](../settings/storage.md) |
+| `assets` | `Assets` | read access to `scripts/assets` — [The assets folder](../extras/assets.md) (API 2) |
+| `clipboard` | `Clipboard` | system clipboard — [Messages](../ui/messages.md) (API 2) |
+| `filters` | `EntityFilters` | prebuilt entity predicates — [Entities and filters](../game/entities.md) |
+| `keys` | `Keys` | keyboard and mouse state — [Keys and binds](../actions/keys.md) |
+| `player` | `SelfPlayer` | the local player — [Your player](../game/player.md) |
+| `world` | `World` | the loaded world — [World and blocks](../game/world.md) |
+| `inventory` | `Inventory` | the player inventory — [Inventory and items](../game/inventory.md) |
+| `container` | `Container` | the open screen handler — [Containers](../game/containers.md) |
+| `recipes` | `Recipes` | the recipe book — [Containers](../game/containers.md) (API 2) |
+| `inGame` | `Boolean` | true when both player and world exist |
+| `interaction` | `Interaction` | attack, use, break — [Interaction](../actions/interaction.md) |
+| `raycast` | `Raycast` | block and entity rays — [Rays and the crosshair](../game/raycast.md) |
+| `control` | `Control` | movement flags and jump — [Movement](../actions/control.md) |
+| `gameSettings` | `GameSettings` | Minecraft options — [Movement](../actions/control.md#game-settings) (API 2) |
+| `slots` | `Slots` | hotbar slot selection — [Slots and armor](../actions/slots.md) |
+| `armor` | `Armor` | worn armor comparison — [Slots and armor](../actions/slots.md) |
+| `combat` | `Combat` | attack point and target marking — [Interaction](../actions/interaction.md) |
+| `rotations` | `Rotations` | server-side yaw/pitch spoofing — [Rotations](../actions/rotations.md) |
+| `prediction` | `Prediction` | movement and projectile prediction — [Prediction](../actions/prediction.md) |
+| `gpu` | `Gpu` | mesh and pipeline registry — [Your own geometry](../ui/gpu.md) (API 2) |
 
-```kotlin
-bind.key()          // which key
-bind.bound()        // is anything bound at all
-bind.displayName()  // how it reads in the menu
-bind.type()         // BindType.TOGGLE or BindType.HOLD
+`player`, `world`, `inventory`, `container`, `recipes`, `interaction`, `raycast` and `control` throw `ScriptStateException` outside a world; `inGame` is the guard.
+Every root throws `ScriptStateException` after the script has been unloaded.
 
-bind.set(Key.R, BindType.HOLD)
-bind.clear()
-```
+## The client object
 
-## Switching from code
+| Method | Type | Description |
+|---|---|---|
+| `client.user()` | `User` | Nursultan account of the local user (API 2) |
+| `client.chat()` | `Chat` | chat printing and sending, tagged with the script id |
+| `client.text()` | `Texts` | text component factory |
+| `client.log()` | `Logger` | script console logger, still usable after unload |
+| `client.notifications()` | `Notifications` | client notification stack — [Messages](../ui/messages.md) |
+| `client.tasks()` | `Tasks` | tick scheduler owned by this script — [Timers and tasks](../extras/tasks.md) |
+| `client.storage()` | `Config` | the script's default config, file name `storage` |
+| `client.configs()` | `Configs` | named per-script config store |
+| `client.assets()` | `Assets` | read-only file access under `scripts/assets` (API 2) |
+| `client.clipboard()` | `Clipboard` | system clipboard read and write (API 2) |
+| `client.commands()` | `Commands` | `.`-prefixed command registration — [Your own commands](../extras/commands.md) |
+| `client.modules()` | `Modules` | client module registry — [Client modules](../extras/modules.md) |
+| `client.waypoints()` | `Waypoints` | client waypoint manager — [Waypoints](../extras/waypoints.md) |
+| `client.rotations()` | `Rotations` | spoofed server rotation handler |
+| `client.combat()` | `Combat` | attack point, target marking |
+| `client.slots()` | `Slots` | hotbar and held-slot control |
+| `client.armor()` | `Armor` | worn armor accessor |
+| `client.prediction()` | `Prediction` | movement and projectile prediction |
+| `client.timer()` | `Timer` | a new independent stopwatch on every call — [Timers and tasks](../extras/tasks.md) |
+| `client.filters()` | `EntityFilters` | entity predicate factory, still usable after unload |
+| `client.keys()` | `Keys` | keyboard, mouse and cursor state |
+| `client.fonts()` | `Fonts` | per-session font registry — [2D render](../ui/render-2d.md) |
+| `client.shaders()` | `Shaders` | per-script shader registry — [Shaders](../ui/shaders.md) |
+| `client.gpu()` | `Gpu` | per-script GPU buffer and pipeline registry (API 2) |
+| `client.textures()` | `Textures` | per-script texture registry — [2D render](../ui/render-2d.md) |
 
-`enabled` is an ordinary property:
+`client.fps()`, `tick()`, `millis()`, `nanos()`, `tickDelta()` and `onClientThread()` are documented on [Timers and tasks](../extras/tasks.md).
 
-```kotlin
-enabled = false           // turn yourself off
-toggle()                  // flip
+## The game object
 
-hotkey("Panic", Key.RIGHT_SHIFT) { enabled = false }
-```
+| Method | Type | Description |
+|---|---|---|
+| `game.inGame()` | `boolean` | true when both player and world exist |
+| `game.connected()` | `boolean` | true while a play network handler exists |
+| `game.player()` | `SelfPlayer` | the local player — [Your player](../game/player.md) |
+| `game.world()` | `World` | the client world — [World and blocks](../game/world.md) |
+| `game.inventory()` | `Inventory` | the player inventory — [Inventory and items](../game/inventory.md) |
+| `game.control()` | `Control` | movement-state control — [Movement](../actions/control.md) |
+| `game.interaction()` | `Interaction` | attack, use, break — [Interaction](../actions/interaction.md) |
+| `game.raycast()` | `Raycast` | block and entity ray casting — [Rays and the crosshair](../game/raycast.md) |
+| `game.server()` | `Server` | current server info — [Server, scoreboard, tab list](../game/server.md) (throws `ScriptStateException` when not connected) |
+| `game.packets()` | `Packets` | outgoing packet sender, never throws — [Packets](../actions/packets.md) |
+| `game.screenOpen()` | `boolean` | true when any screen is open |
+| `game.screenKind()` | `ScreenKind` | kind of the open screen, `NONE` when there is none |
+| `game.screen()` | `Screen?` | snapshot of the open screen, null when none — [Server, scoreboard, tab list](../game/server.md) |
+| `game.container()` | `Container` | the open screen handler — [Containers](../game/containers.md) |
+| `game.recipes()` | `Recipes` | the recipe book — [Containers](../game/containers.md) (API 2) |
+| `game.settings()` | `GameSettings` | game options, never throws — [Movement](../actions/control.md#game-settings) (API 2) |
+| `game.translate(key, arguments)` | `String` | translated Minecraft text, `""` for a blank key |
+| `game.hasTranslation(key)` | `boolean` | true when the key exists in the loaded language |
+| `game.language()` | `String` | language code, e.g. `en_us` |
+| `game.item(itemId)` | `Item` | new stack of size 1, namespace defaults to `minecraft:` (throws `ScriptException` when the id is unparseable) |
+| `game.closeScreen()` | `void` | closes the open screen on the client thread |
+| `game.disconnect()` | `void` | leaves the server on the client thread |
 
-## Reloading and unloading
+`player()`, `world()`, `inventory()`, `control()`, `interaction()`, `raycast()`, `container()` and `recipes()` throw `ScriptStateException` outside a world.
 
-Save the file and the client recompiles the script and starts a fresh instance. On/off state, the bind and setting values all come back.
+## Version requirement
 
-`onUnload` runs when the script goes away: before a reload, when it is deleted, and when you quit. It is the place to flush something to disk:
+| Method | Type | Description |
+|---|---|---|
+| `requireApi(minimum)` | `Unit` | refuses the load on an older client (throws `ScriptApiException` when `ApiVersion.CURRENT` < `minimum`) |
 
-```kotlin
-onUnload {
-    storage.put("runs", runs)
-    storage.save()
-}
-```
-
-Unsaved [configs](../settings/storage.md) are flushed for you, so you do not have to handle that case.
-
-## API version requirements
-
-If your script uses something new, ask for a minimum API version — on an older client it will refuse to load with a clear message instead of a confusing one:
-
-```kotlin
-requireApi(1)
-```
-
-There is a limit to what that line can do, and it is worth knowing before you rely on it: see [API versions](../extras/api-versions.md).
+This client provides API version 2 — see [API versions](../extras/api-versions.md).

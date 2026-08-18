@@ -1,64 +1,33 @@
 # Waypoints
 
-A script can drop the same world markers the client uses, with a label and a distance.
+`client.waypoints()` places client waypoints bound to the current server domain. A duration makes one temporary; no duration makes it permanent and saved into the waypoint config.
 
 ```kotlin
-waypoints = client.waypoints()
+val waypoints = client.waypoints()
 
-waypoints.add("Base", player.position())            // forever
-waypoints.add("Drop", position, 20 * 60)            // for a minute
+waypoints.add("Base", player.position())            // permanent
+waypoints.add("Drop", player.position(), 20 * 60)   // 60 seconds
+
 waypoints.remove("Drop")
-waypoints.all()
+waypoints.all().forEach { log.info(it.name()) }
 ```
 
-The third argument is how many ticks the marker lives. Without it, it stays until removed.
+## Adding one
 
-## The marker itself
+| Method | Type | Description |
+|---|---|---|
+| `waypoints.add(name, position, durationTicks)` | `Waypoint` | temporary waypoint, expires after `durationTicks × 50` ms (throws `ScriptException` on a blank name or a duration below 1) |
+| `waypoints.add(name, position)` | `Waypoint` | permanent waypoint, saved in the waypoint config (throws `ScriptException` on a blank name) |
+| `waypoints.remove(name)` | `void` | removes every waypoint carrying that name (throws `ScriptException` on a blank name) |
+| `waypoints.all()` | `List<Waypoint>` | snapshot of all current waypoints, party ones included |
 
-```kotlin
-val point = client.waypoints().all().first()
+`position` is a [`Vec`](../game/math.md) in blocks; names are not unique. `client.waypoints()` throws `ScriptStateException` after the script is unloaded.
 
-point.name()
-point.position()
-point.permanent()      // no expiry
-point.remove()
-```
+## The marker
 
-## What it is good for
-
-Marking where someone died:
-
-```kotlin
-on<PacketReceiveEvent> { e ->
-    val packet = e.packet()
-    if (packet !is S2CEntityDamagePacket) return@on
-    onClientThread {
-        val victim = world.entityById(packet.entityId()) ?: return@onClientThread
-        val living = victim.asLiving() ?: return@onClientThread
-        if (living.health() > 0f) return@onClientThread
-        client.waypoints().add(victim.name(), victim.position(), 20 * 120)
-    }
-}
-```
-
-Marking a chest you did not get to:
-
-```kotlin
-command("mark") {
-    runs {
-        val hit = raycast.crosshair(player.blockReachBlocks())
-        if (hit !is Hit.OnBlock) {
-            replyError("no block under the crosshair")
-            return@runs
-        }
-        client.waypoints().add(rest().ifEmpty { "mark" }, hit.position())
-        reply("marked")
-    }
-}
-```
-
-## Things to keep in mind
-
-* Names are not unique, but `remove(name)` drops the first match — so give them different names.
-* Timed markers expire on their own, nothing to clean up.
-* A script's markers live as long as the client does; reloading the script does not bring them back. If you want them to persist, keep them in a [config](../settings/storage.md) and place them again in `onEnable`.
+| Method | Type | Description |
+|---|---|---|
+| `name()` | `String` | waypoint name as registered |
+| `position()` | `Vec` | world position in blocks |
+| `permanent()` | `boolean` | true for a stored waypoint, false for a timed one |
+| `remove()` | `void` | removes every waypoint carrying this name |

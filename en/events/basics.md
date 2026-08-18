@@ -1,96 +1,92 @@
 # Subscribing
 
-An event is a moment in the game your script can react to: a tick happened, the player attacked, a packet arrived, a frame was drawn.
-
-## How to subscribe
+`on<E> { }` registers a handler that lives as long as the script is switched on. Every script handler runs at one fixed priority: after the client's `BEFORE_ALL` and `BEFORE` modules, before its `NOW` ones.
 
 ```kotlin
-on<ClientTickEvent> {
-    // every game tick
+on<ClientTickEvent> { }
+
+on<UseItemEvent> { e ->
+    if (inventory.held().isA("ender_pearl")) {
+        e.cancel()
+    }
 }
 
-on<AttackEvent> { e ->
-    chat.print("hitting " + e.target().name())
-}
+val sub = on<AttackEvent>(ignoreCancelled = true) { e -> chat.print(e.target().name()) }
+sub.unsubscribe()
 ```
 
-The event type goes in angle brackets and the object arrives in the lambda. Leave the parameter unnamed and it is available as `it`.
+## Subscribing
 
-A subscription lives while the script is **on**. Switch it off and handlers unsubscribe; switch it back on and they return. There is nothing to clean up by hand.
+| Method | Type | Description |
+|---|---|---|
+| `on<E>(ignoreCancelled) { }` | `Subscription` | subscribes by reified event type, `ignoreCancelled` defaults to false (throws `ScriptException` when `E` is not a supported event) |
+| `on(type, ignoreCancelled) { }` | `Subscription` | subscribes by event class (throws `ScriptException` when the class is not a supported event) |
+| `on<E>(priority, ignoreCancelled) { }` | `Subscription` | (deprecated, drop the argument) |
+| `on(type, priority, ignoreCancelled) { }` | `Subscription` | (deprecated, drop the argument) |
 
-## Priority
+`ignoreCancelled = true` skips the handler when the event is already cancelled.
 
-When several modules and scripts listen to the same event, priority decides the order:
+| Method | Type | Description |
+|---|---|---|
+| `Events.on(type, handler)` | `Subscription` | subscribes with `EventOptions.DEFAULT` |
+| `Events.on(type, options, handler)` | `Subscription` | subscribes with options; null options fall back to `DEFAULT` |
+| `Events.supportedEvents()` | `List<String>` | simple names of every supported event, sorted |
 
-```kotlin
-on<MoveInputEvent>(priority = Priority.LAST) {
-    it.sprint(false)
-}
-```
-
-| Priority | When it runs |
-|---|---|
-| `FIRST` | before everyone |
-| `EARLY` | |
-| `NORMAL` | the default |
-| `LATE` | |
-| `LAST` | after everyone |
-
-`LAST` is for having the final word — forcing input after everything else, say. `FIRST` is for cancelling an event before anyone else sees it.
+`Events` is the interface the `on(...)` overloads above delegate to. A handler registered while the script is off is activated when it is switched on.
 
 ## Cancelling
 
-Some events can be cancelled, and then the game does not do what it was about to:
+| Method | Type | Description |
+|---|---|---|
+| `Cancellable.cancel()` | `void` | marks this dispatch cancelled |
+| `Cancellable.cancelled()` | `boolean` | true after `cancel()` on this dispatch |
+| `CancellableEvent.cancel()` | `void` | sets the flag, never resets it |
+| `CancellableEvent.cancelled()` | `boolean` | flag value, false at dispatch start |
 
-```kotlin
-on<UseItemEvent> { e ->
-    if (inventory.held().isA("ender_pearl")) {
-        e.cancel()          // do not let it be used
-    }
-}
-```
+`CancellableEvent` is the base class of every cancellable event; the flag is cleared before every dispatch, so cancellation never leaks into the next one.
+Which events are cancellable, and what cancelling each one skips: [Event list](reference.md).
 
-Cancellable events are marked in the [list](reference.md). By default a cancelled event never reaches your handler — if you want to see it anyway, say so:
+## Options
 
-```kotlin
-on<AttackEvent>(ignoreCancelled = true) { e ->
-    chat.print("someone cancelled the attack on " + e.target().name())
-}
-```
+| Method | Type | Description |
+|---|---|---|
+| `EventOptions(ignoreCancelled)` | `EventOptions` | builds options with `Priority.NORMAL` (API 2) |
+| `EventOptions(priority, ignoreCancelled)` | `EventOptions` | canonical constructor (throws `NullPointerException` when priority is null) |
+| `EventOptions.DEFAULT` | `EventOptions` | `Priority.NORMAL`, `ignoreCancelled = false` |
+| `EventOptions.priority()` | `Priority` | (deprecated) (no effect: the value is never read) |
+| `EventOptions.ignoreCancelled()` | `boolean` | true skips the handler on an already-cancelled event |
+| `EventOptions.ignoreCancelled(value)` | `EventOptions` | copy with the flag replaced |
+| `EventOptions.priority(priority)` | `EventOptions` | copy of `DEFAULT` carrying that priority (deprecated) (no effect: the value is never read) |
 
-## Unsubscribing early
+The `on(...)` overloads build `EventOptions(ignoreCancelled)` themselves; explicit options only reach `Events.on(type, options, handler)`.
 
-`on` returns a subscription you can drop by hand:
+## Priority does nothing
 
-```kotlin
-val sub = on<ClientTickEvent> { ... }
+Every script handler is registered at one fixed slot, `EventPriority.SCRIPT` — after the client's `BEFORE_ALL` and `BEFORE` modules, before its `NOW`, `AFTER` and `AFTER_ALL` ones; among scripts the order is registration order.
+The enum is `@NoEffect` since API 2.
 
-sub.unsubscribe()
-sub.active()
-```
+| Constant | Description |
+|---|---|
+| `FIRST` | (no effect on dispatch order) |
+| `EARLY` | (no effect on dispatch order) |
+| `NORMAL` | default in `EventOptions` (no effect on dispatch order) |
+| `LATE` | (no effect on dispatch order) |
+| `LAST` | (no effect on dispatch order) |
 
-You rarely need this — handlers already go away when the script is switched off.
+The members that still take or return a `Priority` — the two deprecated `on(priority, ...)` overloads and `EventOptions.priority(...)` — compile and discard the value.
 
-## Which thread this runs on
+## Unsubscribing
 
-Almost every event arrives on the client thread, where reading the world and acting on it is fine.
+| Method | Type | Description |
+|---|---|---|
+| `Subscription.unsubscribe()` | `void` | removes the handler; idempotent |
+| `Subscription.active()` | `boolean` | true while subscribed and the script is loaded |
+| `Subscription.close()` | `void` | calls `unsubscribe()`; `Subscription` is `AutoCloseable` |
 
-The exception is **packets**: `PacketReceiveEvent` and `PacketSendEvent` fire on the network thread. Reading the packet's fields there is fine; touching the world, the player or the inventory is not. Hop over first:
+Switching the script off unsubscribes every handler; switching it on registers them again.
 
-```kotlin
-on<PacketReceiveEvent> { e ->
-    val packet = e.packet()
-    if (packet !is S2CEntityVelocityPacket) return@on
-    onClientThread {
-        control.jump()
-    }
-}
-```
+## Threads and budget
 
-More in [Packets](../actions/packets.md).
-
-## Do not freeze the game
-
-A handler has 250 ms to finish. Miss that and the client decides the script hung, switches it off and prints the file and line to the console. The game keeps running.
-
-So: no endless loops, and no "recompute everything" inside a tick. Split heavy work across ticks with [`everyTicks`](../extras/tasks.md).
+Every event fires on the Minecraft client thread except `PacketReceiveEvent` (netty IO thread) and `PacketSendEvent` (the thread that sends the packet) — see [Packets](../actions/packets.md).
+One handler invocation has 250 ms; overrunning it switches the script off, and so do 5 consecutive throws.
+`Render2DEvent`, `Render3DEvent`, `PacketReceiveEvent` and `PacketSendEvent` ignore `EventOptions` entirely — both `priority` and `ignoreCancelled`.

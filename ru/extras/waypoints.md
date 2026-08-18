@@ -1,64 +1,33 @@
 # Путевые точки
 
-Скрипт может ставить те же метки в мире, что и сам клиент: с подписью и расстоянием.
+`client.waypoints()` ставит клиентские метки, привязанные к текущему домену сервера. С длительностью метка временная, без неё — постоянная и сохраняется в конфиг путевых точек.
 
 ```kotlin
-waypoints = client.waypoints()
+val waypoints = client.waypoints()
 
-waypoints.add("База", player.position())            // насовсем
-waypoints.add("Дроп", position, 20 * 60)            // на минуту
-waypoints.remove("Дроп")
-waypoints.all()
+waypoints.add("Base", player.position())            // постоянная
+waypoints.add("Drop", player.position(), 20 * 60)   // 60 секунд
+
+waypoints.remove("Drop")
+waypoints.all().forEach { log.info(it.name()) }
 ```
 
-Третий аргумент — сколько тиков метка проживёт. Без него она остаётся, пока её не уберут.
+## Добавить
 
-## Сама метка
+| Метод | Тип | Описание |
+|---|---|---|
+| `waypoints.add(name, position, durationTicks)` | `Waypoint` | временная метка, исчезает через `durationTicks × 50` мс (бросает `ScriptException` на пустое имя или длительность меньше 1) |
+| `waypoints.add(name, position)` | `Waypoint` | постоянная метка, сохраняется в конфиг путевых точек (бросает `ScriptException` на пустое имя) |
+| `waypoints.remove(name)` | `void` | убирает все метки с таким именем (бросает `ScriptException` на пустое имя) |
+| `waypoints.all()` | `List<Waypoint>` | снимок всех текущих меток, включая party-метки |
 
-```kotlin
-val point = client.waypoints().all().first()
+`position` — это [`Vec`](../game/math.md) в блоках; имена не уникальны. `client.waypoints()` бросает `ScriptStateException` после выгрузки скрипта.
 
-point.name()
-point.position()
-point.permanent()      // без срока
-point.remove()
-```
+## Метка
 
-## Зачем это нужно
-
-Отметить, где кто-то умер:
-
-```kotlin
-on<PacketReceiveEvent> { e ->
-    val packet = e.packet()
-    if (packet !is S2CEntityDamagePacket) return@on
-    onClientThread {
-        val victim = world.entityById(packet.entityId()) ?: return@onClientThread
-        val living = victim.asLiving() ?: return@onClientThread
-        if (living.health() > 0f) return@onClientThread
-        client.waypoints().add(victim.name(), victim.position(), 20 * 120)
-    }
-}
-```
-
-Отметить сундук, до которого не дошёл:
-
-```kotlin
-command("mark") {
-    runs {
-        val hit = raycast.crosshair(player.blockReachBlocks())
-        if (hit !is Hit.OnBlock) {
-            replyError("нет блока под прицелом")
-            return@runs
-        }
-        client.waypoints().add(rest().ifEmpty { "метка" }, hit.position())
-        reply("отмечено")
-    }
-}
-```
-
-## Что учесть
-
-* Имена не уникальны, но `remove(name)` уберёт первую подходящую — так что лучше давать разные.
-* Метки со сроком исчезают сами, чистить их не надо.
-* Метки скрипта живут, пока живёт клиент; при перезагрузке скрипта они не восстанавливаются автоматически. Нужно постоянство — храни их в [конфиге](../settings/storage.md) и расставляй заново на `onEnable`.
+| Метод | Тип | Описание |
+|---|---|---|
+| `name()` | `String` | имя метки, как её зарегистрировали |
+| `position()` | `Vec` | позиция в мире, в блоках |
+| `permanent()` | `boolean` | true для сохранённой метки, false для временной |
+| `remove()` | `void` | убирает все метки с этим именем |

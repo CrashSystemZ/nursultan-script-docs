@@ -1,78 +1,64 @@
 # Messages
 
+`chat` prints locally and sends to the server, `log` writes to the script console, `notify` pushes a card onto the client notification stack, `clipboard` reads and writes the system clipboard. All four are roots of the script; `chat` is `client.chat()`, `log` is `client.log()`, `clipboard` is `client.clipboard()`.
+
+```kotlin
+on<ClientTickEvent> {
+    if (player.health() > 6f) return@on
+    chat.print(text.literal("low health").color(Colors.RED))
+    notify("low health", NotifyKind.WARN)
+    log.error("health " + player.health())
+}
+```
+
 ## Chat
 
-```kotlin
-chat.print("hi")                           // only you, with the client prefix
-chat.printPrefixed("[AutoJump]", "done")   // with your own prefix
-chat.sendToServer("hi everyone")           // send to the server chat
-chat.runCommand("spawn")                   // run a server command
-```
+| Method | Type | Description |
+|---|---|---|
+| `chat.print(message)` | `void` | prints `[<scriptId>] message` into your own chat only |
+| `chat.printPrefixed(prefix, message)` | `void` | same with `[prefix] ` instead of the script id |
+| `chat.sendToServer(message)` | `void` | sends a chat message, a leading `/` sends a server command (throws `NullPointerException` when not connected) |
+| `chat.runCommand(command)` | `void` | re-sends the text with the client prefix `.` so a client command runs (throws `NullPointerException` when not connected) |
 
-`print` is seen by you alone — the server knows nothing about that message. `sendToServer` and `runCommand` really do go out.
-
-`runCommand` does not want a leading slash: `runCommand("spawn")` sends `/spawn`.
-
-`print` takes anything — a string, a number, or a [`Text`](text.md) when you want colour, a click or a hover:
-
-```kotlin
-chat.print(text.literal("saved").color(Colors.GREEN))
-```
+A `Text` argument to `print`/`printPrefixed` keeps its styling, anything else goes through `toString`, null prints `null` — see [Styled text](text.md).
+`sendToServer` and `runCommand` ignore null and blank strings; `runCommand` strips one leading prefix character before re-adding it.
 
 ## Notifications
 
-The popup in the corner — for when a message matters but chat is too wordy for it:
+| Method | Type | Description |
+|---|---|---|
+| `notify(text, kind)` | `void` | pushes a notification card, `kind` defaults to `NotifyKind.OK` |
+| `notifications.show(text)` | `void` | card with kind OK, null text becomes `""` |
+| `notifications.show(text, kind)` | `void` | card with that style, null kind falls back to OK |
 
-```kotlin
-notify("done")
-notify("low health", NotifyKind.WARN)
-notify("did not work", NotifyKind.FAIL)
-notify("target found", NotifyKind.ACCENT)
-```
+`notifications` is `client.notifications()`; `notify(...)` is the same call from the script root.
 
-| Kind | What for |
+| Constant | Description |
 |---|---|
-| `OK` | ordinary, the default |
-| `WARN` | a warning |
-| `FAIL` | an error |
-| `ACCENT` | just to stand out |
+| `OK` | success styling, the default |
+| `WARN` | warning styling |
+| `FAIL` | error styling |
+| `ACCENT` | client accent-colour styling |
 
 ## The log
 
-The log goes to the script console and stays out of chat. That is where debugging and anything the player does not need to see belongs:
+| Method | Type | Description |
+|---|---|---|
+| `log.info(message)` | `void` | INFO line in the script console and the client log |
+| `log.warn(message)` | `void` | WARN line in the script console and the client log |
+| `log.error(message)` | `void` | ERROR line in the script console and the client log |
+| `log.error(message, cause)` | `void` | ERROR line plus `<file>.kts:<line>: <cause message>`, full stacktrace only in the client log |
 
-```kotlin
-log.info("loaded")
-log.warn("target went away")
-log.error("could not parse the answer")
-log.error("it broke", exception)
-```
+The console is menu → **Scripts** → the terminal button; every line carries the time, the level and the script id, and it keeps the last 1000 lines.
+Load, reload, toggle and compile errors are written there by the client itself, as is anything a script throws.
 
-The script's own errors land there too, together with the file and line.
+## Clipboard
 
-## The console
+| Method | Type | Description |
+|---|---|---|
+| `clipboard.get()` | `String` | clipboard text, `""` when empty or holding something that is not text (API 2) |
+| `clipboard.set(text)` | `void` | replaces the clipboard, null ignored (API 2) (throws `ScriptException` above 65536 chars) |
+| `clipboard.clear()` | `void` | writes an empty string (API 2) |
+| `clipboard.empty()` | `boolean` | true when `get()` returns `""`, also true on a read timeout (API 2) |
 
-Menu → **Scripts** → the terminal button next to the search field. Every line carries the time, the level and the script it came from:
-
-```
-[15:03:20] [INFO] [auto-jump] loaded
-[15:03:25] [WARN] [auto-jump] target went away
-[15:03:31] [ERROR] [auto-jump] failed - auto-jump.kts:12: NullPointerException
-```
-
-`[INFO]` is tinted with the client accent while its text stays white; `[WARN]` and `[ERROR]` colour the whole line so a problem is impossible to miss.
-
-Besides your own `log` calls it shows the lifecycle the client drives itself: loaded, reloaded, removed, switched on and off, and every compile error with its message.
-
-The pin keeps the console on screen after the menu is closed — that is the mode you want while editing a script and watching it hot-reload. The bin clears it. It holds the last 1000 lines and follows the tail on its own, unless you scroll up to read something.
-
-## What goes where
-
-| Where | When |
-|---|---|
-| `notify` | short and important: it worked, it did not |
-| `chat.print` | text worth re-reading |
-| `log` | debugging and detail the player does not need |
-| `reply` in a command | an answer to something the player typed |
-
-Do not write to chat every tick — that is the first reason people delete a script. If you need to show state continuously, draw it on the HUD: [2D render](render-2d.md).
+Off the client thread `get()`/`empty()` hop onto it and wait up to 1000 ms, returning `""`/`true` on timeout, while `set`/`clear` are queued and do not block — see [getting onto the client thread](../extras/tasks.md#getting-onto-the-client-thread).

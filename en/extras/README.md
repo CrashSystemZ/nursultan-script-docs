@@ -1,3 +1,3 @@
 # More
 
-Commands, client modules, timers, waypoints, script files, and the sandbox rules.
+Commands, client modules, your account, timers, waypoints, script files, and the sandbox rules.

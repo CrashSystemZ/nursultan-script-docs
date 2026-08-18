@@ -1,213 +1,196 @@
 # 2D render
 
-The `Render2DEvent` event fires every frame in the script layer — above the game's own HUD and above the client's world overlays (ESP, waypoints, arrows), below the client's HUD elements. It carries `render()`, the screen size `width()` × `height()` and `tickDelta()`.
-
-All drawing goes through `e.render()`. Coordinates are real window pixels, the same ones `width()` and `height()` are in, and they do not depend on the game's GUI Scale setting: at scale 2 a 1920×1080 screen still gives you `width()` = 1920, not 960. `project` works in that same space, so a world point can go straight next to a rectangle or a piece of text. Colours are ordinary `Int`s shaped `0xAARRGGBB`, and `Colors` is the easy way to build them.
-
-One thing follows from that: do not hardcode sizes if you want the same look on every monitor. Place everything relative to `width()` and `height()`, and derive your font size from them too. To match the vanilla interface exactly, multiply by [`gameSettings.scaleFactor()`](../actions/control.md#game-settings) — that is the number the game divides these pixels by.
+`Render2DEvent` hands you a drawing surface — `e.render()`. Coordinates are framebuffer pixels, not GUI-scaled units, and every call queues a command flushed after all handlers ran, so call order is draw order.
 
 ```kotlin
 on<Render2DEvent> { e ->
     val r = e.render()
-    r.roundedRect(8f, 8f, 160f, 40f, 8f, Colors.rgba(0, 0, 0, 160))
-    r.text("Nursultan", 16f, 16f, 14f, Colors.WHITE)
-    r.text("fps " + client.fps(), 16f, 32f, 10f, Colors.CYAN)
+    val label = "fps " + client.fps()
+    val w = r.textWidth(label, 10f) + 12f
+    r.blur(8f, 8f, w, 22f, 12f, Colors.rgba(0, 0, 0, 160), 6f)
+    r.roundedRect(8f, 8f, w, 22f, 6f, Colors.rgba(10, 12, 15, 120))
+    r.text(label, 14f, 14f, 10f, Colors.WHITE)
 }
 ```
 
-## Draw order
+## The surface
 
-Whatever you draw later goes on top, exactly as you wrote it:
+| Method | Type | Description |
+|---|---|---|
+| `r.width()` | `float` | framebuffer width in px, refreshed each 2D frame |
+| `r.height()` | `float` | framebuffer height in px, refreshed each 2D frame |
 
-```kotlin
-r.text("hidden", 10f, 10f, 10f, Colors.WHITE)
-r.rect(10f, 8f, 80f, 14f, Colors.BLACK)     // covers the text
-
-r.rect(10f, 30f, 80f, 14f, Colors.BLACK)
-r.text("visible", 10f, 32f, 10f, Colors.WHITE)   // sits on the bar
-```
-
-Two things follow from that. `blur(...)` blurs everything already drawn underneath it, including your own shapes — put it before the panel it belongs to, not after. And consecutive calls of the same kind are batched into one draw, so grouping your backdrops together and your labels together is slightly cheaper than alternating them. It is a small difference; write what reads best and only regroup if you are drawing hundreds of things.
+At GUI Scale 2 a 1920×1080 window still reports `width()` = 1920. Divide by [`gameSettings.scaleFactor()`](../actions/control.md#game-settings) to get vanilla GUI units.
 
 ## Shapes
 
-| Method | What it draws |
+| Method | Type | Description |
+|---|---|---|
+| `r.rect(x, y, width, height, argb)` | `void` | filled rectangle |
+| `r.roundedRect(x, y, width, height, radius, argb)` | `void` | radius clamped 0..min(width, height)/2 |
+| `r.roundedRect(x, y, width, height, topLeft, topRight, bottomRight, bottomLeft, argb)` | `void` | per-corner radii, clockwise from top-left, each clamped the same way |
+| `r.outline(x, y, width, height, thickness, argb)` | `void` | square border inside the rect, thickness clamped 0..min(w, h)/2 |
+| `r.roundedOutline(x, y, width, height, radius, thickness, argb)` | `void` | rounded border, stroke aligned INSIDE |
+| `r.roundedOutline(x, y, width, height, radius, thickness, align, argb)` | `void` | null align treated as INSIDE |
+| `r.circle(centerX, centerY, radius, argb)` | `void` | filled circle, negative radius treated as 0 |
+| `r.ring(centerX, centerY, radius, thickness, argb)` | `void` | thickness clamped 0..radius |
+| `r.triangle(x1, y1, x2, y2, x3, y3, argb)` | `void` | filled triangle, bounding quad padded 2 px |
+
+| Constant | Description |
 |---|---|
-| `rect(x, y, w, h, argb)` | a filled rectangle |
-| `roundedRect(x, y, w, h, radius, argb)` | with rounded corners |
-| `roundedRect(x, y, w, h, tl, tr, br, bl, argb)` | a radius per corner, clockwise from the top left |
-| `gradient(x, y, w, h, argbFrom, argbTo, horizontal)` | a two-colour gradient |
-| `gradientAngle(x, y, w, h, argbFrom, argbTo, degrees)` | the same at any angle — `0` left to right, `90` top to bottom |
-| `radialGradient(x, y, w, h, argbCenter, argbEdge)` | a gradient out of the centre |
-| `radialGradient(x, y, w, h, radius, argbCenter, argbEdge)` | the same, with rounded corners |
-| `outline(x, y, w, h, thickness, argb)` | the border only |
-| `roundedOutline(x, y, w, h, radius, thickness, argb)` | a rounded border |
-| `roundedOutline(x, y, w, h, radius, thickness, align, argb)` | and where the stroke sits |
-| `circle(cx, cy, radius, argb)` | a circle |
-| `ring(cx, cy, radius, thickness, argb)` | a ring |
-| `triangle(x1, y1, x2, y2, x3, y3, argb)` | a triangle |
+| `StrokeAlign.INSIDE` | stroke inside the rect edge, used when align is null |
+| `StrokeAlign.CENTER` | stroke centred on the edge, rect grown by half the thickness |
+| `StrokeAlign.OUTSIDE` | stroke outside the edge, rect grown by the full thickness |
 
-A chip with only its top corners rounded, and a border drawn around the outside of it:
+The size you pass is always the shape itself; the stroke grows outwards from it.
 
-```kotlin
-r.roundedRect(8f, 8f, 120f, 24f, 7f, 7f, 0f, 0f, Colors.rgba(0, 0, 0, 160))
-r.roundedOutline(8f, 8f, 120f, 24f, 7f, 1f, StrokeAlign.OUTSIDE, Colors.CYAN)
-```
+## Gradients and blur
 
-`StrokeAlign` decides which side of the edge the line sits on: `INSIDE` (the default, the border eats into the shape), `CENTER` (half in, half out) or `OUTSIDE` (entirely around it). The size you pass is always the shape itself — the stroke grows outwards from it, it does not shrink the rectangle.
+| Method | Type | Description |
+|---|---|---|
+| `r.gradient(x, y, width, height, argbFrom, argbTo, horizontal)` | `void` | horizontal true = left to right, false = top to bottom |
+| `r.gradientAngle(x, y, width, height, argbFrom, argbTo, angleDegrees)` | `void` | linear gradient along (cos a, sin a) in degrees, screen Y grows downward |
+| `r.radialGradient(x, y, width, height, argbCenter, argbEdge)` | `void` | gradient out of the centre, corner radius 0 |
+| `r.radialGradient(x, y, width, height, radius, argbCenter, argbEdge)` | `void` | corner radius clamped 0..min(w, h)/2 |
+| `r.blur(x, y, width, height, radius)` | `void` | blurs what is already drawn under the region, full opacity, square corners |
+| `r.blur(x, y, width, height, radius, argb, cornerRadius)` | `void` | only the alpha byte of argb is used, one radius for all corners |
+| `r.blur(x, y, width, height, radius, argb, tl, tr, bl, br)` | `void` | per-corner radii in order top-left, top-right, bottom-left, bottom-right (API 2) |
 
-## Blur
-
-Blurs whatever is already drawn under the given area — that is how you make backdrops for panels:
-
-```kotlin
-r.blur(8f, 8f, 160f, 40f, 12f)
-r.blur(8f, 8f, 160f, 40f, 12f, Colors.rgba(0, 0, 0, 80), 8f)
-```
-
-The second form rounds the corners and takes **only the alpha** of the colour you pass — how strongly the blur shows through. Want a tinted panel — draw a `roundedRect` over the blur:
-
-```kotlin
-r.blur(8f, 8f, 160f, 40f, 12f, Colors.rgba(0, 0, 0, 255), 8f)
-r.roundedRect(8f, 8f, 160f, 40f, 8f, Colors.rgba(10, 12, 15, 140))
-```
+Blur reads the framebuffer at its own place in the queue, so it only blurs commands issued before it. The rect is snapped to whole pixels and the blur radius to `max(1, round(radius))` px; a width or height that rounds to 0 is skipped.
 
 ## Text
 
-```kotlin
-r.text("hi", 10f, 10f, 12f, Colors.WHITE)
-r.textShadow("hi", 10f, 10f, 12f, Colors.WHITE, Colors.rgba(0, 0, 0, 200))
+| Method | Type | Description |
+|---|---|---|
+| `r.text(text, x, y, sizePx, argb)` | `void` | font `inter`, weight REGULAR |
+| `r.text(text, x, y, sizePx, argb, font)` | `void` | named family, weight REGULAR |
+| `r.text(text, x, y, sizePx, argb, weight)` | `void` | font `inter` at that weight (API 2) |
+| `r.text(text, x, y, sizePx, argb, font, weight)` | `void` | named family at that weight (API 2) |
+| `r.textShadow(text, x, y, sizePx, argb, shadowArgb)` | `void` | shadow copy queued at +1, +1 px before the text |
+| `r.textShadow(text, x, y, sizePx, argb, shadowArgb, font)` | `void` | named family, weight REGULAR |
+| `r.textShadow(text, x, y, sizePx, argb, shadowArgb, weight)` | `void` | font `inter` at that weight (API 2) |
+| `r.textShadow(text, x, y, sizePx, argb, shadowArgb, font, weight)` | `void` | named family at that weight (API 2) |
 
-r.textWidth("hi", 12f)
-r.textHeight(12f)
-r.textAscent(12f)      // from the top of the line down to the baseline
-r.textDescent(12f)     // from the baseline down to the bottom of the line
-```
+`y` is the line top; the baseline sits at `y + textAscent(...)`. An unknown family falls back to `inter`, and null or empty text is skipped.
 
-`textHeight` is the whole line, `ascent + descent`. Use the split when you have to put something *on the baseline* — an icon next to a label, an underline, two fonts on the same line:
+## Measuring text
 
-```kotlin
-val baseline = y + r.textAscent(12f)
-r.text("hi", x, y, 12f, Colors.WHITE)
-r.rect(x, baseline + 1f, r.textWidth("hi", 12f), 1f, Colors.WHITE)
-```
+| Method | Type | Description |
+|---|---|---|
+| `r.textWidth(text, sizePx)` | `float` | advance width in px, font `inter`, REGULAR |
+| `r.textWidth(text, sizePx, font)` | `float` | width in px for the named family |
+| `r.textWidth(text, sizePx, weight)` | `float` | width in px, font `inter` (API 2) |
+| `r.textWidth(text, sizePx, font, weight)` | `float` | 0 for null or empty text and for an unresolvable family (API 2) |
+| `r.textHeight(sizePx)` | `float` | line height in px, font `inter`, REGULAR |
+| `r.textHeight(sizePx, font)` | `float` | line height in px for the named family |
+| `r.textHeight(sizePx, weight)` | `float` | line height in px, font `inter` (API 2) |
+| `r.textHeight(sizePx, font, weight)` | `float` | single-line height, independent of any string (API 2) |
+| `r.textAscent(sizePx)` | `float` | ascent above the baseline in px, font `inter`, REGULAR |
+| `r.textAscent(sizePx, font)` | `float` | ascent in px for the named family |
+| `r.textAscent(sizePx, weight)` | `float` | ascent in px, font `inter` (API 2) |
+| `r.textAscent(sizePx, font, weight)` | `float` | 0 when no family resolves (API 2) |
+| `r.textDescent(sizePx)` | `float` | line height minus ascent in px, font `inter`, REGULAR |
+| `r.textDescent(sizePx, font)` | `float` | descent in px for the named family |
+| `r.textDescent(sizePx, weight)` | `float` | descent in px, font `inter` (API 2) |
+| `r.textDescent(sizePx, font, weight)` | `float` | 0 when no family resolves (API 2) |
 
-You measure width to fit a backdrop around the text:
+`textHeight` equals `textAscent + textDescent` at the same size, family and weight.
 
-```kotlin
-val text = "health " + player.health()
-val width = r.textWidth(text, 10f) + 12f
-r.roundedRect(6f, 6f, width, 18f, 5f, Colors.rgba(0, 0, 0, 140))
-r.text(text, 12f, 11f, 10f, Colors.WHITE)
-```
+## Fonts and weights
 
-## Fonts
+| Method | Type | Description |
+|---|---|---|
+| `font(name, ttfFileInAssetsFolder)` | `void` | registers a TTF from `scripts/assets` under that family name |
+| `font(name, ttf)` | `void` | registers a family from TTF bytes, rejected above 8 MiB (API 2) |
+| `client.fonts().register(name, ttfFileInAssetsFolder)` | `void` | what `font(name, file)` calls, applied on the next render frame |
+| `client.fonts().register(name, ttf)` | `void` | what `font(name, bytes)` calls, the array is cloned (API 2) |
+| `client.fonts().registered(name)` | `boolean` | true when a live family has that name, a queued font is not visible yet |
 
-Without a font argument you get the client's font. You can ask for the vanilla one or register your own:
+A name that already exists — including the client's own `inter`, `jetbrains-mono` and `minecraft` — is ignored, and script families are dropped when the script unloads. The byte form pairs with `base64(...)`: see [assets inside the script](../extras/assets.md#assets-inside-the-script).
 
-```kotlin
-r.text("hi", 10f, 10f, 12f, Colors.WHITE, "minecraft")
+| Constant | Description |
+|---|---|
+| `Weight.THIN` | `wght` 100 (API 2) |
+| `Weight.EXTRA_LIGHT` | `wght` 200 (API 2) |
+| `Weight.LIGHT` | `wght` 300 (API 2) |
+| `Weight.REGULAR` | `wght` 400, used when the weight argument is omitted or null (API 2) |
+| `Weight.MEDIUM` | `wght` 500 (API 2) |
+| `Weight.SEMI_BOLD` | `wght` 600 (API 2) |
+| `Weight.BOLD` | `wght` 700 (API 2) |
+| `Weight.EXTRA_BOLD` | `wght` 800 (API 2) |
+| `Weight.BLACK` | `wght` 900 (API 2) |
 
-// once, at the top level of the script
-font("myfont", "my-font.ttf")
+## Items, heads, icons
 
-// then by name
-r.text("hi", 10f, 30f, 12f, Colors.WHITE, "myfont")
-```
+| Method | Type | Description |
+|---|---|---|
+| `r.item(item, x, y, sizePx)` | `void` | item stack icon, foreign `Item` implementations ignored |
+| `r.item(itemId, x, y, sizePx)` | `void` | namespaced id, malformed id ignored, unknown id resolves to air |
+| `r.head(player, x, y, sizePx)` | `void` | player skin head quad, no-op for sizePx ≤ 0, StreamerMode or a missing skin |
+| `r.effectIcon(effectId, x, y, sizePx)` | `void` | status-effect sprite `mob_effect/<path>`, x/y/size floored to ints |
 
-The TTF file goes into [the assets folder](../extras/assets.md) — `%APPDATA%\Nursultan\scripts\assets`, subfolders included: `font("myfont", "fonts/my-font.ttf")`. It can also travel inside the script itself: `font("myfont", base64(PART1, PART2))`, see [assets inside the script](../extras/assets.md#assets-inside-the-script).
+## Textures
 
-## Images and icons
+| Method | Type | Description |
+|---|---|---|
+| `r.texture(identifier, x, y, width, height)` | `void` | Minecraft resource identifier, full 0..1 UV, malformed identifier ignored |
+| `r.texture(texture, x, y, width, height)` | `void` | full 0..1 UV, skipped while the GL id is 0 |
+| `r.texture(texture, x, y, width, height, u0, v0, u1, v1)` | `void` | explicit UV rectangle 0..1, u0/v0 top-left, v grows downward |
+| `r.image(fileInAssetsFolder, x, y, width, height)` | `void` | PNG from `scripts/assets`, decoded and uploaded once |
+| `texture(identifier)` | `Texture?` | handle for a Minecraft resource id, null when malformed or empty |
+| `image(fileInAssetsFolder)` | `Texture?` | handle for a PNG in `scripts/assets`, null when rejected, missing or empty |
+| `image(name, png)` | `Texture?` | handle for PNG bytes, null for a blank name, empty bytes or over 8 MiB (API 2) |
+| `client.textures().resource(identifier)` | `Texture?` | what `texture(identifier)` calls |
+| `client.textures().image(fileInAssetsFolder)` | `Texture?` | what `image(file)` calls, uploaded on first draw |
+| `client.textures().image(name, png)` | `Texture?` | what `image(name, bytes)` calls, released when the script is unloaded (API 2) |
+| `handle.name()` | `String` | resource identifier string or the image name |
+| `handle.glId()` | `int` | OpenGL texture id, 0 off the client main thread or before upload |
+| `handle.ready()` | `boolean` | true when `glId()` is non-zero |
+| `handle.width()` | `int` | mip-0 width in px, 0 off the main thread or when unavailable |
+| `handle.height()` | `int` | mip-0 height in px, 0 off the main thread or when unavailable |
 
-```kotlin
-r.item(inventory.held(), 10f, 10f, 16f)          // an item
-r.item("minecraft:diamond", 30f, 10f, 16f)       // by id
-r.head(playerEntity, 50f, 10f, 16f)              // a player's head
-r.effectIcon("speed", 70f, 10f, 16f)             // an effect icon
-r.texture("minecraft:textures/item/apple.png", 90f, 10f, 16f, 16f)
-r.image("logo.png", 110f, 10f, 32f, 32f)         // a file from the assets folder
-```
+A file path is resolved against `scripts/assets`, with a one-time-warned fallback to the scripts root — see [assets](../extras/assets.md). `skinTexture()` on a player or a tab entry returns the same kind of handle.
 
-You do not bind anything and you do not load anything: you name the texture, and it is looked up in the game's own texture manager when the frame is flushed. A name nothing answers to gets you Minecraft's missing-texture chequerboard, so a typo is loud rather than silent.
+## Colours
 
-## Texture handles
+Every colour is an `int` shaped `0xAARRGGBB`.
 
-Sometimes a name is not enough — you want the size, or you want to hand the thing to your own shader. Ask for the texture itself:
-
-```kotlin
-val apple = texture("minecraft:textures/item/apple.png")   // any game texture
-val logo = image("logo.png")                               // a file from the assets folder
-val badge = image("badge", base64(BADGE_PNG))              // bytes carried inside the script
-val skin = target.skinTexture()                            // a player's skin
-```
-
-All three give you the same kind of object, and all three can be `null` — a malformed identifier, a file that is not there, a skin that has not arrived. A handle answers five questions:
-
-```kotlin
-skin.name()      // "minecraft:skins/…" — what it is called
-skin.width()     // 64
-skin.height()    // 64
-skin.glId()      // the raw OpenGL id
-skin.ready()     // has it been uploaded to the card yet
-```
-
-Everything except `name()` is only real inside a render handler — that is the only place the texture is guaranteed to be uploaded — and reads `0` / `false` anywhere else. `ready()` is worth checking before you divide by `width()`.
-
-Handles go everywhere a name goes:
-
-```kotlin
-r.texture(skin, x, y, 32f, 32f)
-```
-
-## A piece of a texture
-
-Give `texture` a handle and four more numbers — the corner of the source rectangle you want, `0..1` across the whole texture, top-left first:
-
-```kotlin
-r.texture(handle, x, y, width, height, u0, v0, u1, v1)
-```
-
-Cutting a piece needs the handle, not the name. That is deliberate: a name is for drawing a texture whole and forgetting about it, and once you care about regions you care about the size too.
-
-`u0, v0` is the top-left corner, `u1, v1` the bottom-right, and `v` grows downwards like pixel rows do. Swapping a pair mirrors the piece.
-
-A player's head is exactly that. The face sits at pixel `8,8` and is 8×8, and the hat layer that goes over it at `40,8`:
-
-```kotlin
-val skin = target.skinTexture() ?: return@on
-val w = skin.width().toFloat()
-val h = skin.height().toFloat()
-if (w <= 0f) return@on
-
-r.texture(skin, x, y, 32f, 32f, 8f / w, 8f / h, 16f / w, 16f / h)
-r.texture(skin, x, y, 32f, 32f, 40f / w, 8f / h, 48f / w, 16f / h)
-```
-
-Two draws, the hat on top of the face — that is all `r.head(...)` does for you. Do it by hand when you want a different part of the skin, another size, or a head for someone who is not loaded in the world: [tab rows](../game/server.md) carry `skinTexture()` too, and those you have for everyone on the server. Want it round, or glowing, or greyed out — that is a [shader](shaders.md), and a texture handle is what you feed it.
+| Method | Type | Description |
+|---|---|---|
+| `Colors.TRANSPARENT` | `int` | `0x00000000` |
+| `Colors.WHITE` | `int` | `0xFFFFFFFF` |
+| `Colors.BLACK` | `int` | `0xFF000000` |
+| `Colors.GRAY` | `int` | `0xFF808080` |
+| `Colors.RED` | `int` | `0xFFFF5555` |
+| `Colors.GREEN` | `int` | `0xFF55FF55` |
+| `Colors.BLUE` | `int` | `0xFF5555FF` |
+| `Colors.YELLOW` | `int` | `0xFFFFFF55` |
+| `Colors.ORANGE` | `int` | `0xFFFFA500` |
+| `Colors.CYAN` | `int` | `0xFF55FFFF` |
+| `Colors.MAGENTA` | `int` | `0xFFFF55FF` |
+| `Colors.rgb(red, green, blue)` | `int` | packs opaque ARGB, channels clamped 0..255 |
+| `Colors.rgba(red, green, blue, alpha)` | `int` | packs ARGB, all channels clamped 0..255 |
+| `Colors.red(argb)` | `int` | red channel 0..255 |
+| `Colors.green(argb)` | `int` | green channel 0..255 |
+| `Colors.blue(argb)` | `int` | blue channel 0..255 |
+| `Colors.alpha(argb)` | `int` | alpha channel 0..255 |
+| `Colors.withAlpha(argb, alpha)` | `int` | replaces alpha clamped 0..255, keeps RGB |
+| `Colors.fade(argb, factor)` | `int` | multiplies alpha by factor clamped 0..1 |
+| `Colors.mix(first, second, amount)` | `int` | per-channel lerp including alpha, amount clamped 0..1 |
 
 ## A world point on the screen
 
-`project` turns world coordinates into screen coordinates — that is how nametags are done:
+| Method | Type | Description |
+|---|---|---|
+| `r.project(worldPosition)` | `Projection` | world position to screen pixels, rounded |
+| `p.visible()` | `boolean` | false when the point projects behind the camera |
+| `p.x()` | `float` | screen X in framebuffer px, 0 when not visible |
+| `p.y()` | `float` | screen Y in framebuffer px, 0 when not visible |
 
-```kotlin
-on<Render2DEvent> { e ->
-    val r = e.render()
-    for (target in world.players()) {
-        if (target.isSelf()) continue
-        val point = r.project(target.position().add(0.0, target.height() + 0.4, 0.0))
-        if (!point.visible()) continue
-        val name = target.name()
-        r.text(name, point.x() - r.textWidth(name, 8f) / 2f, point.y(), 8f, Colors.WHITE)
-    }
-}
-```
+## Shaders
 
-`visible()` is `false` when the point is behind you or off screen.
+| Method | Type | Description |
+|---|---|---|
+| `r.shader(shader, x, y, width, height)` | `void` | draws a quad with a script shader, uniforms snapshotted at call time |
 
-## Smoothness
-
-There are more frames than ticks, so positions from `position()` will judder. For drawing use `renderPosition()`, which is already smoothed. If you compute something yourself, use `tickDelta()` from the event.
-
-## Do not do heavy work per frame
-
-The handler runs 60+ times a second. Do not walk every entity, shoot rays or ask for predictions inside it — compute in `ClientTickEvent`, stash it in a variable, and only draw in the frame.
+Foreign `Shader` implementations are ignored, and the quad is skipped while compilation failed. Compiling one and setting uniforms: [shaders](shaders.md).

@@ -1,81 +1,53 @@
 # Your first script
 
-## An empty file already works
-
-Create `hello.kts` and write one line:
+The file name without `.kts` is the script id; everything at the top level runs once when the file loads, and `on<...>` handlers run only while the script is switched on.
 
 ```kotlin
-chat.print("hi")
-```
-
-Drop the file into the scripts folder, open the menu → **Scripts**, flip the switch — "hi" lands in chat.
-
-Everything you write at the top level of the file runs **once, on load**. That is usually where you declare settings and subscribe to events; the actual work happens inside handlers.
-
-## Add settings and a bind
-
-```kotlin
-name("AutoJump")
-description("Jumps for you")
-
+name("Auto jump")
 key(Key.G)
-
-val delay = slider("Delay", 5, 1, 20)
-val sound = checkBox("Sound", true)
-
+val delay by slider("Delay", 5, 1, 20)
 var ticks = 0
-
 onEnable { ticks = 0 }
-
 on<ClientTickEvent> {
-    if (!inGame) return@on
-    if (++ticks < delay.intValue()) return@on
+    if (++ticks < delay) return@on
     ticks = 0
-    control.jump()
-    if (sound.value()) {
-        world.playSound("minecraft:entity.experience_orb.pickup", 1f, 1f)
-    }
+    whenInGame { control.jump() }
 }
 ```
 
-What is going on here:
+## The smallest file
 
-* `name` and `description` are how the script is labelled in the menu. Skip them and the file name is used.
-* `key(Key.G)` is the default bind. If the player already rebound it, their choice is not overwritten.
-* `slider` and `checkBox` are settings — they show up in the script's card.
-* `onEnable` runs when the script is switched on, handy for resetting counters.
-* `on<ClientTickEvent>` is a handler; it works while the script is on.
+| Fact | Detail |
+|---|---|
+| file | any `.kts` in the scripts folder, `*.gradle.kts` is ignored |
+| script id | file name without `.kts`, key for configs and presets |
+| empty file | compiles, appears in the Scripts tab, does nothing |
+| menu label | `name(...)` when set, otherwise the script id |
+| saving the file | recompiles it, restores the bind and the on/off state |
 
-## Two ways to read a setting
+## Settings and a bind
 
-If you only need the value, take it through `by`:
+| What | Documented on |
+|---|---|
+| `checkBox`, `slider`, `input`, `selectable`, `combo`, `colorPicker`, `hotkey`, `button` | [Kinds of settings](../settings/types.md) |
+| `name`, `description`, `key`, `bind`, `onEnable`, `onDisable` | [How a script works](lifecycle.md) |
+| `on<E> { }`, `ignoreCancelled`, `unsubscribe()` | [Subscribing](../events/basics.md) |
 
-```kotlin
-val delay by slider("Delay", 5f, 1f, 20f)   // delay is a Float
+## Reading a setting
 
-if (ticks >= delay) { ... }
-```
+| Declaration | Type | Description |
+|---|---|---|
+| `val delay by slider("Delay", 5f, 1f, 20f)` | `Float` | delegate, reads the live value on every access |
+| `val delay = slider("Delay", 5f, 1f, 20f)` | `Slider` | the setting object: `value()`, `onChange`, `visibleWhen` |
 
-If you need the object itself — to listen for changes or hide it conditionally — keep it as is:
+`var x by ...` writes as well: assigning to the property calls the setting's setter. The delegate type of every setting kind is on [Kinds of settings](../settings/types.md).
 
-```kotlin
-val delay = slider("Delay", 5f, 1f, 20f)
+## Where errors go
 
-delay.value()                       // read
-delay.value(10f)                    // write
-delay.onChange { chat.print("now $it") }
-```
+| Destination | What lands there |
+|---|---|
+| script console | compile errors, handler throws as `failed - <file>.kts:<line>: <message>`, `log.info/warn/error` |
+| chat | only what the script prints itself through `chat.print` |
+| client log | every console line, mirrored into the Minecraft log file |
 
-More in [Kinds of settings](../settings/types.md).
-
-## Where to look when something breaks
-
-Everything a script prints, and every error it throws, goes to the script console together with the file and line where it happened:
-
-```
-[15:03:31] [ERROR] [auto-jump] failed - auto-jump.kts:12: NullPointerException
-```
-
-Open it from the menu → **Scripts** → the terminal button next to the search field, and pin it if you want it to stay while you tab back into the game. More in [Messages](../ui/messages.md).
-
-Five throws in a row and the script switches itself off so it stops spamming. More in [Sandbox and limits](../extras/limits.md).
+Repeated throws are throttled to one report per 3000 ms per script, and 5 throws in a row switch the script off — [Sandbox and limits](../extras/limits.md). Console and chat output are on [Messages](../ui/messages.md).

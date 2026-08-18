@@ -1,213 +1,196 @@
 # Рендер 2D
 
-Событие `Render2DEvent` вызывается каждый кадр на слое скриптов — поверх игрового HUD и поверх оверлеев клиента (ESP, вейпоинты, стрелы), под элементами HUD клиента. Оно несёт `render()`, размер экрана `width()` × `height()` и `tickDelta()`.
-
-Вся отрисовка идёт через `e.render()`. Координаты — в настоящих пикселях окна, тех же, что `width()` и `height()`, и от «Масштаб интерфейса» в настройках игры они не зависят: при скейле 2 экран 1920×1080 даёт `width()` = 1920, а не 960. В этом же пространстве работает `project`, так что мировую точку можно сразу класть рядом с прямоугольником или текстом. Цвета — обычные `Int` вида `0xAARRGGBB`, собрать их удобно через `Colors`.
-
-Отсюда одно следствие: не зашивай размеры цифрами, если хочешь одинаковый вид на разных мониторах. Ставь всё от `width()` и `height()`, а размер шрифта считай от них же. Чтобы попасть один в один в ванильный интерфейс, домножай на [`gameSettings.scaleFactor()`](../actions/control.md#настройки-игры) — это то число, на которое игра делит эти пиксели.
+`Render2DEvent` даёт тебе поверхность для рисования — `e.render()`. Координаты — пиксели фреймбуфера, а не единицы масштаба интерфейса, и каждый вызов кладёт команду в очередь, которая сбрасывается после всех обработчиков, так что порядок вызовов и есть порядок отрисовки.
 
 ```kotlin
 on<Render2DEvent> { e ->
     val r = e.render()
-    r.roundedRect(8f, 8f, 160f, 40f, 8f, Colors.rgba(0, 0, 0, 160))
-    r.text("Nursultan", 16f, 16f, 14f, Colors.WHITE)
-    r.text("fps " + client.fps(), 16f, 32f, 10f, Colors.CYAN)
+    val label = "fps " + client.fps()
+    val w = r.textWidth(label, 10f) + 12f
+    r.blur(8f, 8f, w, 22f, 12f, Colors.rgba(0, 0, 0, 160), 6f)
+    r.roundedRect(8f, 8f, w, 22f, 6f, Colors.rgba(10, 12, 15, 120))
+    r.text(label, 14f, 14f, 10f, Colors.WHITE)
 }
 ```
 
-## Порядок отрисовки
+## Поверхность
 
-Что нарисовал позже — то и сверху, ровно как написал:
+| Метод | Тип | Описание |
+|---|---|---|
+| `r.width()` | `float` | ширина фреймбуфера в пикселях, обновляется каждый 2D-кадр |
+| `r.height()` | `float` | высота фреймбуфера в пикселях, обновляется каждый 2D-кадр |
 
-```kotlin
-r.text("скрыт", 10f, 10f, 10f, Colors.WHITE)
-r.rect(10f, 8f, 80f, 14f, Colors.BLACK)     // закроет текст
-
-r.rect(10f, 30f, 80f, 14f, Colors.BLACK)
-r.text("виден", 10f, 32f, 10f, Colors.WHITE)   // ляжет на плашку
-```
-
-Отсюда два следствия. `blur(...)` размывает всё, что уже нарисовано под ним, включая твои собственные фигуры, — ставь его перед той панелью, к которой он относится, а не после. И подряд идущие вызовы одного вида склеиваются в одну отрисовку, так что сгруппировать подложки отдельно, а подписи отдельно чуть дешевле, чем чередовать их. Разница маленькая: пиши как читается, и перегруппировывай, только если рисуешь сотни элементов.
+При масштабе интерфейса 2 окно 1920×1080 всё равно даёт `width()` = 1920. Раздели на [`gameSettings.scaleFactor()`](../actions/control.md#настройки-игры), чтобы получить ванильные единицы интерфейса.
 
 ## Фигуры
 
-| Метод | Что рисует |
+| Метод | Тип | Описание |
+|---|---|---|
+| `r.rect(x, y, width, height, argb)` | `void` | залитый прямоугольник |
+| `r.roundedRect(x, y, width, height, radius, argb)` | `void` | радиус зажат в 0..min(width, height)/2 |
+| `r.roundedRect(x, y, width, height, topLeft, topRight, bottomRight, bottomLeft, argb)` | `void` | радиус на каждый угол, по часовой от левого верхнего, каждый зажат так же |
+| `r.outline(x, y, width, height, thickness, argb)` | `void` | прямая рамка внутри прямоугольника, толщина зажата в 0..min(w, h)/2 |
+| `r.roundedOutline(x, y, width, height, radius, thickness, argb)` | `void` | скруглённая рамка, обводка по INSIDE |
+| `r.roundedOutline(x, y, width, height, radius, thickness, align, argb)` | `void` | null в align считается за INSIDE |
+| `r.circle(centerX, centerY, radius, argb)` | `void` | залитый круг, отрицательный радиус считается за 0 |
+| `r.ring(centerX, centerY, radius, thickness, argb)` | `void` | толщина зажата в 0..radius |
+| `r.triangle(x1, y1, x2, y2, x3, y3, argb)` | `void` | залитый треугольник, габаритный квад с запасом в 2 px |
+
+| Константа | Описание |
 |---|---|
-| `rect(x, y, w, h, argb)` | залитый прямоугольник |
-| `roundedRect(x, y, w, h, radius, argb)` | со скруглёнными углами |
-| `roundedRect(x, y, w, h, tl, tr, br, bl, argb)` | свой радиус на каждый угол, по часовой от левого верхнего |
-| `gradient(x, y, w, h, argbFrom, argbTo, horizontal)` | градиент из двух цветов |
-| `gradientAngle(x, y, w, h, argbFrom, argbTo, degrees)` | он же под любым углом — `0` слева направо, `90` сверху вниз |
-| `radialGradient(x, y, w, h, argbCenter, argbEdge)` | градиент из центра |
-| `radialGradient(x, y, w, h, radius, argbCenter, argbEdge)` | он же со скруглёнными углами |
-| `outline(x, y, w, h, thickness, argb)` | только рамка |
-| `roundedOutline(x, y, w, h, radius, thickness, argb)` | скруглённая рамка |
-| `roundedOutline(x, y, w, h, radius, thickness, align, argb)` | и где именно лежит линия |
-| `circle(cx, cy, radius, argb)` | круг |
-| `ring(cx, cy, radius, thickness, argb)` | кольцо |
-| `triangle(x1, y1, x2, y2, x3, y3, argb)` | треугольник |
+| `StrokeAlign.INSIDE` | обводка внутри границы, берётся при null |
+| `StrokeAlign.CENTER` | обводка по центру границы, прямоугольник растёт на половину толщины |
+| `StrokeAlign.OUTSIDE` | обводка снаружи границы, прямоугольник растёт на всю толщину |
 
-Плашка со скруглением только сверху и рамкой снаружи неё:
+Размер ты всегда передаёшь у самой фигуры, обводка растёт наружу от неё.
 
-```kotlin
-r.roundedRect(8f, 8f, 120f, 24f, 7f, 7f, 0f, 0f, Colors.rgba(0, 0, 0, 160))
-r.roundedOutline(8f, 8f, 120f, 24f, 7f, 1f, StrokeAlign.OUTSIDE, Colors.CYAN)
-```
+## Градиенты и размытие
 
-`StrokeAlign` решает, по какую сторону границы ляжет линия: `INSIDE` (по умолчанию, рамка съедает фигуру изнутри), `CENTER` (половина внутрь, половина наружу) или `OUTSIDE` (целиком вокруг). Размер ты всегда передаёшь у самой фигуры — обводка растёт наружу от неё, а не ужимает прямоугольник.
+| Метод | Тип | Описание |
+|---|---|---|
+| `r.gradient(x, y, width, height, argbFrom, argbTo, horizontal)` | `void` | horizontal true — слева направо, false — сверху вниз |
+| `r.gradientAngle(x, y, width, height, argbFrom, argbTo, angleDegrees)` | `void` | линейный градиент вдоль (cos a, sin a) в градусах, экранный Y растёт вниз |
+| `r.radialGradient(x, y, width, height, argbCenter, argbEdge)` | `void` | градиент из центра, радиус углов 0 |
+| `r.radialGradient(x, y, width, height, radius, argbCenter, argbEdge)` | `void` | радиус углов зажат в 0..min(w, h)/2 |
+| `r.blur(x, y, width, height, radius)` | `void` | размывает то, что уже нарисовано под областью, полная непрозрачность, прямые углы |
+| `r.blur(x, y, width, height, radius, argb, cornerRadius)` | `void` | из argb берётся только байт альфы, один радиус на все углы |
+| `r.blur(x, y, width, height, radius, argb, tl, tr, bl, br)` | `void` | радиусы углов в порядке верхний левый, верхний правый, нижний левый, нижний правый (API 2) |
 
-## Размытие
-
-Размывает то, что уже нарисовано под указанной областью — так делают подложки под панели:
-
-```kotlin
-r.blur(8f, 8f, 160f, 40f, 12f)
-r.blur(8f, 8f, 160f, 40f, 12f, Colors.rgba(0, 0, 0, 80), 8f)
-```
-
-Второй вариант скругляет углы и берёт из цвета **только альфу** — насколько сильно проступает размытие. RGB игнорируется. Нужна подложка с оттенком — рисуй `roundedRect` поверх блюра:
-
-```kotlin
-r.blur(8f, 8f, 160f, 40f, 12f, Colors.rgba(0, 0, 0, 255), 8f)
-r.roundedRect(8f, 8f, 160f, 40f, 8f, Colors.rgba(10, 12, 15, 140))
-```
+Размытие читает фреймбуфер на своём месте в очереди, поэтому размывает только команды, поставленные раньше него. Прямоугольник прижимается к целым пикселям, радиус размытия — к `max(1, round(radius))` px; ширина или высота, округлившаяся в 0, пропускается.
 
 ## Текст
 
-```kotlin
-r.text("привет", 10f, 10f, 12f, Colors.WHITE)
-r.textShadow("привет", 10f, 10f, 12f, Colors.WHITE, Colors.rgba(0, 0, 0, 200))
+| Метод | Тип | Описание |
+|---|---|---|
+| `r.text(text, x, y, sizePx, argb)` | `void` | шрифт `inter`, насыщенность REGULAR |
+| `r.text(text, x, y, sizePx, argb, font)` | `void` | названное семейство, насыщенность REGULAR |
+| `r.text(text, x, y, sizePx, argb, weight)` | `void` | шрифт `inter` с этой насыщенностью (API 2) |
+| `r.text(text, x, y, sizePx, argb, font, weight)` | `void` | названное семейство с этой насыщенностью (API 2) |
+| `r.textShadow(text, x, y, sizePx, argb, shadowArgb)` | `void` | копия тени ставится в очередь на +1, +1 px перед текстом |
+| `r.textShadow(text, x, y, sizePx, argb, shadowArgb, font)` | `void` | названное семейство, насыщенность REGULAR |
+| `r.textShadow(text, x, y, sizePx, argb, shadowArgb, weight)` | `void` | шрифт `inter` с этой насыщенностью (API 2) |
+| `r.textShadow(text, x, y, sizePx, argb, shadowArgb, font, weight)` | `void` | названное семейство с этой насыщенностью (API 2) |
 
-r.textWidth("привет", 12f)
-r.textHeight(12f)
-r.textAscent(12f)      // от верха строки вниз до базовой линии
-r.textDescent(12f)     // от базовой линии вниз до низа строки
-```
+`y` — это верх строки, базовая линия лежит на `y + textAscent(...)`. Неизвестное семейство откатывается на `inter`, а null или пустая строка пропускается.
 
-`textHeight` — это вся строка, `ascent + descent`. Разделение нужно, когда что-то надо посадить *на базовую линию*: иконку рядом с подписью, подчёркивание, два шрифта в одной строке.
+## Метрики текста
 
-```kotlin
-val baseline = y + r.textAscent(12f)
-r.text("привет", x, y, 12f, Colors.WHITE)
-r.rect(x, baseline + 1f, r.textWidth("привет", 12f), 1f, Colors.WHITE)
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `r.textWidth(text, sizePx)` | `float` | ширина строки в пикселях, шрифт `inter`, REGULAR |
+| `r.textWidth(text, sizePx, font)` | `float` | ширина в пикселях для названного семейства |
+| `r.textWidth(text, sizePx, weight)` | `float` | ширина в пикселях, шрифт `inter` (API 2) |
+| `r.textWidth(text, sizePx, font, weight)` | `float` | 0 для null или пустой строки и для неизвестного семейства (API 2) |
+| `r.textHeight(sizePx)` | `float` | высота строки в пикселях, шрифт `inter`, REGULAR |
+| `r.textHeight(sizePx, font)` | `float` | высота строки в пикселях для названного семейства |
+| `r.textHeight(sizePx, weight)` | `float` | высота строки в пикселях, шрифт `inter` (API 2) |
+| `r.textHeight(sizePx, font, weight)` | `float` | высота одной строки, от самой строки не зависит (API 2) |
+| `r.textAscent(sizePx)` | `float` | высота над базовой линией в пикселях, шрифт `inter`, REGULAR |
+| `r.textAscent(sizePx, font)` | `float` | ascent в пикселях для названного семейства |
+| `r.textAscent(sizePx, weight)` | `float` | ascent в пикселях, шрифт `inter` (API 2) |
+| `r.textAscent(sizePx, font, weight)` | `float` | 0, если семейство не нашлось (API 2) |
+| `r.textDescent(sizePx)` | `float` | высота строки минус ascent в пикселях, шрифт `inter`, REGULAR |
+| `r.textDescent(sizePx, font)` | `float` | descent в пикселях для названного семейства |
+| `r.textDescent(sizePx, weight)` | `float` | descent в пикселях, шрифт `inter` (API 2) |
+| `r.textDescent(sizePx, font, weight)` | `float` | 0, если семейство не нашлось (API 2) |
 
-Ширину считают, чтобы подогнать подложку под текст:
+`textHeight` равен `textAscent + textDescent` при том же размере, семействе и насыщенности.
 
-```kotlin
-val text = "здоровье " + player.health()
-val width = r.textWidth(text, 10f) + 12f
-r.roundedRect(6f, 6f, width, 18f, 5f, Colors.rgba(0, 0, 0, 140))
-r.text(text, 12f, 11f, 10f, Colors.WHITE)
-```
+## Шрифты и насыщенность
 
-## Шрифты
+| Метод | Тип | Описание |
+|---|---|---|
+| `font(name, ttfFileInAssetsFolder)` | `void` | регистрирует TTF из `scripts/assets` под именем семейства |
+| `font(name, ttf)` | `void` | регистрирует семейство из байтов TTF, свыше 8 МиБ отклоняется (API 2) |
+| `client.fonts().register(name, ttfFileInAssetsFolder)` | `void` | то, что зовёт `font(name, file)`, применяется на следующем кадре |
+| `client.fonts().register(name, ttf)` | `void` | то, что зовёт `font(name, bytes)`, массив копируется (API 2) |
+| `client.fonts().registered(name)` | `boolean` | true, если живое семейство с таким именем есть, шрифт в очереди ещё не виден |
 
-Без указания шрифта используется шрифт клиента. Можно попросить ванильный или зарегистрировать свой:
+Уже занятое имя — включая клиентские `inter`, `jetbrains-mono` и `minecraft` — игнорируется, а семейства скрипта снимаются при его выгрузке. Байтовая форма идёт в паре с `base64(...)`: смотри [ассеты внутри скрипта](../extras/assets.md#ассеты-внутри-скрипта).
 
-```kotlin
-r.text("привет", 10f, 10f, 12f, Colors.WHITE, "minecraft")
+| Константа | Описание |
+|---|---|
+| `Weight.THIN` | `wght` 100 (API 2) |
+| `Weight.EXTRA_LIGHT` | `wght` 200 (API 2) |
+| `Weight.LIGHT` | `wght` 300 (API 2) |
+| `Weight.REGULAR` | `wght` 400, берётся без аргумента и при null (API 2) |
+| `Weight.MEDIUM` | `wght` 500 (API 2) |
+| `Weight.SEMI_BOLD` | `wght` 600 (API 2) |
+| `Weight.BOLD` | `wght` 700 (API 2) |
+| `Weight.EXTRA_BOLD` | `wght` 800 (API 2) |
+| `Weight.BLACK` | `wght` 900 (API 2) |
 
-// один раз на верхнем уровне скрипта
-font("myfont", "my-font.ttf")
+## Предметы, головы, иконки
 
-// дальше по имени
-r.text("привет", 10f, 30f, 12f, Colors.WHITE, "myfont")
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `r.item(item, x, y, sizePx)` | `void` | иконка стака, чужие реализации `Item` игнорируются |
+| `r.item(itemId, x, y, sizePx)` | `void` | идентификатор с неймспейсом, кривой игнорируется, неизвестный даёт воздух |
+| `r.head(player, x, y, sizePx)` | `void` | голова со скина, ничего не делает при sizePx ≤ 0, StreamerMode или отсутствии скина |
+| `r.effectIcon(effectId, x, y, sizePx)` | `void` | спрайт эффекта `mob_effect/<path>`, x/y/size округляются вниз до целых |
 
-TTF-файл кладётся в [папку assets](../extras/assets.md) — `%APPDATA%\Nursultan\scripts\assets`, подпапки тоже можно: `font("myfont", "fonts/my-font.ttf")`. А ещё шрифт может ехать внутри самого скрипта: `font("myfont", base64(PART1, PART2))`, смотри [ассеты внутри скрипта](../extras/assets.md#ассеты-внутри-скрипта).
+## Текстуры
 
-## Картинки и иконки
+| Метод | Тип | Описание |
+|---|---|---|
+| `r.texture(identifier, x, y, width, height)` | `void` | идентификатор ресурса Minecraft, UV целиком 0..1, кривой игнорируется |
+| `r.texture(texture, x, y, width, height)` | `void` | UV целиком 0..1, пропускается, пока GL-идентификатор равен 0 |
+| `r.texture(texture, x, y, width, height, u0, v0, u1, v1)` | `void` | явный прямоугольник UV 0..1, u0/v0 — левый верхний угол, v растёт вниз |
+| `r.image(fileInAssetsFolder, x, y, width, height)` | `void` | PNG из `scripts/assets`, декодируется и заливается один раз |
+| `texture(identifier)` | `Texture?` | ссылка на игровую текстуру, null при кривом или пустом идентификаторе |
+| `image(fileInAssetsFolder)` | `Texture?` | ссылка на PNG из `scripts/assets`, null при отказе, отсутствии или пустом файле |
+| `image(name, png)` | `Texture?` | ссылка на PNG из байтов, null при пустом имени, пустых байтах или свыше 8 МиБ (API 2) |
+| `client.textures().resource(identifier)` | `Texture?` | то, что зовёт `texture(identifier)` |
+| `client.textures().image(fileInAssetsFolder)` | `Texture?` | то, что зовёт `image(file)`, заливается при первой отрисовке |
+| `client.textures().image(name, png)` | `Texture?` | то, что зовёт `image(name, bytes)`, освобождается при выгрузке скрипта (API 2) |
+| `handle.name()` | `String` | строка идентификатора ресурса или имя картинки |
+| `handle.glId()` | `int` | идентификатор текстуры OpenGL, 0 вне главного потока клиента и до заливки |
+| `handle.ready()` | `boolean` | true, когда `glId()` не равен 0 |
+| `handle.width()` | `int` | ширина мип-уровня 0 в пикселях, 0 вне главного потока или если недоступна |
+| `handle.height()` | `int` | высота мип-уровня 0 в пикселях, 0 вне главного потока или если недоступна |
 
-```kotlin
-r.item(inventory.held(), 10f, 10f, 16f)          // предмет
-r.item("minecraft:diamond", 30f, 10f, 16f)       // по идентификатору
-r.head(playerEntity, 50f, 10f, 16f)              // голова игрока
-r.effectIcon("speed", 70f, 10f, 16f)             // иконка эффекта
-r.texture("minecraft:textures/item/apple.png", 90f, 10f, 16f, 16f)
-r.image("logo.png", 110f, 10f, 32f, 32f)         // файл из папки assets
-```
+Путь к файлу разрешается относительно `scripts/assets`, с откатом на корень папки скриптов и разовым предупреждением — смотри [ассеты](../extras/assets.md). `skinTexture()` у игрока или строки таба возвращает такую же ссылку.
 
-Ничего биндить и ничего грузить не надо: ты называешь текстуру, а при сбросе кадра её ищут в игровом менеджере текстур. На имя, которому никто не отвечает, получишь ванильную «пропавшую текстуру» в клетку — опечатка видна сразу, а не молчит.
+## Цвета
 
-## Ссылка на текстуру
+Любой цвет — это `int` вида `0xAARRGGBB`.
 
-Иногда имени мало: нужен размер или нужно отдать саму текстуру своему шейдеру. Тогда попроси её целиком:
-
-```kotlin
-val apple = texture("minecraft:textures/item/apple.png")   // любая игровая текстура
-val logo = image("logo.png")                               // файл из папки assets
-val badge = image("badge", base64(BADGE_PNG))              // байты, встроенные в сам скрипт
-val skin = target.skinTexture()                            // скин игрока
-```
-
-Все три дают один и тот же объект, и все три могут вернуть `null` — кривой идентификатор, файла нет, скин не приехал. У объекта пять вопросов:
-
-```kotlin
-skin.name()      // "minecraft:skins/…" — как называется
-skin.width()     // 64
-skin.height()    // 64
-skin.glId()      // сырой OpenGL-идентификатор
-skin.ready()     // залита ли уже на видеокарту
-```
-
-Всё, кроме `name()`, честно только внутри обработчика отрисовки — только там текстура гарантированно залита, — а в остальных местах вернёт `0` / `false`. `ready()` стоит проверять до того, как делить на `width()`.
-
-Ссылку принимают там же, где и имя:
-
-```kotlin
-r.texture(skin, x, y, 32f, 32f)
-```
-
-## Кусок текстуры
-
-Передай в `texture` ссылку и ещё четыре числа — угол нужного куска, `0..1` по всей текстуре, сначала левый верхний:
-
-```kotlin
-r.texture(handle, x, y, width, height, u0, v0, u1, v1)
-```
-
-Кусок вырезается только по ссылке, не по имени. Так и задумано: имя — это «нарисовать текстуру целиком и забыть», а как только пошли области, нужен и размер.
-
-`u0, v0` — левый верхний угол, `u1, v1` — правый нижний, а `v` растёт вниз, как ряды пикселей. Поменяешь пару местами — кусок отзеркалится.
-
-Голова игрока — ровно этот случай. Лицо лежит на пикселе `8,8` и занимает 8×8, а слой шапки поверх него — на `40,8`:
-
-```kotlin
-val skin = target.skinTexture() ?: return@on
-val w = skin.width().toFloat()
-val h = skin.height().toFloat()
-if (w <= 0f) return@on
-
-r.texture(skin, x, y, 32f, 32f, 8f / w, 8f / h, 16f / w, 16f / h)
-r.texture(skin, x, y, 32f, 32f, 40f / w, 8f / h, 48f / w, 16f / h)
-```
-
-Две отрисовки, шапка поверх лица — это всё, что делает за тебя `r.head(...)`. Руками имеет смысл, когда нужен другой кусок скина, другой размер или голова того, кто в мире не прогружен: у [строк таба](../game/server.md) тоже есть `skinTexture()`, а они есть на всех, кто на сервере. А если хочется круглую, светящуюся или обесцвеченную — это уже [шейдер](shaders.md), и текстуру ты в него передаёшь тем же объектом.
+| Метод | Тип | Описание |
+|---|---|---|
+| `Colors.TRANSPARENT` | `int` | `0x00000000` |
+| `Colors.WHITE` | `int` | `0xFFFFFFFF` |
+| `Colors.BLACK` | `int` | `0xFF000000` |
+| `Colors.GRAY` | `int` | `0xFF808080` |
+| `Colors.RED` | `int` | `0xFFFF5555` |
+| `Colors.GREEN` | `int` | `0xFF55FF55` |
+| `Colors.BLUE` | `int` | `0xFF5555FF` |
+| `Colors.YELLOW` | `int` | `0xFFFFFF55` |
+| `Colors.ORANGE` | `int` | `0xFFFFA500` |
+| `Colors.CYAN` | `int` | `0xFF55FFFF` |
+| `Colors.MAGENTA` | `int` | `0xFFFF55FF` |
+| `Colors.rgb(red, green, blue)` | `int` | пакует непрозрачный ARGB, каналы зажаты в 0..255 |
+| `Colors.rgba(red, green, blue, alpha)` | `int` | пакует ARGB, все каналы зажаты в 0..255 |
+| `Colors.red(argb)` | `int` | канал красного 0..255 |
+| `Colors.green(argb)` | `int` | канал зелёного 0..255 |
+| `Colors.blue(argb)` | `int` | канал синего 0..255 |
+| `Colors.alpha(argb)` | `int` | канал альфы 0..255 |
+| `Colors.withAlpha(argb, alpha)` | `int` | меняет альфу с зажимом в 0..255, RGB сохраняет |
+| `Colors.fade(argb, factor)` | `int` | умножает альфу на factor, зажатый в 0..1 |
+| `Colors.mix(first, second, amount)` | `int` | поканальная интерполяция вместе с альфой, amount зажат в 0..1 |
 
 ## Точка мира на экране
 
-`project` переводит координаты мира в координаты экрана — так делают подписи над игроками:
+| Метод | Тип | Описание |
+|---|---|---|
+| `r.project(worldPosition)` | `Projection` | мировая позиция в пиксели экрана, с округлением |
+| `p.visible()` | `boolean` | false, если точка проецируется за камерой |
+| `p.x()` | `float` | экранный X в пикселях фреймбуфера, 0 при невидимой точке |
+| `p.y()` | `float` | экранный Y в пикселях фреймбуфера, 0 при невидимой точке |
 
-```kotlin
-on<Render2DEvent> { e ->
-    val r = e.render()
-    for (target in world.players()) {
-        if (target.isSelf()) continue
-        val point = r.project(target.position().add(0.0, target.height() + 0.4, 0.0))
-        if (!point.visible()) continue
-        val name = target.name()
-        r.text(name, point.x() - r.textWidth(name, 8f) / 2f, point.y(), 8f, Colors.WHITE)
-    }
-}
-```
+## Шейдеры
 
-`visible()` — `false`, если точка за спиной или за краем экрана.
+| Метод | Тип | Описание |
+|---|---|---|
+| `r.shader(shader, x, y, width, height)` | `void` | рисует квад скриптовым шейдером, униформы снимаются в момент вызова |
 
-## Плавность
-
-Кадров больше, чем тиков, поэтому позиции, взятые из `position()`, будут дёргаться. Для рисования бери `renderPosition()` — она уже сглажена. Если считаешь что-то своё, используй `tickDelta()` из события.
-
-## Не делай тяжёлое в кадре
-
-Обработчик вызывается 60+ раз в секунду. Перебирать все сущности мира, считать лучи и запрашивать предсказание внутри него не надо — посчитай в `ClientTickEvent`, положи в переменную, а в кадре только рисуй.
+Чужие реализации `Shader` игнорируются, а квад пропускается, пока компиляция падает. Компиляция и униформы: [шейдеры](shaders.md).

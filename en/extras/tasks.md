@@ -1,93 +1,71 @@
 # Timers and tasks
 
-## Timers
-
-Counting ticks by hand is the thing scripts get wrong most often. That is what a timer is for:
+`timer()` returns a fresh independent stopwatch on every call. Scheduled actions run on the client thread and only while the script is switched on.
 
 ```kotlin
 val sinceAttack = timer()
 
 on<ClientTickEvent> {
-    if (!sinceAttack.passed(10)) return@on
-    // ten ticks since the last reset
-    sinceAttack.reset()
+    if (sinceAttack.passedAndReset(10)) interaction.attackCrosshair()
 }
+
+everyTicks(100) { chat.print("still here") }
 ```
 
-| Method | What it does |
-|---|---|
-| `passed(ticks)` | have that many ticks passed |
-| `passedMillis(ms)` | the same in milliseconds |
-| `passedAndReset(ticks)` | check and reset in one go |
-| `passedMillisAndReset(ms)` | the same in milliseconds |
-| `elapsedTicks()` | how many ticks passed |
-| `elapsedMillis()` | how many milliseconds passed |
-| `reset()` | start counting again |
+## Timers
 
-`passedAndReset` saves a line when you were going to reset anyway:
+| Method | Type | Description |
+|---|---|---|
+| `timer()` | `Timer` | a new independent stopwatch, already started |
+| `elapsedTicks()` | `int` | client ticks since the last reset, clamped to 0..2147483647 |
+| `elapsedMillis()` | `long` | wall-clock milliseconds since the last reset, never negative |
+| `passed(ticks)` | `boolean` | true when `elapsedTicks() >= ticks` |
+| `passedMillis(ms)` | `boolean` | true when `elapsedMillis() >= ms` |
+| `passedAndReset(ticks)` | `boolean` | `passed(ticks)`, and resets when it returns true |
+| `passedMillisAndReset(ms)` | `boolean` | `passedMillis(ms)`, and resets when it returns true |
+| `reset()` | `void` | restarts both the tick and millisecond baselines |
 
-```kotlin
-if (sinceAttack.passedAndReset(10)) {
-    interaction.attackCrosshair()
-}
-```
+Timer fields are volatile, so a timer can be read and reset off the client thread.
 
-You can have as many timers as you like — one per action with its own delay.
+## Scheduling
 
-## Delaying and repeating
+| Method | Type | Description |
+|---|---|---|
+| `nextTick(action)` | `Task` | runs once after 1 client tick |
+| `afterTicks(ticks, action)` | `Task` | runs once after that many client ticks (throws `ScriptException` when ticks < 0) |
+| `everyTicks(ticks, action)` | `Task` | repeats every `ticks` client ticks, first run after 2×`ticks` (throws `ScriptException` when ticks < 1) |
+| `client.tasks().nextTick(action)` | `Task` | `Tasks` form of `nextTick` |
+| `client.tasks().afterTicks(ticks, action)` | `Task` | `Tasks` form of `afterTicks` |
+| `client.tasks().everyTicks(ticks, action)` | `Task` | `Tasks` form of `everyTicks` |
 
-```kotlin
-nextTick { ... }                  // next tick
-afterTicks(20) { ... }            // a second from now
-val task = everyTicks(100) { ... } // every five seconds
-```
+`afterTicks(0, ...)` is accepted and the task is dropped before it ever runs; a null action throws `NullPointerException`.
+A scheduled action is skipped while the script is off or unloaded, a throw is reported to the script console instead of propagating, and every outstanding task is cancelled on unload.
 
-All of these run on the client thread.
+## The handle
 
-`everyTicks` returns a task you can stop:
-
-```kotlin
-task.cancel()
-task.cancelled()
-```
-
-You do not clean tasks up yourself — they go away when the script unloads.
-
-A task only fires while the script is switched on, the same as handlers and commands: a loaded but disabled script does nothing at all. The schedule itself keeps running, so after you switch the script back on the task carries on without being re-created.
-
-That also means you cannot defer cleanup out of `onDisable` — by the time it runs the script counts as off, and an `afterTicks` block scheduled there would never fire. Clean up right there in `onDisable`.
-
-## Timer or task
-
-| You want | Use |
-|---|---|
-| "no more than once every N ticks" inside a handler | a timer |
-| "do this once, N ticks from now" | `afterTicks` |
-| "do this regularly, independent of other handlers" | `everyTicks` |
-| "finish this next tick" | `nextTick` |
+| Method | Type | Description |
+|---|---|---|
+| `cancel()` | `void` | stops further runs and drops the handle from the script |
+| `cancelled()` | `boolean` | true once cancelled |
+| `close()` | `void` | calls `cancel()`, `Task` is `AutoCloseable` |
 
 ## Getting onto the client thread
 
-You cannot touch the world from a packet handler — that is another thread. Hop over like this:
+| Method | Type | Description |
+|---|---|---|
+| `onClientThread(action)` | `Unit` | hands the action to the client thread, inline when already on it |
+| `client.tasks().onClientThread(action)` | `void` | `Tasks` form of `onClientThread` |
 
-```kotlin
-on<PacketReceiveEvent> { e ->
-    onClientThread {
-        control.jump()
-    }
-}
-```
-
-If you are already on the client thread the block runs straight away. `client.onClientThread()` tells you where you are.
+`PacketReceiveEvent` (netty IO thread) and `PacketSendEvent` (the sending thread) are the only events that do not fire on the client thread — see [Packets](../actions/packets.md).
+World, player, inventory, container, interaction and rotation calls throw `ScriptThreadException` off the client thread.
 
 ## Time
 
-```kotlin
-client.tick()             // ticks the client has lived
-client.millis()           // system time
-client.nanos()
-client.fps()
-client.tickDelta()        // the fraction of a frame between ticks
-```
-
-For delays prefer `client.tick()` and timers over `millis()`: the game runs on ticks.
+| Method | Type | Description |
+|---|---|---|
+| `client.tick()` | `long` | client ticks since launch, never resets in a session |
+| `client.millis()` | `long` | wall-clock milliseconds, loses precision once stored in a `float` |
+| `client.nanos()` | `long` | monotonic nanoseconds, `System.nanoTime()` |
+| `client.fps()` | `int` | frames per second reported by the client |
+| `client.tickDelta()` | `float` | render progress between the last two ticks, 0..1 |
+| `client.onClientThread()` | `boolean` | true when the caller runs on the client thread |

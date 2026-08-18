@@ -1,128 +1,66 @@
 # Interaction
 
-`interaction` is everything the player does with their hands: hit, use, place, break.
-
-## Hitting
-
-```kotlin
-interaction.attack(target)        // hit a specific entity
-interaction.attackCrosshair()     // hit whatever is under the crosshair
-interaction.swing(Hand.MAIN_HAND) // just swing
-```
-
-Before hitting you normally check the cooldown, or the damage is pitiful:
+`interaction` is `game.interaction()` — attacking, using, swinging and breaking; every call except `breakingBlock()` runs on the client thread only. `combat` is `client.combat()` and supplies the aim point on a target's hitbox.
 
 ```kotlin
 on<ClientTickEvent> {
-    if (!inGame) return@on
-    val target = raycast.entityAtCrosshair(player.entityReachBlocks()) { !it.isAlly() } ?: return@on
-    if (player.attackCooldown() < 0.9f) return@on
+    val target = raycast.entityAtCrosshair(player.entityReachBlocks()) ?: return@on
+    if (player.attackCooldown() < 1f) return@on
+    val point = combat.attackPoint(target, AttackPoint.MULTI_POINT, 3.0, false)
+    rotations.apply(rotations.lookAt(point))
     interaction.attack(target)
 }
 ```
 
+## Attacking
+
+| Method | Type | Description |
+|---|---|---|
+| `interaction.attack(target)` | `void` | attacks the entity and swings the main hand (main thread only) (throws `ScriptStateException` when the target is not alive) |
+| `interaction.attackCrosshair()` | `void` | vanilla attack on whatever the crosshair hits (main thread only) |
+| `interaction.swing(hand)` | `void` | plays the swing animation and sends the swing packet (main thread only) |
+
+`Hand` constants are on [Inventory and items](../game/inventory.md#hands).
+
 ## Where to hit
 
-`combat.attackPoint(...)` picks a point on the target worth aiming at:
+| Method | Type | Description |
+|---|---|---|
+| `combat.attackPoint(target)` | [`Vec`](../game/math.md#vec) | `NEAREST` point, max distance = entity reach, through walls |
+| `combat.attackPoint(target, mode, maxDistanceBlocks, throughWalls)` | [`Vec`](../game/math.md#vec) | aim point on the hitbox; distance and walls read only by `MULTI_POINT` and `TRIANGLE` (throws `ScriptException` when `maxDistanceBlocks` is 0 or less) |
+| `combat.markTarget(target, timeoutTicks)` | `void` | marks the client's TargetESP target for that many ticks (main thread only) (throws `ScriptException` when `timeoutTicks` is 0 or less) |
+| `combat.target()` | [`Entity`](../game/entities.md)`?` | current TargetESP target, null when there is none |
 
-```kotlin
-val point = combat.attackPoint(target)
-val point = combat.attackPoint(target, AttackPoint.MULTI_POINT, 3.0, false)
-```
+A null `mode` is treated as `NEAREST`; both `attackPoint` overloads throw `ScriptStateException` when the entity has left the world.
+`markTarget` throws `ScriptStateException` when the target is not a living entity.
 
-| Mode | What it does |
+| Constant | Description |
 |---|---|
-| `CENTER` | the centre of the box |
-| `NEAREST` | the closest point to you |
-| `MULTI_POINT` | tries several points and takes a reachable one |
-| `TRIANGLE` | like MULTI_POINT, with the points spread differently |
-
-The last two arguments are the maximum distance and whether hitting through walls is allowed.
-
-`combat` can also mark a target so the client highlights it:
-
-```kotlin
-combat.markTarget(living, 15)    // for 15 ticks
-combat.target()                  // who the client currently considers the target
-```
+| `CENTER` | geometric centre of the bounding box |
+| `NEAREST` | closest surface point to the eyes, hitbox shrunk by 0.01 blocks |
+| `MULTI_POINT` | best of an 11×11 grid over the visible faces, each candidate ray-checked |
+| `TRIANGLE` | one point per visible face, ranked by reach then mouse delta |
 
 ## Using an item
 
-```kotlin
-interaction.useItem(Hand.MAIN_HAND)
-interaction.useItem(Hand.OFF_HAND)
-interaction.stopUsingItem()      // release right click: fire, throw the trident
-interaction.useCrosshair()       // right click on whatever is under the crosshair
-interaction.swapHands()          // swap hands
-```
+| Method | Type | Description |
+|---|---|---|
+| `interaction.useItem(hand)` | `void` | starts using the item in that hand (main thread only) |
+| `interaction.useCrosshair()` | `void` | vanilla use on whatever the crosshair hits (main thread only) |
+| `interaction.stopUsingItem()` | `void` | releases the use: fires the bow, throws the trident (main thread only) |
+| `interaction.swapHands()` | `void` | sends the offhand swap packet (main thread only) (throws `ScriptStateException` when not connected) |
 
-For example, releasing a trident by itself once it is fully charged:
-
-```kotlin
-on<ClientTickEvent> {
-    if (!player.usingItem()) return@on
-    if (!inventory.held().isA("trident")) return@on
-    if (player.itemUseTicks() < 10) return@on
-    interaction.stopUsingItem()
-}
-```
-
-## Eating, drinking, charging
-
-`useItem` only *starts* the use. The game releases right click for you on the very next tick unless the key is physically held, so a potion started from a script is aborted before it is drunk. Hold it yourself by cancelling the release while you want the use to continue:
-
-```kotlin
-var busy = false
-
-on<StopUsingItemEvent> { e -> if (busy) e.cancel() }
-
-fun drink() {
-    interaction.useItem(Hand.MAIN_HAND)
-    busy = true
-}
-
-on<ClientTickEvent> {
-    if (busy && !player.usingItem()) {
-        busy = false   // the item finished on its own and was consumed
-    }
-}
-```
-
-The use ends by itself when the item is consumed — `player.usingItem()` goes back to `false`, and that path does not go through the event. Always clear the flag: a stuck `busy` means right click can never be released again.
+The game calls `stopUsingItem` itself on the next tick while the use key is not physically held, so a use started from a script ends immediately unless `StopUsingItemEvent` is cancelled.
 
 ## Blocks
 
-```kotlin
-interaction.useBlock(x, y, z, Side.UP, Hand.MAIN_HAND)     // press a block
-interaction.placeBlock(x, y, z, Side.UP, Hand.MAIN_HAND)   // place a block
-```
+| Method | Type | Description |
+|---|---|---|
+| `interaction.useBlock(x, y, z, side, hand)` | `void` | interacts with the centre of that block face (main thread only) |
+| `interaction.placeBlock(x, y, z, side, hand)` | `void` | identical to `useBlock`, delegates to it (main thread only) |
+| `interaction.startBreaking(x, y, z, side)` | `void` | begins breaking that block (main thread only) |
+| `interaction.continueBreaking(x, y, z, side)` | `boolean` | advances breaking, true when the block broke (main thread only) |
+| `interaction.stopBreaking()` | `void` | cancels the current breaking progress (main thread only) |
+| `interaction.breakingBlock()` | `boolean` | true while a block is being broken, false when out of world |
 
-Breaking takes three steps because it is a process, not one action:
-
-```kotlin
-interaction.startBreaking(x, y, z, Side.UP)
-
-on<ClientTickEvent> {
-    if (interaction.breakingBlock()) {
-        val done = interaction.continueBreaking(x, y, z, Side.UP)
-        if (done) {
-            interaction.stopBreaking()
-        }
-    }
-}
-```
-
-`continueBreaking` returns `true` when the block is gone. `breakingBlock()` tells you whether anything is being broken right now — including by the player themselves.
-
-## Which side
-
-`Side` is a face of a block: `UP`, `DOWN`, `NORTH`, `SOUTH`, `WEST`, `EAST`. When you shoot a [ray](../game/raycast.md), the side comes with the hit:
-
-```kotlin
-val hit = raycast.crosshair(player.blockReachBlocks())
-if (hit is Hit.OnBlock) {
-    interaction.placeBlock(hit.blockX(), hit.blockY(), hit.blockZ(), hit.side(), Hand.MAIN_HAND)
-}
-```
-
-`side.opposite()` gives you the opposite face.
+`Side` constants and `opposite()` are on [Rays and the crosshair](../game/raycast.md#sides).

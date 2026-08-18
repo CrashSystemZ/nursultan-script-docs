@@ -27,7 +27,7 @@ fun offset(side: Side): Triple<Int, Int, Int> = when (side) {
 
 fun blockSlot(): Slot? = (0 until Slot.HOTBAR_SIZE)
     .map { Slot.hotbar(it) }
-    .firstOrNull { inventory.item(it).placeable() }
+    .firstOrNull { inventory.item(it).buildable() }
 
 fun underFeet(box: Box, x: Int, y: Int, z: Int): Boolean {
     if (box.maxX() <= x || box.minX() >= x + 1.0) return false
@@ -105,6 +105,6 @@ on<PrePlayerTickEvent> {
 
 **`underFeet` is why it builds a bridge and not a wall.** A cell only counts if your hitbox overhangs it in x and z and its top sits at or just below your feet, no further down than `maxDrop`. `predictTicks` runs the same test against the box you will occupy in a couple of ticks, so the block is already there when you step off.
 
-**`slots.using(slot) { }` borrows the hotbar and gives it back.** The blocks are found by asking each hotbar item whether it is `placeable()`, and the swap lasts exactly as long as the place and the swing — you never end a tick holding something you did not choose.
+**`slots.using(slot) { }` borrows the hotbar and gives it back.** The blocks are found by asking each hotbar item whether it is `buildable()` — not `placeable()`, which would happily hand you sand, ice or a cobweb — and the swap lasts exactly as long as the place and the swing, so you never end a tick holding something you did not choose.
 
 **Nothing runs while the client is busy with items.** `inventory.busy()` and `game.screenOpen()` keep the script out of the way while you or another module is moving things around.

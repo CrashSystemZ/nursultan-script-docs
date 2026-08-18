@@ -1,105 +1,68 @@
 # Styled text
 
-A `Text` is a chat message with colour, clicks and hovers on it. You build one with `text`, and hand it wherever a message goes.
-
-```kotlin
-chat.print(text.literal("ready").color(Colors.GREEN))
-```
-
-The same type comes back out of the game: screen titles, item lore, scoreboard lines and tab rows are all `Text`, not plain strings.
-
-## Building one
-
-| Builder | What it makes |
-|---|---|
-| `text.literal("hi")` | fixed text |
-| `text.empty()` | an unstyled root to hang children on |
-| `text.translatable("block.minecraft.stone")` | text the client translates |
-| `text.keybind("key.jump")` | the key the player has bound |
-| `text.legacy("§aok")` | parses `§` colour codes into real style |
-| `text.fromJson(json)` | parses the wire format |
-
-`translatable` fills `%s` slots from the arguments you pass, and an argument can itself be a `Text`:
-
-```kotlin
-text.translatable("chat.type.text", text.literal("Notch").color(Colors.CYAN), "hello")
-```
-
-## Styling
-
-Every styling call returns the same object, so they chain:
-
-```kotlin
-val label = text.literal("LOW HEALTH")
-    .color(Colors.RED)
-    .bold(true)
-    .italic(false)
-```
-
-| Method | |
-|---|---|
-| `color(argb)` | colour; only the RGB part is used, chat has no alpha |
-| `bold(v)`, `italic(v)`, `underlined(v)`, `strikethrough(v)`, `obfuscated(v)` | the vanilla toggles |
-| `font(id)` | a font provider, `"minecraft:default"` and friends |
-| `append(other)`, `append("text")` | add a child |
-| `insertion(v)` | what shift-click inserts into the chat box |
-
-Style set on a parent is inherited by children appended after it, exactly like vanilla:
-
-```kotlin
-val line = text.empty()
-    .append(text.literal("[").color(Colors.GRAY))
-    .append(text.literal("kill").color(Colors.RED).bold(true))
-    .append(text.literal("] ").color(Colors.GRAY))
-    .append(text.literal(target.name()))
-
-chat.print(line)
-```
-
-## Clicks and hovers
+`text` is `client.text()`. Every styling call mutates the receiver and returns it, so a `Text` is a builder and a value at the same time — `copy()` is the only way to branch.
 
 ```kotlin
 chat.print(
     text.literal("[teleport]")
         .color(Colors.CYAN)
+        .bold(true)
         .runCommand("/spawn")
         .hoverText("go to spawn")
 )
 ```
 
-| Method | What clicking does |
-|---|---|
-| `runCommand(cmd)` | runs it as if the player typed it |
-| `suggestCommand(cmd)` | puts it in the chat box, unsent |
-| `openUrl(url)` | opens a link — `http` and `https` only |
-| `copyToClipboard(v)` | copies to the clipboard |
+## Building one
 
-| Method | What hovering shows |
-|---|---|
-| `hoverText(text)` / `hoverText("...")` | a tooltip |
-| `hoverItem(item)` | the item card, same as hovering an item in chat |
-| `hoverEntity(entity)` | name, type and uuid |
+| Method | Type | Description |
+|---|---|---|
+| `text.literal(value)` | `Text` | literal component; null becomes `""` |
+| `text.empty()` | `Text` | empty component, usable as an append root |
+| `text.translatable(key, args...)` | `Text` | translation component; `Text` arguments are unwrapped (throws `ScriptException` when the key is blank) |
+| `text.keybind(key)` | `Text` | renders the key bound to a vanilla keybind id (throws `ScriptException` when the key is blank) |
+| `text.legacy(value)` | `Text` | parses `§` codes into styled children; null gives an empty component |
+| `text.fromJson(json)` | `Text` | parses a text-component json string (throws `ScriptException` when blank or invalid) |
 
-A click event only fires from a message that is actually in chat — `chat.print` and friends. Text drawn on the HUD is a picture, nothing there is clickable.
+In `legacy`, a colour code resets the style to that colour alone, `§r` resets to no style, and every other code accumulates onto the current style. A `§` with no valid code after it stays a literal character.
 
-## Reading
+## Styling
 
-```kotlin
-val title = game.screen()?.title ?: return
-title.string()      // "Chest", styling thrown away
-title.toJson()      // the wire format
-title.copy()        // an independent copy you can restyle
-```
+| Method | Type | Description |
+|---|---|---|
+| `color(argb)` | `Text` | colour; the alpha byte is masked off, RGB only |
+| `bold(value)` | `Text` | bold flag |
+| `italic(value)` | `Text` | italic flag |
+| `underlined(value)` | `Text` | underline flag |
+| `strikethrough(value)` | `Text` | strikethrough flag |
+| `obfuscated(value)` | `Text` | scrambled-glyph flag |
+| `font(fontId)` | `Text` | font id; a bare id gets the `minecraft:` namespace (throws `ScriptException` when blank or unparsable) |
+| `append(Text)` | `Text` | appends another component; null ignored (throws `ScriptException` when it was not built by `text.*`) |
+| `append(String)` | `Text` | appends a literal string; null ignored |
 
-`string()` is what you want for comparisons — it is the plain text a player sees:
+A child appended after a style call inherits that style, as in vanilla.
 
-```kotlin
-if (game.screen()?.title()?.string() == "Sell") { ... }
-```
+## Clicks and hovers
 
-## Things to keep in mind
+| Method | Type | Description |
+|---|---|---|
+| `insertion(value)` | `Text` | what shift-click inserts into the chat box |
+| `runCommand(command)` | `Text` | click runs the command (throws `ScriptException` when blank) |
+| `suggestCommand(command)` | `Text` | click fills the chat box, unsent (throws `ScriptException` when blank) |
+| `openUrl(url)` | `Text` | click opens a link; http and https only (throws `ScriptException` on any other scheme) |
+| `copyToClipboard(value)` | `Text` | click copies the string (throws `ScriptException` when blank) |
+| `hoverText(Text)` | `Text` | show-text hover; null ignored (throws `ScriptException` when it was not built by `text.*`) |
+| `hoverText(String)` | `Text` | show-text hover from a literal string; null ignored |
+| `hoverItem(item)` | `Text` | show-item hover; null, empty and foreign stacks are ignored |
+| `hoverEntity(entity)` | `Text` | show-entity hover with type, uuid and name (throws `ScriptStateException` when the entity left the world) |
 
-* **A `Text` is mutable.** `color(...)` changes the object and returns it; it does not make a new one. If you keep a `Text` around and restyle it, everything holding that reference sees the change. `copy()` when that matters.
-* `chat.print` takes anything — a `String`, a number, a `Text`. Only a `Text` keeps its styling.
-* Colour is `0xAARRGGBB` like everywhere else in the API, but chat ignores the alpha byte.
-* `text.legacy(...)` only understands `§`, not `&`. Server strings arrive with `§`; when you write the colours yourself, use the builder.
+Clicks and hovers only fire from a message that is in the chat log; text drawn through `render` is not interactive.
+
+## Reading it back
+
+| Method | Type | Description |
+|---|---|---|
+| `copy()` | `Text` | deep copy of the component and its children, safe to mutate |
+| `string()` | `String` | flattened plain text, no formatting codes |
+| `toJson()` | `String` | text-component json (throws `ScriptException` when encoding fails) |
+
+`toString()` returns the same value as `string()`.

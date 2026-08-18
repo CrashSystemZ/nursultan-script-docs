@@ -1,277 +1,253 @@
 # Сущности и фильтры
 
-Сущность — это всё, что живёт в мире: игроки, мобы, лодки, выпавшие предметы, стрелы. Берутся они из [мира](world.md), из [луча](raycast.md) или из события.
-
-## Что можно спросить у любой сущности
+Любая сущность, которую ты берёшь из [мира](world.md), из [луча](raycast.md) или из события, — живая обёртка: каждый геттер читает завёрнутую сущность Minecraft в момент вызова и продолжает читать её после того, как та ушла из мира, так что о пропаже говорит `alive()`. `LivingEntity`, `PlayerEntity` и `TextDisplay` добавляют методы поверх `Entity`; локальный игрок — это [`SelfPlayer`](player.md).
 
 ```kotlin
-entity.id()              // числовой id в этом мире
-entity.uuid()
-entity.name()
-entity.typeId()          // "minecraft:zombie"
+on<ClientTickEvent> {
+    val nearby = filters.player().and(filters.attackable())
+    val target = world.nearestEntity(player.position(), 6.0, nearby)?.asLiving() ?: return@on
 
-entity.position()
-entity.renderPosition()  // сглаженная, для рисования
-entity.previousPosition()
-entity.box()
-entity.width()  entity.height()
-
-entity.rotation()
-entity.yaw()  entity.pitch()
-entity.velocity()
-
-entity.alive()
-entity.onGround()
-entity.sneaking()
-entity.sprinting()
-entity.invisible()
-entity.glowing()
-entity.onFire()
-entity.inWater()
-entity.pose()
-entity.fallDistanceBlocks()
-
-entity.swimming()
-entity.crawling()
-entity.wet()             // в воде или стоит под дождём
-entity.submerged()       // голова под водой
-entity.inLava()
-entity.frozen()  entity.frozenTicks()
-entity.fireImmune()
-entity.silent()
-entity.noGravity()
-entity.age()             // тиков с момента появления
-
-entity.distanceTo(other)
-entity.distanceTo(point)
+    chat.print("${target.name()} ${target.health()} / ${target.maxHealth()}")
+    chat.print("box height ${target.box().sizeY()}")
+}
 ```
-
-## Имена и команды
-
-```kotlin
-entity.name()            // обычный текст, всегда что-то есть
-entity.displayName()     // Text: то, что реально рисует нейметег
-entity.hasCustomName()
-entity.customName()      // имя, которое кто-то повесил, или null
-
-entity.team()            // имя команды на табло, или null
-entity.teamColor()       // её цвет как 0xAARRGGBB, или -1
-```
-
-На сервере, который раскидывает игроков по цветным командам, `teamColor()` — это способ отличить своего от чужого без списка друзей:
-
-```kotlin
-val mine = player.teamColor()
-
-val enemies = world.players().filter { it.teamColor() != mine }
-```
-
-`displayName()` — это [оформленный текст](../ui/text.md): он несёт префикс и цвет команды, которые прислал сервер.
-
-## Поездки
-
-```kotlin
-entity.vehicle()         // на чём едет, или null
-entity.passengers()      // кто едет на нём
-```
-
-У игрока на лошади `vehicle()` — это лошадь, и бить игрока значит целиться в игрока, а не в лошадь.
 
 ## Кто это
 
-```kotlin
-entity.isSelf()          // это я
-entity.isPlayer()
-entity.isLiving()
-entity.isBot()           // похоже на бота
-entity.isFriend()        // в списке друзей
-entity.isParty()         // в моей пати
-entity.isAlly()          // друг или пати
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `entity.id()` | `int` | сетевой id сущности на клиенте |
+| `entity.uuid()` | `String` | uuid сущности строкой |
+| `entity.name()` | `String` | имя сущности обычным текстом |
+| `entity.typeId()` | `String` | id типа с пространством имён, напр. `minecraft:zombie` |
+| `entity.displayName()` | [`Text`](../ui/text.md) | оформленное имя, несёт цвет команды и кастомное имя |
+| `entity.hasCustomName()` | `boolean` | на сущности висит кастомное имя |
+| `entity.customName()` | `String?` | кастомное имя текстом, null если его нет |
+| `entity.isLiving()` | `boolean` | завёрнутая сущность живая |
+| `entity.isPlayer()` | `boolean` | завёрнутая сущность — игрок |
+| `entity.isSelf()` | `boolean` | завёрнутая сущность — локальный игрок |
+| `entity.asLiving()` | `LivingEntity?` | та же сущность как `LivingEntity`, иначе null |
+| `entity.asPlayer()` | `PlayerEntity?` | та же сущность как `PlayerEntity`, иначе null |
+| `entity.asTextDisplay()` | `TextDisplay?` | та же сущность как `TextDisplay`, иначе null |
 
-`isAlly()` — то, что обычно и нужно, чтобы не бить своих.
+## Позиция и размер
 
-## Живые сущности
+| Метод | Тип | Описание |
+|---|---|---|
+| `entity.position()` | [`Vec`](math.md#vec) | текущая позиция ног в блоках мира |
+| `entity.x()` | `double` | текущий X в блоках |
+| `entity.y()` | `double` | текущий Y в блоках |
+| `entity.z()` | `double` | текущий Z в блоках |
+| `entity.previousPosition()` | `Vec` | позиция на прошлом тике |
+| `entity.renderPosition()` | `Vec` | позиция с интерполяцией тика, для отрисовки |
+| `entity.box()` | [`Box`](math.md#box) | хитбокс в координатах мира |
+| `entity.width()` | `float` | ширина хитбокса в блоках |
+| `entity.height()` | `float` | высота хитбокса в блоках |
+| `entity.rotation()` | [`Rotation`](math.md#rotation) | yaw и pitch в градусах |
+| `entity.yaw()` | `float` | yaw в градусах |
+| `entity.pitch()` | `float` | pitch в градусах, -90..90 |
+| `entity.velocity()` | `Vec` | скорость в блоках за тик |
+| `entity.distanceTo(other)` | `double` | расстояние между позициями в блоках (бросает `ScriptStateException`, если `other` не сущность мира) |
+| `entity.distanceTo(point)` | `double` | расстояние от позиции до точки в блоках |
 
-Если сущность живая, у неё есть здоровье, эффекты и предметы. Приведение возвращает `null`, если это, например, лодка:
+## Состояние
 
-```kotlin
-val living = entity.asLiving() ?: return
+| Метод | Тип | Описание |
+|---|---|---|
+| `entity.onGround()` | `boolean` | стоит на земле |
+| `entity.sneaking()` | `boolean` | флаг приседания |
+| `entity.sprinting()` | `boolean` | флаг спринта |
+| `entity.swimming()` | `boolean` | флаг плавания |
+| `entity.crawling()` | `boolean` | ползёт в щели высотой в один блок |
+| `entity.wet()` | `boolean` | в воде или стоит под дождём |
+| `entity.submerged()` | `boolean` | глаза под водой |
+| `entity.inWater()` | `boolean` | касается воды |
+| `entity.inLava()` | `boolean` | стоит в лаве |
+| `entity.onFire()` | `boolean` | горит |
+| `entity.fireImmune()` | `boolean` | тип сущности не боится огня |
+| `entity.frozen()` | `boolean` | заморозка снегом применена полностью |
+| `entity.frozenTicks()` | `int` | прогресс заморозки снегом в тиках |
+| `entity.glowing()` | `boolean` | флаг свечения |
+| `entity.invisible()` | `boolean` | ванильный флаг невидимости |
+| `entity.invisible(value)` | `void` | ставит его только на клиенте; метаданные сервера перезапишут |
+| `entity.alive()` | `boolean` | жива и не удалена из мира |
+| `entity.pose()` | `Pose` | текущая поза |
+| `entity.airTicks()` | `int` | остаток воздуха в тиках |
+| `entity.maxAirTicks()` | `int` | максимум воздуха в тиках |
+| `entity.fallDistanceBlocks()` | `double` | накопленная высота падения в блоках |
+| `entity.silent()` | `boolean` | флаг беззвучности |
+| `entity.noGravity()` | `boolean` | флаг отсутствия гравитации |
+| `entity.age()` | `int` | сколько тиков сущность существует на клиенте |
 
-living.health()
-living.maxHealth()
-living.absorption()
-living.armorPoints()
-living.bypassedHealth()   // здоровье с учётом брони и резистов
-living.dead()
-living.hurtTicks()
+`invisible(true)` прячет модель, но не неймтег, а дисплеи флаг игнорируют вовсе.
 
-living.blocking()         // держит щит
-living.usingItem()
-living.isNaked()          // без брони
+## Команды и отношения
 
-living.headYaw()
-living.bodyYaw()
+| Метод | Тип | Описание |
+|---|---|---|
+| `entity.team()` | `String?` | имя команды на табло, null если команды нет |
+| `entity.teamColor()` | `int` | непрозрачный ARGB цвет команды, -1 без команды или цвета |
+| `entity.isFriend()` | `boolean` | имя есть в списке друзей клиента |
+| `entity.isParty()` | `boolean` | имя есть в пати |
+| `entity.isAlly()` | `boolean` | друг, пати или тиммейт NoFriendDamage; всегда false, пока NoFriendDamage выключен |
+| `entity.isBot()` | `boolean` | эвристики клиента на бота; false для себя и на FT-серверах |
 
-living.hasEffect("speed")
-living.effect("speed")?.amplifier()
-living.effects()
+## Поездки
 
-living.mainHandItem()
-living.offHandItem()
-living.activeItem()       // что использует прямо сейчас, или null
-living.armorItem(ArmorSlot.HELMET)
-living.armorItems()
-
-living.baby()
-living.scale()
-living.climbing()
-living.gliding()
-living.sleeping()
-living.usingRiptide()
-living.itemUseTicks()     // сколько уже использует
-living.itemUseTicksLeft()
-living.movementSpeed()
-living.deathTicks()       // анимация смерти, 0 пока жив
-```
-
-Атрибуты — это числа за всем этим: скорость, дальность, сопротивление отбросу, что там сервер накрутил.
-
-```kotlin
-living.attribute("movement_speed")?.value()
-living.attribute("minecraft:movement_speed")?.base()   // пространство имён необязательно
-
-for ((id, attribute) in living.attributes()) {
-    chat.print(id + " = " + attribute.value())
-}
-```
-
-Идентификаторы: `movement_speed`, `attack_damage`, `max_health`, `block_interaction_range` и т.д.
-
-`base()` — число до модификаторов, `value()` — после них, то есть то, которое реально действует. `attributes()` обходит все известные игре атрибуты, так что вызывай один раз и держи результат, а не спрашивай внутри цикла.
-
-Для игроков есть отдельное приведение — оно даёт пинг, режим игры и скин:
-
-```kotlin
-val target = entity.asPlayer() ?: return
-target.pingMs()
-target.gameMode()
-target.skinTexture()         // скин или null
-```
-
-`skinTexture()` отдаёт [текстуру](../ui/render-2d.md): из неё можно рисовать куски или скормить её своему шейдеру — голова, слой шапки, вообще что угодно, вырезанное из скина. Там `null`, пока скин не приехал, и всегда, когда режим стримера прячет скины: в этом случае лучше не рисовать ничего, чем подставлять заглушку.
-
-## Текстовые дисплеи
-
-Второе, что серверы вешают в воздух, — текстовый дисплей. Это не армор-стенд с именем: сама надпись и есть сущность, поэтому `hasCustomName()` у неё `false`, а `customName()` — `null`. Текст лежит за отдельным приведением:
-
-```kotlin
-val display = entity.asTextDisplay() ?: return
-
-display.text()         // просто текст
-display.styledText()   // то же самое как стилизованный текст
-```
-
-`asTextDisplay()` даёт `null` на всём, что дисплеем не является, — ровно как `asLiving()`. Под одну и ту же задачу сервер может взять любой из двух видов, так что читай то, что у сущности реально есть:
-
-```kotlin
-val label = when (entity.typeId()) {
-    "minecraft:armor_stand" -> entity.customName()
-    "minecraft:text_display" -> entity.asTextDisplay()?.text()
-    else -> null
-} ?: return@on
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `entity.vehicle()` | `Entity?` | на чём едет, null если едет сама |
+| `entity.passengers()` | `List<Entity>` | кто едет на ней, пустой список если никто |
 
 ## Как спрятать
 
-Запретить серверу присылать сущность нельзя, а вот запретить своему клиенту её рисовать — можно:
+| Метод | Тип | Описание |
+|---|---|---|
+| `entity.hidden()` | `boolean` | клиентский флаг подавления отрисовки; false у неотслеживаемых сущностей |
+| `entity.hidden(value)` | `void` | ставит флаг; ничего не делает у неотслеживаемых сущностей |
 
-```kotlin
-entity.hidden(true)
-entity.hidden()          // спрятана ли она сейчас
-```
+Скрытие убирает неймтег любой сущности, а текстовый дисплей — целиком; сама сущность тикает и остаётся читаемой.
+Флаг переживает выключение скрипта — [`world.unhideEntities()`](world.md) снимает их все разом.
 
-Так пропадает неймтег любой сущности, а дисплей — целиком: текстовый дисплей и есть своя надпись, от него не остаётся ничего. Всё остальное продолжается: сущность тикает, её текст обновляется, и ты по-прежнему можешь его читать. Этим оно и отличается от `world.removeEntity(...)`, который выбрасывает твою копию, а вместе с ней и обновления.
+## Живые сущности
 
-Скрытие держится, пока ты его не снимешь или пока не выгрузится чанк, и оно не привязано к твоему скрипту — выключишь скрипт, а сущность останется спрятанной. Снять всё разом:
+| Метод | Тип | Описание |
+|---|---|---|
+| `living.health()` | `float` | текущее здоровье в половинках сердец |
+| `living.maxHealth()` | `float` | максимум здоровья в половинках сердец |
+| `living.absorption()` | `float` | жёлтые сердца поглощения |
+| `living.armorPoints()` | `int` | очки брони, 0..20 |
+| `living.bypassedHealth()` | `float` | здоровье с табло, пока включён BypassHealth, иначе `health()` |
+| `living.dead()` | `boolean` | здоровье не выше нуля |
+| `living.deathTicks()` | `int` | тиков с момента смерти, 0 пока жива |
+| `living.hurtTicks()` | `int` | остаток тиков анимации урона |
+| `living.bodyYaw()` | `float` | yaw тела в градусах |
+| `living.headYaw()` | `float` | yaw головы в градусах |
+| `living.blocking()` | `boolean` | блокирует щитом |
+| `living.usingItem()` | `boolean` | сейчас использует предмет |
+| `living.activeItem()` | `Item?` | используемый стак, null если ничего |
+| `living.itemUseTicks()` | `int` | сколько тиков использует предмет |
+| `living.itemUseTicksLeft()` | `int` | сколько тиков осталось до конца использования |
+| `living.swinging()` | `boolean` | идёт анимация замаха (API 2) |
+| `living.swingTicks()` | `int` | текущий тик анимации замаха (API 2) |
+| `living.baby()` | `boolean` | детёныш |
+| `living.scale()` | `float` | множитель размера, по умолчанию 1.0 |
+| `living.climbing()` | `boolean` | на блоке, по которому лезут |
+| `living.gliding()` | `boolean` | летит на элитрах |
+| `living.sleeping()` | `boolean` | спит |
+| `living.usingRiptide()` | `boolean` | в риптайд-вращении трезубца |
+| `living.movementSpeed()` | `float` | атрибут скорости в блоках за тик |
+| `living.isNaked()` | `boolean` | ни в одном из четырёх слотов брони ничего нет |
 
-```kotlin
-onDisable { world.unhideEntities() }
-```
+`bypassedHealth()` равен `health()` в одиночной игре и всегда, когда BypassHealth выключен.
 
-Ванильный флаг невидимости — отдельная вещь, и именно его читает `invisible()`:
+## Экипировка
 
-```kotlin
-entity.invisible(true)
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `living.mainHandItem()` | [`Item`](inventory.md) | стак в основной руке, пустой предмет если рука пуста |
+| `living.offHandItem()` | `Item` | стак во второй руке, пустой предмет если она пуста |
+| `living.armorItem(slot)` | `Item` | стак в этом [`ArmorSlot`](inventory.md), пустой предмет если слот пуст |
+| `living.armorItems()` | `List<Item>` | только непустые стаки гуманоидной брони |
 
-Он прячет *модель* — армор-стенд, моба — но не неймтег над ней. Как и всё здесь, он твой личный, поэтому сервер перезапишет его при следующей отправке метаданных этой сущности: если нужно, чтобы держался, ставь заново. Дисплеи флаг игнорируют вовсе — потому на голограммах работает именно `hidden(...)`.
+## Эффекты
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `living.hasEffect(effectId)` | `boolean` | активен эффект ровно с этим полным id |
+| `living.effects()` | `List<Effect>` | снимки всех активных эффектов |
+| `living.effect(effectId)` | `Effect?` | активный эффект по точному полному id, null если его нет |
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `effect.id()` | `String` | id эффекта с пространством имён, напр. `minecraft:speed` |
+| `effect.name()` | `String` | локализованное клиентом название эффекта |
+| `effect.amplifier()` | `int` | уровень, 0 = I |
+| `effect.durationTicks()` | `int` | остаток длительности в тиках |
+| `effect.ambient()` | `boolean` | эффект от маяка или кондуита |
+| `effect.infinite()` | `boolean` | длительность бесконечная |
+| `effect.beneficial()` | `boolean` | тип эффекта считается полезным |
+
+Id эффектов сравниваются точно: `hasEffect("minecraft:speed")` попадает, `hasEffect("speed")` — нет.
+
+## Атрибуты
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `living.attributes()` | `Map<String, Attribute>` | неизменяемая карта всех имеющихся атрибутов по полному id |
+| `living.attribute(attributeId)` | `Attribute?` | один атрибут, `minecraft:` добавится сам; null если атрибута нет |
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `attribute.id()` | `String` | id атрибута с пространством имён, напр. `minecraft:movement_speed` |
+| `attribute.base()` | `double` | значение до модификаторов |
+| `attribute.value()` | `double` | значение после всех модификаторов |
+
+`attributes()` на каждый вызов обходит весь реестр атрибутов.
+
+## Игроки
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `player.pingMs()` | `int` | пинг из списка игроков в миллисекундах, 0 без записи |
+| `player.gameMode()` | `GameMode` | режим игры из списка игроков, `SURVIVAL` без записи |
+| `player.skinTexture()` | [`Texture?`](../ui/render-2d.md) | текстура скина; null у неклиентских игроков и пока StreamerMode прячет скины |
+
+| Константа | Описание |
+|---|---|
+| `SURVIVAL` | выживание; и запасной вариант, когда режим неизвестен |
+| `CREATIVE` | творческий |
+| `ADVENTURE` | приключение |
+| `SPECTATOR` | наблюдатель |
+
+## Текстовые дисплеи
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `display.text()` | `String` | текст дисплея без оформления |
+| `display.styledText()` | `Text` | оформленный текст дисплея |
+
+У текстового дисплея нет кастомного имени: `hasCustomName()` на нём false, а `customName()` — null.
+
+## Позы
+
+| Константа | Описание |
+|---|---|
+| `STANDING` | обычная поза стоя |
+| `GLIDING` | полёт на элитрах |
+| `SLEEPING` | лежит в кровати |
+| `SWIMMING` | плавание или ползание |
+| `SPIN_ATTACK` | вращение с трезубцем |
+| `CROUCHING` | приседание |
+| `LONG_JUMPING` | длинный прыжок козы |
+| `DYING` | анимация смерти |
+| `CROAKING` | кваканье лягушки |
+| `USING_TONGUE` | язык лягушки |
+| `SITTING` | сидит, напр. верблюд |
+| `ROARING` | рёв вардена |
+| `SNIFFING` | принюхивание вардена или снифера |
+| `EMERGING` | варден вылезает |
+| `DIGGING` | варден закапывается |
+| `SLIDING` | бриз скользит |
+| `SHOOTING` | бриз стреляет |
+| `INHALING` | бриз набирает воздух |
 
 ## Фильтры
 
-`filters` даёт возможность удобно отбирать сущности по нужным признакам, не расписывая условия руками:
+| Метод | Тип | Описание |
+|---|---|---|
+| `filters.alive()` | `Predicate<Entity>` | сущность жива |
+| `filters.self()` | `Predicate<Entity>` | сущность — локальный игрок |
+| `filters.player()` | `Predicate<Entity>` | тип сущности `minecraft:player` |
+| `filters.mob()` | `Predicate<Entity>` | сущность — моб |
+| `filters.monster()` | `Predicate<Entity>` | сущность враждебная |
+| `filters.animal()` | `Predicate<Entity>` | моб, который не враждебный |
+| `filters.villager()` | `Predicate<Entity>` | тип сущности `minecraft:villager` |
+| `filters.item()` | `Predicate<Entity>` | тип сущности `minecraft:item` |
+| `filters.friend()` | `Predicate<Entity>` | сущность помечена как друг |
+| `filters.party()` | `Predicate<Entity>` | сущность помечена как участник пати |
+| `filters.ally()` | `Predicate<Entity>` | друг, пати или тиммейт NoFriendDamage; всегда false, пока NoFriendDamage выключен |
+| `filters.bot()` | `Predicate<Entity>` | сущность помечена как бот |
+| `filters.attackable()` | `Predicate<Entity>` | жива, не локальный игрок и не союзник |
 
-| Фильтр | Что отбирает |
-|---|---|
-| `alive()` | живые |
-| `self()` | тебя |
-| `player()` | игроков |
-| `mob()` | мобов |
-| `monster()` | враждебных |
-| `animal()` | животных |
-| `villager()` | жителей |
-| `item()` | выпавшие предметы |
-| `friend()` | друзей |
-| `party()` | пати |
-| `ally()` | друзей и пати |
-| `bot()` | ботов |
-| `attackable()` | всё, что имеет смысл бить |
-
-Каждый фильтр — обычный `Predicate<Entity>`, так что их можно складывать:
-
-```kotlin
-val targets = world.entitiesNear(
-    player.position(), 6.0,
-    filters.player().and(filters.ally().negate())
-)
-```
-
-И смешивать со своими условиями:
-
-```kotlin
-val weak = filters.attackable().and { it.asLiving()?.health() ?: 0f < 8f }
-
-val victim = world.nearestEntity(player.position(), 5.0, weak)
-```
-
-## Появление и исчезновение
-
-```kotlin
-on<EntitySpawnEvent> { e ->
-    if (filters.monster().test(e.entity())) {
-        notify("рядом моб", NotifyKind.WARN)
-    }
-}
-
-on<EntityRemoveEvent> { e ->
-    chat.print(e.entity().name() + " пропал")
-}
-```
-
-## Осторожно с хранением
-
-Сущности приходят и уходят. Если держишь ссылку между тиками, проверяй, что она ещё жива:
-
-```kotlin
-var target: Entity? = null
-
-on<ClientTickEvent> {
-    val current = target
-    if (current == null || !current.alive()) {
-        target = world.nearestEntity(player.position(), 6.0, filters.attackable())
-        return@on
-    }
-}
-```
-
-Надёжнее хранить `id()` и брать сущность заново через `world.entityById(...)`.
+Любой фильтр даёт false для объекта сущности, который скрипт получил не из мира.

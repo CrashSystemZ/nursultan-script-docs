@@ -1,102 +1,47 @@
 # Слоты и броня
 
-## Сменить предмет в руке
-
-Прямая смена слота видна и тебе, и серверу:
+`slots` — это `client.slots()`, `armor` — `client.armor()`. `select` возвращает ручку, которая помнит слот, выбранный до неё; `armor` сравнивает предмет-кандидат с тем, что надето. Сами `Slot` и `ArmorSlot` описаны в [Инвентаре и предметах](../game/inventory.md).
 
 ```kotlin
-slots.selectSilently(Slot.hotbar(3))
-slots.sync()                        // сообщить серверу текущий слот
-```
-
-Но чаще нужно другое: взять предмет на один удар и сразу вернуть всё как было. Для этого есть `using`:
-
-```kotlin
-val mace = inventory.findInHotbar("mace")
-if (mace.found()) {
-    slots.using(mace) {
-        interaction.attack(target)
+on<ClientTickEvent> {
+    slots.using(Slot.hotbar(2)) {
+        interaction.useItem(Hand.MAIN_HAND)
     }
+
+    val best = armor.bestSlotFor(ArmorSlot.HELMET)
+    if (best.found()) inventory.shiftClick(best)
 }
 ```
 
-Внутри блока предмет уже в руке, после блока слот вернётся сам — даже если внутри что-то упало с ошибкой.
+## Выбрать слот
 
-## Когда нужен контроль вручную
+| Метод | Тип | Описание |
+|---|---|---|
+| `slots.select(hotbarSlot)` | `HeldSlot` | выбирает слот хотбара, синхронизирует его, возвращает ручку возврата (только главный поток) (бросает `ScriptException`, если слот не из хотбара) |
+| `slots.selectSilently(hotbarSlot)` | `void` | выбирает и синхронизирует слот, ничего не запоминает для возврата (только главный поток) (бросает `ScriptException`, если слот не из хотбара) |
+| `slots.sync()` | `void` | заново отправляет серверу текущий слот хотбара (только главный поток) |
+| `slots.using(slot) { }` | `T` | выбирает слот, выполняет блок, вызывает `restoreWhenSafe()` в `finally` (только главный поток) |
 
-`slots.select(...)` возвращает объект, которым можно управлять возвратом:
+Все четыре бросают `ScriptStateException`, если мира нет и после выгрузки скрипта. Все живые ручки скрипта возвращаются молча, когда скрипт выгружается.
 
-```kotlin
-val held = slots.select(Slot.hotbar(5))
+## Ручка возврата
 
-held.originalSlot()      // где были
-held.slot()              // где сейчас
+| Метод | Тип | Описание |
+|---|---|---|
+| `originalSlot()` | `int` | индекс хотбара 0..8, выбранный на момент `select` |
+| `slot()` | `int` | индекс хотбара 0..8, который выбрала эта ручка |
+| `restore()` | `void` | возвращает слот сейчас же и синхронизирует его |
+| `restoreWhenSafe()` | `void` | возвращает слот на следующем тике без атаки |
+| `keep()` | `void` | отменяет возврат, слот остаётся выбранным |
+| `close()` | `void` | то же, что `restoreWhenSafe()` |
 
-held.restore()           // вернуть немедленно
-held.restoreWhenSafe()   // вернуть, когда это не помешает (например, после замаха)
-held.keep()              // не возвращать, остаться на новом слоте
-```
-
-`restoreWhenSafe()` — то, что нужно в бою: мгновенный возврат может съесть удар.
+`restore`, `restoreWhenSafe`, `keep` и `close` взаимоисключающие: срабатывает первый вызов, остальные ничего не делают. Возврат идёт на глобальный последний выбранный слот клиента, который перезаписывается ручной сменой слота, так что он не обязан совпадать с `originalSlot()`.
 
 ## Броня
 
-```kotlin
-val best = armor.bestSlotFor(ArmorSlot.CHESTPLATE)
-if (best.found()) {
-    // в этом слоте лежит нагрудник лучше надетого
-}
+| Метод | Тип | Описание |
+|---|---|---|
+| `armor.bestSlotFor(slot)` | `Slot` | лучший слот основного инвентаря 0..35 для этого слота брони, `Slot.NONE`, если надетое не хуже |
+| `armor.isBetterThanEquipped(slot, candidate)` | `boolean` | true, когда **надетый** предмет выигрывает или равен (`>=`) — обратно названию (бросает `ScriptException`, если предмет не из инвентаря) |
 
-armor.isBetterThanEquipped(ArmorSlot.HELMET, someItem)
-```
-
-`bestSlotFor` учитывает защиту, чары и прочность и возвращает `Slot.NONE`, если ничего лучше надетого нет.
-
-## Надеть найденное
-
-Как именно надевать — зависит от того, где лежит предмет:
-
-```kotlin
-fun equip(slot: Slot, armorSlot: ArmorSlot) {
-    // в хотбаре — просто использовать
-    if (slot.inHotbar()) {
-        slots.using(slot) { interaction.useItem(Hand.MAIN_HAND) }
-        return
-    }
-    // слот брони пуст — хватит шифт-клика
-    if (inventory.armor(armorSlot).empty()) {
-        inventory.shiftClick(slot)
-        return
-    }
-    // иначе меняем через свободную ячейку хотбара
-    val hotbar = Slot.hotbar(inventory.selected().index() % 8 + 1)
-    inventory.batch {
-        it.swap(slot, hotbar)
-        it.delay(1)
-        it.swap(Slot.armor(armorSlot), hotbar)
-        it.delay(1)
-        it.swap(slot, hotbar)
-    }
-}
-```
-
-## Не спеши
-
-Перекладывать инвентарь каждый тик — верный способ поругаться с сервером. Ставь между действиями задержку и не лезь, пока клиент занят:
-
-```kotlin
-val sinceSwap = timer()
-
-on<PrePlayerTickEvent> {
-    if (inventory.busy()) return@on
-    if (!sinceSwap.passed(3)) return@on
-
-    val best = armor.bestSlotFor(ArmorSlot.HELMET)
-    if (!best.found()) return@on
-
-    equip(best, ArmorSlot.HELMET)
-    sinceSwap.reset()
-}
-```
-
-Про `timer()` — в [Таймерах и задачах](../extras/tasks.md).
+`bestSlotFor` сортирует по защите (броня + прочность брони + чары защиты), затем по остатку прочности, затем по модификатору атрибута, затем по уровню Unbreaking. Оба метода бросают `NullPointerException` вне мира и не проверяют поток.

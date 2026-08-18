@@ -1,102 +1,47 @@
 # Slots and armor
 
-## Changing the item in hand
-
-Switching the slot directly is visible to you and to the server:
+`slots` is `client.slots()` and `armor` is `client.armor()`. `select` returns a handle that remembers the slot selected before it; `armor` compares a candidate piece against what is worn. `Slot` and `ArmorSlot` themselves are documented on [Inventory and items](../game/inventory.md).
 
 ```kotlin
-slots.selectSilently(Slot.hotbar(3))
-slots.sync()                        // tell the server the current slot
-```
-
-More often you want something else: grab an item for one hit and put everything back. That is what `using` is for:
-
-```kotlin
-val mace = inventory.findInHotbar("mace")
-if (mace.found()) {
-    slots.using(mace) {
-        interaction.attack(target)
+on<ClientTickEvent> {
+    slots.using(Slot.hotbar(2)) {
+        interaction.useItem(Hand.MAIN_HAND)
     }
+
+    val best = armor.bestSlotFor(ArmorSlot.HELMET)
+    if (best.found()) inventory.shiftClick(best)
 }
 ```
 
-Inside the block the item is already in hand; after the block the slot restores itself — even if something inside threw.
+## Selecting a slot
 
-## When you want manual control
+| Method | Type | Description |
+|---|---|---|
+| `slots.select(hotbarSlot)` | `HeldSlot` | selects the hotbar slot, syncs it, returns a restore handle (main thread only) (throws `ScriptException` when the slot is not a hotbar slot) |
+| `slots.selectSilently(hotbarSlot)` | `void` | selects and syncs the slot, records nothing to restore (main thread only) (throws `ScriptException` when the slot is not a hotbar slot) |
+| `slots.sync()` | `void` | resends the currently selected hotbar slot to the server (main thread only) |
+| `slots.using(slot) { }` | `T` | selects, runs the block, calls `restoreWhenSafe()` in a `finally` (main thread only) |
 
-`slots.select(...)` returns an object that lets you decide when to go back:
+All four throw `ScriptStateException` when there is no world and after the script is unloaded. Every live handle of a script is restored silently when the script unloads.
 
-```kotlin
-val held = slots.select(Slot.hotbar(5))
+## The handle
 
-held.originalSlot()      // where we were
-held.slot()              // where we are
+| Method | Type | Description |
+|---|---|---|
+| `originalSlot()` | `int` | hotbar index 0..8 selected when `select` ran |
+| `slot()` | `int` | hotbar index 0..8 this handle selected |
+| `restore()` | `void` | switches back now and syncs it |
+| `restoreWhenSafe()` | `void` | switches back on a later tick with no attack |
+| `keep()` | `void` | drops the pending restore, the slot stays selected |
+| `close()` | `void` | same as `restoreWhenSafe()` |
 
-held.restore()           // go back right now
-held.restoreWhenSafe()   // go back when it will not hurt (after the swing, say)
-held.keep()              // do not go back, stay on the new slot
-```
-
-`restoreWhenSafe()` is the one you want in combat: an instant restore can eat the hit.
+`restore`, `restoreWhenSafe`, `keep` and `close` are mutually exclusive: the first call takes effect and the rest are no-ops. They switch to the client's global last-selected slot, which a manual hotbar change overwrites, so it is not guaranteed to equal `originalSlot()`.
 
 ## Armor
 
-```kotlin
-val best = armor.bestSlotFor(ArmorSlot.CHESTPLATE)
-if (best.found()) {
-    // that slot holds a better chestplate than the one you wear
-}
+| Method | Type | Description |
+|---|---|---|
+| `armor.bestSlotFor(slot)` | `Slot` | best main-inventory slot 0..35 for that armor slot, `Slot.NONE` when nothing beats the worn piece |
+| `armor.isBetterThanEquipped(slot, candidate)` | `boolean` | true when the **equipped** piece wins or ties (`>=`) — inverted relative to the name (throws `ScriptException` when the item is not from the inventory) |
 
-armor.isBetterThanEquipped(ArmorSlot.HELMET, someItem)
-```
-
-`bestSlotFor` weighs protection, enchantments and durability, and returns `Slot.NONE` when nothing beats what you wear.
-
-## Putting it on
-
-How you equip depends on where the item is:
-
-```kotlin
-fun equip(slot: Slot, armorSlot: ArmorSlot) {
-    // in the hotbar — just use it
-    if (slot.inHotbar()) {
-        slots.using(slot) { interaction.useItem(Hand.MAIN_HAND) }
-        return
-    }
-    // the armor slot is empty — a shift click is enough
-    if (inventory.armor(armorSlot).empty()) {
-        inventory.shiftClick(slot)
-        return
-    }
-    // otherwise swap through a spare hotbar cell
-    val hotbar = Slot.hotbar(inventory.selected().index() % 8 + 1)
-    inventory.batch {
-        it.swap(slot, hotbar)
-        it.delay(1)
-        it.swap(Slot.armor(armorSlot), hotbar)
-        it.delay(1)
-        it.swap(slot, hotbar)
-    }
-}
-```
-
-## Do not rush
-
-Shuffling the inventory every tick is a reliable way to fall out with the server. Put a delay between actions and stay out while the client is busy:
-
-```kotlin
-val sinceSwap = timer()
-
-on<PrePlayerTickEvent> {
-    if (inventory.busy()) return@on
-    if (!sinceSwap.passed(3)) return@on
-
-    val best = armor.bestSlotFor(ArmorSlot.HELMET)
-    if (!best.found()) return@on
-
-    equip(best, ArmorSlot.HELMET)
-    sinceSwap.reset()
-}
-```
-
-`timer()` is covered in [Timers and tasks](../extras/tasks.md).
+`bestSlotFor` ranks by protection (armor + toughness + protection enchants), then remaining durability, then attribute modifier, then Unbreaking level. Both methods throw `NullPointerException` outside a world and have no thread guard.

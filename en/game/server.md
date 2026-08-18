@@ -1,253 +1,163 @@
 # Server, scoreboard, tab list
 
-## Where am I connected
+`game.server()` describes the connection you are on and exposes the scoreboard, the tab list and the boss bars. It throws `ScriptStateException` when the client is not connected.
 
 ```kotlin
-game.connected()             // there is a connection
-game.inGame()                // the world is loaded and the player exists
+on<ClientTickEvent> {
+    val board = game.server().scoreboard()
+    if (!board.visible()) return@on
+    log.info(board.title())
+    board.lines().forEach { log.info(it) }
 
-val server = game.server()
-
-server.name()
-server.address()             // "mc.example.com:25565"
-server.type()                // SINGLEPLAYER, LAN, REALM, MULTIPLAYER
-server.protocolVersion()
-server.pingMs()
-server.tps()                 // how many ticks per second the server manages
-```
-
-`tps()` is measured from how often ticks arrive — useful for not hammering the server with actions while it lags.
-
-You can disconnect from code:
-
-```kotlin
-if (player.health() < 4f) {
-    game.disconnect()
+    val me = game.server().tabList().players().firstOrNull { it.uuid() == player.uuid() }
+    log.info("ping ${me?.pingMs() ?: -1} ms")
 }
 ```
 
-## The side scoreboard
+## The connection
 
-```kotlin
-val board = game.server().scoreboard()
+| Method | Type | Description |
+|---|---|---|
+| `server.name()` | `String` | server-list entry name, `"singleplayer"` without an entry |
+| `server.address()` | `String` | server-list address `host:port`, `"singleplayer"` without an entry |
+| `server.type()` | `ServerType` | kind of connection, MULTIPLAYER when unknown |
+| `server.protocolVersion()` | `int` | protocol version from the server-list entry, 0 without one |
+| `server.pingMs()` | `int` | your own tab-list latency in ms, 0 when unavailable |
+| `server.tps()` | `float` | measured server tick rate, rounded to 0.1, 20.0 out of world |
+| `server.scoreboard()` | `Scoreboard` | the client scoreboard view |
+| `server.tabList()` | `TabList` | the player list view |
+| `server.bossBars()` | `List<BossBar>` | boss bars on the HUD, empty without an in-game HUD |
 
-board.visible()
-board.title()                // the header
-board.lines()                // lines top to bottom
-```
+| Constant | Description |
+|---|---|
+| `SINGLEPLAYER` | integrated server, no server-list entry |
+| `LAN` | LAN-discovered server |
+| `REALM` | Minecraft Realm |
+| `MULTIPLAYER` | any other remote server, also the unknown fallback |
 
-Often you only want to know which mode you are in:
+## The sidebar
 
-```kotlin
-if (board.contains("BedWars", "Bed Wars")) {
-    // we are on bedwars
-}
-```
+| Method | Type | Description |
+|---|---|---|
+| `scoreboard.visible()` | `boolean` | true when a sidebar objective is resolved |
+| `scoreboard.title()` | `String` | plain text of the sidebar title, `""` when none |
+| `scoreboard.lines()` | `List<String>` | plain text of non-hidden sidebar entries, scoreboard order |
+| `scoreboard.contains(vararg needles)` | `boolean` | case-insensitive substring over the title only, never the lines |
 
-`contains` checks the title and the lines for any of the words you pass and does not care about case.
+The sidebar objective is the team-colour slot matching your own team colour, falling back to the plain `sidebar` slot.
 
-### Objectives and scores
+## Objectives and scores
 
-`lines()` is the sidebar flattened into strings. When you need the numbers, or an objective that is not on the sidebar, go through the objectives:
+| Method | Type | Description |
+|---|---|---|
+| `scoreboard.objectives()` | `List<Objective>` | every objective known to the client, empty out of world |
+| `scoreboard.objective(name)` | `Objective?` | objective by internal name, null when absent |
+| `scoreboard.display(slot)` | `Objective?` | objective in a display slot: `list`, `sidebar`, `below_name`, `sidebar.team.red` |
+| `scoreboard.holders()` | `List<String>` | every known score-holder name, empty out of world |
 
-```kotlin
-val board = game.server().scoreboard()
+| Method | Type | Description |
+|---|---|---|
+| `objective.name()` | `String` | internal objective name |
+| `objective.displayName()` | `Text` | styled display name |
+| `objective.criterion()` | `String` | criterion name, e.g. `dummy`, `health`, `playerKillCount` |
+| `objective.renderType()` | `String` | `integer` or `hearts` |
+| `objective.slots()` | `List<String>` | display slots this objective occupies, empty out of world |
+| `objective.score(holder)` | `int` | that holder's score, 0 when there is no entry |
+| `objective.entries()` | `List<ScoreEntry>` | every score entry of this objective |
 
-board.objectives()               // every objective the server sent
-board.objective("kills")         // one by its internal name
-board.display("sidebar")         // whichever one is in a display slot
-board.holders()                  // every name that has a score anywhere
-```
+| Method | Type | Description |
+|---|---|---|
+| `entry.owner()` | `String` | score-holder name |
+| `entry.value()` | `int` | the numeric score |
+| `entry.hidden()` | `boolean` | true when the server marked the entry as not displayed |
+| `entry.name()` | `Text` | styled name as drawn on the sidebar |
+| `entry.formattedValue()` | `Text` | styled score value in the entry's own number format |
 
-```kotlin
-val kills = board.objective("kills") ?: return
-kills.displayName().string()
-kills.criterion()                // "dummy", "health", "playerKillCount"...
-kills.renderType()               // "integer" or "hearts"
-kills.score(player.name())
+`Text` is documented on [Styled text](../ui/text.md).
 
-for (entry in kills.entries()) {
-    entry.owner()                // whose score it is
-    entry.value()
-    entry.hidden()
-    entry.name()                 // Text, as drawn
-}
-```
+## Teams
 
-### Teams
+| Method | Type | Description |
+|---|---|---|
+| `scoreboard.teams()` | `List<Team>` | every team, empty out of world |
+| `scoreboard.team(name)` | `Team?` | team by internal name, null when absent |
+| `scoreboard.teamOf(holder)` | `Team?` | team that score-holder name belongs to |
 
-```kotlin
-board.teams()
-board.team("red")
-board.teamOf(player.name())      // which team a name is on
-```
+| Method | Type | Description |
+|---|---|---|
+| `team.name()` | `String` | internal team name |
+| `team.displayName()` | `Text` | styled team display name |
+| `team.prefix()` | `Text` | styled prefix prepended to member names |
+| `team.suffix()` | `Text` | styled suffix appended to member names |
+| `team.color()` | `String` | formatting colour name, e.g. `red`, `aqua` |
+| `team.colorRgb()` | `int` | ARGB with 0xFF alpha, -1 when the colour has no RGB |
+| `team.members()` | `List<String>` | member score-holder names, immutable copy |
+| `team.friendlyFire()` | `boolean` | vanilla friendly-fire flag |
+| `team.showFriendlyInvisibles()` | `boolean` | vanilla see-friendly-invisibles flag |
+| `team.nametagVisibility()` | `String` | `always`, `never`, `hide_for_other_teams`, `hide_for_own_team` |
+| `team.deathMessageVisibility()` | `String` | same four values, applied to death messages |
+| `team.collisionRule()` | `String` | `always`, `never`, `push_other_teams`, `push_own_team` |
+| `team.decorate(value)` | `Text` | prefix + value + suffix with team formatting, null value is `""` |
+| `team.contains(holder)` | `boolean` | membership test, false for null |
 
-```kotlin
-val team = board.teamOf(target.name()) ?: return
-
-team.displayName().string()
-team.prefix()                    // Text
-team.suffix()
-team.color()                     // "red", "aqua"...
-team.colorRgb()                  // 0xAARRGGBB, or -1 when the team has no colour
-team.members()
-team.friendlyFire()
-team.nametagVisibility()         // "always", "never", "hide_for_other_teams"...
-team.collisionRule()
-team.contains(player.name())
-```
-
-The whole scoreboard is read-only: writing to it would only desync your own view, the server would never hear about it.
+The scoreboard is read-only; nothing written into these objects reaches the server.
 
 ## Boss bars
 
-```kotlin
-for (bar in game.server().bossBars()) {
-    bar.name()                   // Text
-    bar.percent()                // 0..1
-    bar.color()                  // "pink", "blue", "red", "green", "yellow", "purple", "white"
-    bar.style()                  // "progress", "notched_6", "notched_10", "notched_12", "notched_20"
-    bar.uuid()
-}
-```
-
-Servers use boss bars for round timers, event countdowns and region names, so this is often the quickest way to read game state:
-
-```kotlin
-val timer = game.server().bossBars()
-    .firstOrNull { it.name().string().contains("Round") }
-```
-
-## Translations
-
-```kotlin
-game.translate("block.minecraft.stone")           // "Stone", in the player's language
-game.translate("chat.type.text", "Notch", "hi")   // fills the %s slots
-game.hasTranslation("mymod.key")
-game.language()                                    // "en_us"
-```
-
-Handy for comparing against what the player actually sees, instead of hardcoding English.
-
-You can also build an item out of an id, without having one in your inventory:
-
-```kotlin
-val apple = game.item("golden_apple")
-apple.name()
-apple.nutrition()
-```
+| Method | Type | Description |
+|---|---|---|
+| `bar.uuid()` | `String` | boss bar UUID string |
+| `bar.name()` | `Text` | styled boss bar title |
+| `bar.percent()` | `float` | fill fraction, 0..1 |
+| `bar.color()` | `String` | `pink`, `blue`, `red`, `green`, `yellow`, `purple`, `white` |
+| `bar.style()` | `String` | `progress`, `notched_6`, `notched_10`, `notched_12`, `notched_20` |
 
 ## The tab list
 
-```kotlin
-val tab = game.server().tabList()
+| Method | Type | Description |
+|---|---|---|
+| `tab.header()` | `String` | plain text of the tab header, `""` when absent |
+| `tab.footer()` | `String` | plain text of the tab footer, `""` when absent |
+| `tab.headerContains(vararg needles)` | `boolean` | case-insensitive substring over the trimmed header |
+| `tab.footerContains(vararg needles)` | `boolean` | the same test against the footer |
+| `tab.players()` | `List<TabEntry>` | whole roster in vanilla tab order, empty when not connected |
 
-tab.header()
-tab.footer()
-tab.players()                // the roster, in the order the tab shows it
+| Method | Type | Description |
+|---|---|---|
+| `row.name()` | `String` | profile name |
+| `row.uuid()` | `String` | profile UUID string |
+| `row.displayName()` | `String` | plain text of the tab name, falls back to `name()` |
+| `row.pingMs()` | `int` | latency of that entry in milliseconds |
+| `row.pingMs(value)` | `void` | client-side latency write, the next server update overwrites it (API 2) |
+| `row.gameMode()` | `GameMode` | SURVIVAL, CREATIVE, ADVENTURE, SPECTATOR; SURVIVAL when unset |
+| `row.listed()` | `boolean` | true when the entry is one the tab draws |
+| `row.skinTexture()` | `Texture?` | skin body texture, null without skins or in StreamerMode |
+| `row.player()` | `PlayerEntity?` | loaded entity with that UUID, null when out of world or not loaded |
 
-tab.headerContains("anarchy")
-tab.footerContains("season")
-```
-
-`players()` is the roster the server sent, not the players loaded around you: everyone is in it, including the ones on the far side of the map, in another world, or hidden from the list entirely. Each row is a `TabEntry`:
-
-```kotlin
-for (row in tab.players()) {
-    row.name()               // profile name
-    row.uuid()
-    row.displayName()        // what the tab draws, as plain text
-    row.pingMs()
-    row.gameMode()
-    row.listed()             // false for rows the tab does not draw
-    row.skinTexture()        // the skin, or null
-    row.player()             // the entity, or null when it is not loaded
-}
-```
-
-A row is not an entity. Position, health and everything else about the body live on `player()` — a [player entity](entities.md) — and that is `null` whenever the player is out of render distance, which on a big server is most of the roster:
-
-```kotlin
-val nearby = tab.players().mapNotNull { it.player() }
-```
-
-Filter by `listed()` when you want only what the tab actually draws — servers turn it off to keep NPCs and staff out of the list while still sending their skins.
-
-`skinTexture()` works for the whole roster, entity or no entity, so a tab list with heads down the side needs nothing loaded — see [drawing a piece of a texture](../ui/render-2d.md).
-
-### Writing the ping back
-
-`pingMs()` also takes a value, and it writes straight into the entry the client keeps:
-
-```kotlin
-val pingRegex = Regex("""(\d+)\s*ms""")
-var parsed = -1
-
-on<PacketReceiveEvent> { event ->
-    val packet = event.packet()
-    if (packet !is S2CPlayerListHeaderPacket) return@on
-    parsed = pingRegex.find(packet.footer())?.groupValues?.get(1)?.toIntOrNull() ?: parsed
-}
-
-on<ClientTickEvent> {
-    if (!inGame || parsed < 0) return@on
-    val uuid = player.uuid()
-    tab.players().firstOrNull { it.uuid() == uuid }?.pingMs(parsed)
-}
-```
-
-This is for servers that never send a real latency and print the number somewhere else instead — the footer, the header, the display name. Parse it out of the text, write it into the row, and everything that reads ping shows it: the vanilla tab, the client's own tab, `pingMs()` in any other script.
-
-Two things to keep in mind. The server keeps sending latency updates and each one overwrites what you wrote, so set it on a tick rather than once. And do not write it from inside the packet handler: that runs before the client has applied the packet, so your value is gone a moment later.
+A row is a profile entry, not an entity: the roster holds every player the server sent, loaded or not.
+`Texture` is documented on [2D render](../ui/render-2d.md), `PlayerEntity` and `GameMode` on [Entities and filters](entities.md).
 
 ## Screens
 
-```kotlin
-game.screenOpen()            // is any screen open
-game.screenKind()            // NONE, INVENTORY, CREATIVE, CONTAINER, CHAT, OTHER
-game.closeScreen()
-```
+| Method | Type | Description |
+|---|---|---|
+| `screen.kind()` | `ScreenKind` | classification of the open screen |
+| `screen.title()` | `Text` | styled screen title |
+| `screen.handled()` | `boolean` | true when the screen has a screen handler |
+| `screen.syncId()` | `int` | screen handler sync id, 0 when not handled |
+| `screen.size()` | `int` | screen handler slot count, 0 when not handled |
 
-Handy for staying out of the way while the player digs through a chest:
+| Constant | Description |
+|---|---|
+| `NONE` | no screen open |
+| `INVENTORY` | vanilla survival inventory screen |
+| `CREATIVE` | creative inventory screen |
+| `CONTAINER` | any other handled screen: chest, villager, shop menu |
+| `CHAT` | the chat input screen |
+| `OTHER` | any other screen: menus, options |
 
-```kotlin
-if (game.screenKind() == ScreenKind.CONTAINER) return@on
-```
+`game.screen()` returns null when nothing is open; `game.screenOpen()`, `game.screenKind()` and `game.closeScreen()` are on [How a script works](../start/lifecycle.md). The closing of a screen fires `ScreenCloseEvent`.
 
-For the details — the title above all — ask for the screen itself. It is `null` when nothing is open:
+## Translations
 
-```kotlin
-val screen = game.screen() ?: return
-
-screen.kind()
-screen.title()               // Text: what the server called this menu
-screen.handled()             // true for anything with slots in it
-screen.syncId()              // the id the server gave this menu
-screen.size()                // how many slots it has
-```
-
-Servers name their menus, so the title is how you tell one from another:
-
-```kotlin
-if (game.screen()?.title()?.string() == "Shop") {
-    // we are looking at the shop
-}
-```
-
-There is a screen-closed event too — `ScreenCloseEvent`.
-
-## Detect the server once
-
-There is no point checking the scoreboard every tick. Once per world is enough:
-
-```kotlin
-var bedwars = false
-
-on<WorldLoadEvent> {
-    afterTicks(40) {
-        bedwars = game.server().scoreboard().contains("BedWars")
-    }
-}
-```
-
-The delay is there because the scoreboard does not arrive the instant the world loads.
+`game.translate(key, args)`, `game.hasTranslation(key)` and `game.language()` are on [How a script works](../start/lifecycle.md).

@@ -1,148 +1,82 @@
 # Предсказание
 
-Предсказание отвечает на вопрос «что будет, если ничего не менять»: где я окажусь через несколько тиков и куда упадёт снаряд.
-
-## Где я буду
-
-```kotlin
-val soon = prediction.after(10)      // через 10 тиков
-
-soon.position()
-soon.velocity()
-soon.box()
-soon.onGround()
-soon.inWater()
-soon.sneaking()
-soon.sprinting()
-soon.jumping()
-soon.fallDistanceBlocks()
-```
-
-Считается по текущей скорости, вводу и физике мира. Ввод игрока в будущем неизвестен, так что чем дальше в тики, тем менее точно. Практический потолок — десяток-другой тиков.
-
-Пример: не прыгать, если через пять тиков всё равно окажешься в воде.
-
-```kotlin
-if (prediction.after(5).inWater()) return@on
-```
-
-## А если бы я нажал другое
-
-Вариант выше держит зажатыми твои текущие клавиши весь прогон. Передай `MoveInput` — и прогон пойдёт на тех клавишах, которые назовёшь. Так и спрашивают «что было бы, если бы я отсюда прыгнул», не прыгая:
-
-```kotlin
-prediction.after(3, moveInput(forward = true, sprint = true, jump = true))
-```
-
-У `moveInput(...)` есть `forward`, `backward`, `left`, `right`, `jump`, `sneak`, `sprint` — всё `false`, пока не скажешь иначе. Чтобы отталкиваться не от пустоты, а от реально зажатых клавиш, возьми их из события и поменяй нужную:
-
-```kotlin
-on<MoveInputEvent> { e ->
-    val jumped = e.toInput().copy(jump = true)
-    if (prediction.after(2, jumped).onGround()) {
-        e.jump(true)
-    }
-}
-```
-
-`copy` работает как у настроек — что не указал, остаётся как было.
-
-Всё остальное про тебя по-прежнему берётся из настоящего: позиция, скорость, эффекты, атрибуты, предмет в руках. Меняются только клавиши.
-
-## Каждый тик, а не только последний
-
-`after(n)` отдаёт тик `n` и ничего не говорит про тики по дороге. Когда вопрос звучит как «в какой-то момент за n тиков», спрашивай весь прогон:
-
-```kotlin
-prediction.path(10)                 // десять результатов, с первого тика по десятый
-prediction.path(10, someInput)      // то же самое, на названных клавишах
-```
-
-Одна симуляция, один результат на тик, по порядку. Это близнец `projectile().points()`, только про движение.
-
-Прыжок по лестнице — вся идея в одну строку. На ровном полу через два тика после прыжка ты ещё в воздухе, а на ступеньке уже стоишь на ней, так что «окажусь ли я снова на земле почти сразу» — ровно тот вопрос, который их различает:
-
-```kotlin
-val landsFast = prediction.path(2, e.toInput().copy(jump = true)).any { it.onGround() }
-```
-
-Не собирай это из `after` в цикле: `path(n)` прогоняет симуляцию один раз, а `(1..n).map { after(it) }` — n раз подряд.
-
-## Остановиться раньше
-
-Попросить сто тиков не значит заплатить за сто. Добавь условие — и прогон остановится на первом тике, который ему удовлетворяет: этот тик войдёт в список, дальше ничего не считается.
-
-```kotlin
-val fall = prediction.path(100) { it.onGround() }
-
-fall.size                    // сколько тиков до приземления
-fall.last().position()       // где приземлишься
-```
-
-Если условие так и не сработало, вернутся все `ticks` результатов — так что приземлился ты или просто кончились тики, показывает `fall.last().onGround()`.
-
-Условие видит каждый тик по мере счёта, в этом и смысл: `path(100) { it.inWater() }`, `path(60) { it.fallDistanceBlocks() > 3.0 }`, `path(40, someInput) { !it.sprinting() }`.
-
-Одно правило: **не вызывай предсказание изнутри условия.** Симуляция идёт на одной общей сущности, и вложенный вызов тихо испортит тот прогон, внутри которого он сидит. За такое прилетит `ScriptStateException`, а не кривые числа.
-
-## Куда полетит снаряд
-
-```kotlin
-val path = prediction.projectile(ProjectileKind.ARROW)
-
-path.points()             // траектория точками
-path.lands()              // долетит ли вообще
-path.landingPosition()    // куда упадёт
-path.hitEntity()          // в кого попадёт, или null
-path.hitsBlock()
-path.flightTicks()        // сколько тиков лететь
-```
-
-Виды снарядов: `ARROW`, `TRIDENT`, `ENDER_PEARL`, `SPLASH_POTION`, `SNOWBALL`, `WIND_CHARGE`.
-
-По умолчанию считается для текущего угла и полного заряда. Можно задать своё:
-
-```kotlin
-prediction.projectile(ProjectileKind.ARROW, aim)
-prediction.projectile(ProjectileKind.ARROW, aim, 0.7f)
-```
-
-## Стрелять только по цели
-
-Самое частое применение — не тратить снаряд впустую:
-
-```kotlin
-fun willHitEnemy(kind: ProjectileKind): Boolean {
-    val victim = prediction.projectile(kind).hitEntity() ?: return false
-    return victim.alive() && !victim.isSelf() && !victim.isAlly()
-}
-
-on<ClientTickEvent> {
-    if (!player.usingItem()) return@on
-    if (!inventory.held().isA("trident")) return@on
-    if (player.itemUseTicks() < 10) return@on
-    if (!willHitEnemy(ProjectileKind.TRIDENT)) return@on
-    interaction.stopUsingItem()
-}
-```
-
-## Нарисовать траекторию
-
-`points()` — готовый список точек, его можно скормить [рендеру 3D](../ui/render-3d.md):
+`prediction` — это `client.prediction()`. Он прогоняет локального игрока вперёд на теневой сущности, копирующей его атрибуты движения, и считает полёт снаряда от последней отправленной позиции.
 
 ```kotlin
 on<Render3DEvent> { e ->
-    val path = prediction.projectile(ProjectileKind.ENDER_PEARL)
-    val points = path.points()
-    for (i in 0 until points.size - 1) {
-        e.render().line(points[i], points[i + 1], Colors.CYAN, true)
-    }
-    path.landingPosition()?.let {
-        e.render().box(Box.around(it, 0.2), Colors.RED, true)
-    }
+    val fall = prediction.path(10) { it.onGround() }   // останавливается на первом тике с землёй
+    val landing = fall.last().position()
+    e.render().box(Box.around(landing, 0.2), Colors.RED, true)
 }
 ```
 
-## Про стоимость
+## Симуляция движения
 
-Каждый запрос — это симуляция, а не чтение поля. Один-два раза за тик нормально, в цикле по всем сущностям — нет. Если нужен результат несколько раз за тик, посчитай один раз и положи в переменную.
+| Метод | Тип | Описание |
+|---|---|---|
+| `prediction.after(ticks)` | `PredictionResult` | состояние через `ticks` симулированных тиков, живой ввод с клавиатуры |
+| `prediction.after(ticks, input)` | `PredictionResult` | то же, `input` зажат каждый симулированный тик |
+| `prediction.path(ticks)` | `List<PredictionResult>` | по одной неизменяемой записи на тик, нулевой тик не входит |
+| `prediction.path(ticks, input)` | `List<PredictionResult>` | то же с фиксированным вводом |
+| `prediction.path(ticks, until)` | `List<PredictionResult>` | останавливается на первой записи под `until`, она входит |
+| `prediction.path(ticks, input, until)` | `List<PredictionResult>` | фиксированный ввод плюс условие остановки |
+
+`ticks` везде 1..100; движение считается на теневой сущности, копирующей скорость движения, скорость приседа, силу прыжка, гравитацию, высоту шага и эффективность движения.
+Всем шести нужен мир и клиентский поток (только клиентский поток); `ticks` вне диапазона бросает `ScriptException`, вызов изнутри условия `path` — `ScriptStateException`.
+
+## Один тик симуляции
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `result.position()` | [`Vec`](../game/math.md#vec) | предсказанная позиция ног в блоках мира |
+| `result.velocity()` | [`Vec`](../game/math.md#vec) | предсказанная скорость в блоках за тик |
+| `result.box()` | [`Box`](../game/math.md#box) | предсказанный хитбокс в мировых координатах |
+| `result.onGround()` | `boolean` | предсказанный флаг «на земле» |
+| `result.inWater()` | `boolean` | предсказанный флаг касания воды |
+| `result.sneaking()` | `boolean` | состояние приседа на этом тике |
+| `result.sprinting()` | `boolean` | состояние спринта на этом тике |
+| `result.jumping()` | `boolean` | ввод прыжка на этом тике |
+| `result.fallDistanceBlocks()` | `double` | накопленная высота падения в блоках |
+
+## Ввод
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `moveInput(forward, backward, left, right, jump, sneak, sprint)` | `MoveInput` | собирает запись ввода, все аргументы по умолчанию `false` |
+| `MoveInput.NONE` | `MoveInput` | все семь флагов выключены |
+| `input.forward()` | `boolean` | зажата клавиша вперёд |
+| `input.backward()` | `boolean` | зажата клавиша назад |
+| `input.left()` | `boolean` | зажат стрейф влево |
+| `input.right()` | `boolean` | зажат стрейф вправо |
+| `input.jump()` | `boolean` | зажат прыжок |
+| `input.sneak()` | `boolean` | зажат присед |
+| `input.sprint()` | `boolean` | зажат спринт |
+| `input.copy(forward, backward, left, right, jump, sneak, sprint)` | `MoveInput` | копия с заменой полей, остальное берётся из приёмника |
+
+`MoveInputEvent.toInput()` отдаёт реально зажатые клавиши — см. [Список событий](../events/reference.md).
+
+## Снаряды
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `prediction.projectile(kind)` | `ProjectilePath` | траектория по последнему отправленному повороту, штатная сила вида |
+| `prediction.projectile(kind, aim)` | `ProjectilePath` | `aim` = null — последний отправленный поворот, штатная сила вида |
+| `prediction.projectile(kind, aim, power)` | `ProjectilePath` | своя сила запуска |
+| `path.points()` | `List<Vec>` | точки траектории, по одной на тик, от точки запуска |
+| `path.lands()` | `boolean` | найдено попадание в блок или сущность |
+| `path.landingPosition()` | `Vec?` | точка попадания, null если не попал |
+| `path.hitEntity()` | [`Entity?`](../game/entities.md) | задетая сущность, иначе null |
+| `path.hitsBlock()` | `boolean` | попадание пришлось в блок |
+| `path.flightTicks()` | `int` | `points().size() - 1`, минимум 0 |
+
+Начало — последняя отправленная позиция плюс высота глаз, в скорость запуска входит текущее движение игрока, а `aim` — это [`Rotation`](../game/math.md#rotation).
+Всем трём нужен мир и клиентский поток (только клиентский поток); `kind` = null или `power` не больше 0 бросает `ScriptException`.
+
+| Константа | Описание |
+|---|---|
+| `ARROW` | физика стрелы, штатная сила 3.0 |
+| `TRIDENT` | физика трезубца, штатная сила 2.5 |
+| `ENDER_PEARL` | физика жемчуга Края, штатная сила 1.5 |
+| `SPLASH_POTION` | физика взрывного зелья, сила 0.5, наклон прицела -20° |
+| `SNOWBALL` | физика снежка, штатная сила 1.5 |
+| `WIND_CHARGE` | физика заряда ветра, штатная сила 1.5 |

@@ -1,22 +1,19 @@
 # Своя геометрия
 
-[3D-рендер](render-3d.md) рисует линии, боксы и полигоны одним цветом, а [шейдеры](shaders.md) закрашивают плоский прямоугольник поверх экрана. Когда не подходит ни то, ни другое — облако частиц, текстурный биллборд, меш из тысяч копий, — отрисовку собираешь сам: формат вершины, меш, пайплайн и render type, который всё это связывает.
+`gpu` — это `client.gpu()`: свои форматы вершин, меши, пайплайны и вызовы отрисовки. Координаты вершин задаются относительно камеры, буферы освобождаются, пока скрипт выключен, и всё на этой странице — API 2.
 
 ```kotlin
-val format = gpu.format(
-    VertexAttribute.floats(3),
-    VertexAttribute.color()
-)
-
-val mesh = gpu.mesh(format)
-val pipeline = gpu.pipeline(myShader, DrawMode.TRIANGLES, BlendMode.ALPHA, DepthMode.TEST_AND_WRITE)
+val format = gpu.format(VertexAttribute.floats(3), VertexAttribute.color())
+val mesh = gpu.indexedMesh(format)
+val pipeline = gpu.pipeline(myShader, DrawMode.TRIANGLES, BlendMode.ALPHA, DepthMode.TEST)
 val pass = gpu.renderType(pipeline, mesh)
 
 on<Render3DEvent> { event ->
     val verts = mesh.verts()
-    verts.putVec3(0f, 0f, 0f).putColor(Colors.RED).next()
+    val base = verts.putVec3(0f, 0f, 0f).putColor(Colors.RED).next()
     verts.putVec3(1f, 0f, 0f).putColor(Colors.GREEN).next()
     verts.putVec3(0f, 1f, 0f).putColor(Colors.BLUE).next()
+    mesh.idx()?.putTriangle(base, base + 1, base + 2)
 
     myShader.setMat4("u_view", event.viewMatrix())
     myShader.setMat4("u_projection", event.projectionMatrix())
@@ -24,174 +21,126 @@ on<Render3DEvent> { event ->
 }
 ```
 
-Формат, меш, пайплайн и render type создавай один раз, на верхнем уровне. Заполняй меш и рисуй внутри обработчика — после каждой отрисовки меш очищается сам, так что каждый кадр пишет геометрию заново.
+## Фабрика
 
-## Координаты — относительно камеры
+| Метод | Тип | Описание |
+|---|---|---|
+| `gpu.format(attributes...)` | `VertexFormat` | чередующийся формат вершины (бросает `IllegalArgumentException` меньше 1 и больше 16 атрибутов) |
+| `gpu.mesh(format)` | `Mesh` | меш без индексов, стартовый буфер 1024 байта (бросает `IllegalArgumentException` на чужом формате) |
+| `gpu.indexedMesh(format)` | `Mesh` | меш с индексным буфером, по 1024 байта |
+| `gpu.pipeline(shader, drawMode, blend, depth)` | `Pipeline` | отсечение граней выключено |
+| `gpu.pipeline(shader, drawMode, blend, depth, cull)` | `Pipeline` | null заменяется на `TRIANGLES`/`ALPHA`/`OFF` (бросает `IllegalArgumentException` на чужом шейдере) |
+| `gpu.renderType(pipeline, mesh)` | `RenderType` | связка без инстансинга |
+| `gpu.instancedRenderType(pipeline, mesh, verticesPerInstance)` | `RenderType` | `verticesPerInstance` зажимается от 0 (бросает `IllegalArgumentException` на чужом пайплайне или меше) |
 
-Всё, что ты пишешь в вершину, — это смещение от камеры, а не позиция в мире. Вычитай `event.camera()`:
-
-```kotlin
-val camera = event.camera()
-val target = someEntity.position()
-
-verts.putVec3(
-    (target.x() - camera.x()).toFloat(),
-    (target.y() - camera.y()).toFloat(),
-    (target.z() - camera.z()).toFloat()
-).putColor(Colors.WHITE).next()
-```
-
-Именно это не даёт далёкой геометрии рассыпаться: мировые координаты слишком велики для `float`, которым живёт вершинный буфер.
+Каждый метод бросает `IllegalStateException` после закрытия сессии скрипта. Меши, пайплайны и render type'ы — учитываемые ресурсы, форматы — нет.
 
 ## Формат вершины
 
-Формат описывает одну запись. Атрибуты соответствуют входам `layout(location = N)` твоего вершинного шейдера, по порядку:
-
-```kotlin
-val format = gpu.format(
-    VertexAttribute.floats(3),   // location 0
-    VertexAttribute.floats(2),   // location 1
-    VertexAttribute.color()      // location 2
-)
-```
-
-| Атрибут | Что пишет | В GLSL |
+| Метод | Тип | Описание |
 |---|---|---|
-| `floats(n)` | `n` float'ов | `vec2`, `vec3`, `vec4` |
-| `ints(n)` | `n` целых | `ivec2`, `ivec3` |
-| `color()` | четыре байта | `vec4`, уже в диапазоне `0…1` |
+| `VertexAttribute(count, type, normalized, instanced)` | `VertexAttribute` | канонический конструктор |
+| `attribute.count()` | `int` | количество компонент |
+| `attribute.type()` | `AttributeType` | тип компоненты |
+| `attribute.normalized()` | `boolean` | флаг нормализации, игнорируется — нормализуется только `UNSIGNED_BYTE` |
+| `attribute.instanced()` | `boolean` | true, когда атрибут шагает по инстансам |
+| `VertexAttribute.floats(count)` | `VertexAttribute` | статический, `count` float'ов, на вершину |
+| `VertexAttribute.ints(count)` | `VertexAttribute` | статический, `count` целых, на вершину |
+| `VertexAttribute.color()` | `VertexAttribute` | статический, 4 нормализованных байта, на вершину |
+| `attribute.perInstance()` | `VertexAttribute` | копия с `instanced = true` |
 
-Цвет приходит перемешанным — пиши в шейдере `a_color.bgra`, чтобы получить обратно RGBA.
+| Константа | Описание |
+|---|---|
+| `AttributeType.FLOAT` | 32-битные float-компоненты |
+| `AttributeType.INT` | 32-битные знаковые целые компоненты |
+| `AttributeType.UNSIGNED_BYTE` | 4 нормализованных байта независимо от указанного count |
 
-У писателя по методу на каждую часть, а `next()` закрывает запись:
+| Метод | Тип | Описание |
+|---|---|---|
+| `format.stride()` | `int` | байт на вершину |
+| `format.attributeCount()` | `int` | сколько атрибутов в формате |
 
-```kotlin
-verts.putVec3(x, y, z).putUv(u, v).putColor(argb).next()
-```
+Атрибуты ложатся на входы шейдера `layout(location = N)` в порядке объявления; совпадение записи с форматом никто не проверяет.
 
-Пиши ровно то, что описано форматом, и в том же порядке. Никто это не проверяет: пропущенный `putFloat` сдвинет все записи после него, и картинка превратится в шум.
+## Запись вершин
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `mesh.format()` | `VertexFormat` | формат, с которым создан меш |
+| `mesh.verts()` | `VertexWriter` | писатель вершин (бросает `IllegalStateException`, когда меш закрыт) |
+| `mesh.idx()` | `IndexWriter?` | писатель индексов, null у меша без индексов |
+| `mesh.indexed()` | `boolean` | true, если создан через `gpu.indexedMesh` |
+| `mesh.clear()` | `void` | сбрасывает оба писателя, ничего не делает у неиспользованного меша |
+
+GL-буфер создаётся при первом использовании, и первая запись должна идти с рендер-потока. `draw()` загружает оба писателя и очищает их, так что каждый кадр пишет геометрию заново.
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `verts.putFloat(value)` | `VertexWriter` | пишет 4 байта |
+| `verts.putInt(value)` | `VertexWriter` | пишет 4 байта |
+| `verts.putVec2(x, y)` | `VertexWriter` | пишет два float'а, то же самое, что `putUv` |
+| `verts.putVec3(x, y, z)` | `VertexWriter` | пишет три float'а |
+| `verts.putVec3(position)` | `VertexWriter` | то же из [`Vec`](../game/math.md), компоненты приводятся к float |
+| `verts.putUv(u, v)` | `VertexWriter` | пишет два float'а |
+| `verts.putColor(argb)` | `VertexWriter` | пишет ARGB-число; в GLSL приходит как BGRA |
+| `verts.next()` | `int` | закрывает вершину, возвращает её индекс с нуля (бросает `IllegalStateException` на 1048576 вершинах) |
+| `verts.vertexCount()` | `int` | сколько вершин закрыто, 0 у закрытого меша |
 
 ## Индексы
 
-`gpu.indexedMesh(format)` даёт мешу индексный буфер, и общая вершина пишется один раз:
-
-```kotlin
-val mesh = gpu.indexedMesh(format)
-
-val idx = mesh.idx() ?: return@on
-val base = verts.vertexCount()
-// четыре угла квада
-idx.putQuad(base, base + 1, base + 2, base + 3)
-```
-
-`putQuad` сам пишет два треугольника; `putTriangle` и `put` — на случай, когда геометрию раскладываешь вручную. У меша из `gpu.mesh(...)` метод `idx()` возвращает `null`.
+| Метод | Тип | Описание |
+|---|---|---|
+| `idx.put(index)` | `IndexWriter` | добавляет один индекс вершины (бросает `IllegalStateException` на 4194304 индексах) |
+| `idx.putTriangle(a, b, c)` | `IndexWriter` | добавляет три индекса |
+| `idx.putQuad(a, b, c, d)` | `IndexWriter` | добавляет треугольники `(a, b, c)` и `(a, c, d)` |
+| `idx.indexCount()` | `int` | сколько индексов записано, 0 у закрытого меша |
 
 ## Пайплайн
 
-Пайплайн — это шейдер плюс состояние, в котором идёт отрисовка:
+| Метод | Тип | Описание |
+|---|---|---|
+| `pipeline.shader()` | `Shader` | шейдер, которым рисует пайплайн — [Шейдеры](shaders.md) |
+| `pipeline.drawMode()` | `DrawMode` | тип примитива |
 
-```kotlin
-val pipeline = gpu.pipeline(shader, DrawMode.TRIANGLES, BlendMode.ADDITIVE, DepthMode.TEST)
-```
-
-| | |
+| Константа | Описание |
 |---|---|
-| `DrawMode` | `TRIANGLES`, `TRIANGLE_STRIP`, `TRIANGLE_FAN`, `LINES`, `LINE_STRIP`, `POINTS` |
-| `BlendMode` | `OFF`, `ALPHA`, `PREMULTIPLIED`, `ADDITIVE` |
-| `DepthMode` | `OFF`, `TEST`, `TEST_AND_WRITE` |
+| `DrawMode.TRIANGLES` | `GL_TRIANGLES`, а также замена для null |
+| `DrawMode.TRIANGLE_STRIP` | `GL_TRIANGLE_STRIP` |
+| `DrawMode.TRIANGLE_FAN` | `GL_TRIANGLE_FAN` |
+| `DrawMode.LINES` | `GL_LINES` |
+| `DrawMode.LINE_STRIP` | `GL_LINE_STRIP` |
+| `DrawMode.POINTS` | `GL_POINTS` |
 
-Пятый аргумент включает отсечение задних граней; без него рисуются обе стороны каждого треугольника.
+| Константа | Описание |
+|---|---|
+| `BlendMode.OFF` | смешивание выключено |
+| `BlendMode.ALPHA` | `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`, замена для null |
+| `BlendMode.PREMULTIPLIED` | `ONE, ONE_MINUS_SRC_ALPHA` по цвету и альфе |
+| `BlendMode.ADDITIVE` | `SRC_ALPHA, ONE` по цвету и альфе |
 
-Думать стоит про `DepthMode`. `TEST_AND_WRITE` — то, что нужно плотной геометрии: она прячется и за блоками, и сама за собой. `TEST` прячет за миром, но не за твоими же отрисовками — так нужно всему полупрозрачному, что накладывается само на себя, и частицам в первую очередь: запись глубины порезала бы их на видимые квадраты. `OFF` рисует поверх всего.
+| Константа | Описание |
+|---|---|
+| `DepthMode.OFF` | тест глубины выключен, запись выключена, замена для null |
+| `DepthMode.TEST` | тест глубины включён, запись выключена |
+| `DepthMode.TEST_AND_WRITE` | тест глубины включён, запись включена |
 
-## Матрицы
+## Отрисовка
 
-За тебя в шейдер не передаётся ничего. Матрицы кадра лежат в событии, и выставляешь их ты сам:
+| Метод | Тип | Описание |
+|---|---|---|
+| `pass.pipeline()` | `Pipeline` | используемый пайплайн |
+| `pass.mesh()` | `Mesh` | используемый меш |
+| `pass.draw()` | `void` | биндит фреймбуфер клиента и делает один вызов отрисовки (бросает `IllegalStateException`, когда render type или меш закрыт) |
+| `pass.drawInstanced()` | `void` | рисует инстансы по `verticesPerInstance` вершин, только для `instancedRenderType` |
 
-```kotlin
-shader.setMat4("u_view", event.viewMatrix())
-shader.setMat4("u_projection", event.projectionMatrix())
-```
-
-Обе — шестнадцать float'ов по столбцам, готовые для `mat4`. Минимальный вершинный шейдер:
-
-```glsl
-#version 330
-
-layout(location = 0) in vec3 a_pos;
-layout(location = 1) in vec4 a_color;
-
-out vec4 v_color;
-
-uniform mat4 u_view;
-uniform mat4 u_projection;
-
-void main() {
-    gl_Position = u_projection * u_view * vec4(a_pos, 1.0);
-    v_color = a_color.bgra;
-}
-```
-
-Матрицу можно собрать и самому — например, модельную — и передать теми же шестнадцатью числами в том же порядке.
-
-## Текстуры
-
-`set(uniform, texture)` привязывает текстуру к сэмплеру с той фильтрацией, которая у неё уже есть, а у большинства игровых текстур это ближайший сосед. Проси то, что нужно:
-
-```kotlin
-val sprite = texture("minecraft:textures/particle/glow.png")
-
-shader.set("u_texture", sprite, TextureFilter.LINEAR, TextureWrap.CLAMP)
-```
-
-`TextureFilter` — `NEAREST` или `LINEAR`, `TextureWrap` — `CLAMP` или `REPEAT`. Выбор живёт на отрисовке, а не на текстуре, так что линейная фильтрация здесь не изменит вид этой текстуры где-либо ещё в игре.
-
-## Инстансинг
-
-Для множества копий одной фигуры — частиц, маркеров, поля квадов — пиши одну запись на копию, а не на вершину. Отметь атрибуты через `perInstance()`:
-
-```kotlin
-val format = gpu.format(
-    VertexAttribute.floats(3).perInstance(),   // центр
-    VertexAttribute.floats(1).perInstance(),   // размер
-    VertexAttribute.color().perInstance()
-)
-
-val pass = gpu.instancedRenderType(pipeline, mesh, 6)
-```
-
-Последний аргумент — сколько вершин у одной копии, шесть для квада из двух треугольников. Позиций вершинный шейдер не получает вообще: он строит их из `gl_VertexID` и данных инстанса. Биллборд, всегда повёрнутый к камере, получается сам собой, если делать это во view-пространстве, где оси экрана — просто x и y:
-
-```glsl
-const vec2 CORNERS[6] = vec2[](
-    vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(1.0, 1.0),
-    vec2(-1.0, -1.0), vec2(1.0, 1.0), vec2(-1.0, 1.0)
-);
-
-void main() {
-    vec4 viewCentre = u_view * vec4(a_centre, 1.0);
-    gl_Position = u_projection * (viewCentre + vec4(CORNERS[gl_VertexID] * a_size, 0.0, 0.0));
-}
-```
-
-И `pass.drawInstanced()` вместо `pass.draw()`.
-
-## Время, и почему `millis()` тебя укусит
-
-Анимируй по счётчику тиков, а не по часам:
-
-```kotlin
-val time = (client.tick() + event.tickDelta()) / 20f
-```
-
-`client.millis()` — это настенное время, сегодня около 1.8e12. Поделив на тысячу и положив во `Float`, ты получаешь значения, соседние из которых отстоят уже на 128, так что `sin(time + phase)` вернёт одно и то же число для любого мыслимого `phase`. Анимации замирают, а кольцо частиц схлопывается в одну точку. Счётчик тиков стартует с нуля при запуске клиента и остаётся маленьким.
-
-## Время жизни
-
-Освободить всё это из скрипта нельзя, и не нужно. Выключение скрипта освобождает буферы, включение обратно — пересоздаёт их на следующем кадре. Перезагрузка или удаление скрипта отпускает всё, и консоль пишет, что именно ушло.
-
-На видеокарте ничего не выделяется до первой отрисовки, так что загруженный, но выключенный скрипт не стоит ничего, сколько бы геометрии он ни объявлял.
+Встроенных униформ здесь нет, в отличие от `Render.shader`: `u_view`, `u_projection` и всё остальное выставляешь сам до вызова. Оба метода ничего не рисуют, пока меш пуст или шейдер не собрался.
 
 ## Лимиты
 
-На скрипт даётся 64 ресурса — меши, пайплайны и render type'ы вместе, — а формат принимает не больше 16 атрибутов. В один меш влезает миллион вершин и четыре миллиона индексов. Выход за любой из лимитов бросает ошибку в скрипте, на той строке, которая запросила лишнее.
+| Лимит | Значение |
+|---|---|
+| живых gpu-ресурсов на скрипт | 64 меша, пайплайна и render type'а вместе |
+| атрибутов на формат | 16 |
+| вершин в меше | 1 048 576 |
+| индексов в меше | 4 194 304 |
+| встроенный шрифт или PNG | 8 МиБ |

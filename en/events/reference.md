@@ -1,211 +1,527 @@
 # Event list
 
-Cancellable events are marked in the "Cancel" column. How to subscribe and what priority means is in [Subscribing](basics.md).
+51 events, grouped by area. Every one fires on the Minecraft client thread except `PacketReceiveEvent` and `PacketSendEvent`. An event with no member table carries no payload. Subscribing, cancelling and options are on [Subscribing](basics.md).
+
+```kotlin
+on<BlockHitEvent> {
+    // the top face of a block is never hit
+    if (it.side() == Side.UP) it.cancel()
+}
+```
 
 ## Ticks
 
-| Event | When | Cancel |
+| Event | Cancellable | Fires when |
 |---|---|---|
-| `ClientTickEvent` | every client tick, even without a world | |
-| `PrePlayerTickEvent` | before the player ticks | |
-| `PlayerTickEvent` | inside the player tick, before movement is worked out | |
-| `PostPlayerTickEvent` | the player tick is over — movement is done and the packets are already sent | |
+| `ClientTickEvent` | no | once per client tick, also with no world loaded |
+| `PrePlayerTickEvent` | no | once per client tick, before the local player ticks |
+| `PlayerTickEvent` | no | mid local-player tick, at the cooldown update |
+| `PostPlayerTickEvent` | no | after the local-player tick finished |
+| `TimerEvent` | no | once per render tick, before the tick duration is used |
 
-`ClientTickEvent` always fires, so it almost always needs an `if (!inGame) return@on`. `PrePlayerTickEvent` is where you get in before the player works out its movement for the tick. `PostPlayerTickEvent` is the opposite end: use it to read where the tick actually left you.
+### TimerEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `timer()` | `float` | client tick-rate multiplier, 1.0 = normal speed |
+| `timer(value)` | `void` | overrides it; tick duration is divided by it, not clamped |
+
+Reset to 1.0 before every dispatch, so it does not persist between frames; `0` divides by zero.
 
 ## Movement
 
-| Event | When | Cancel |
+| Event | Cancellable | Fires when |
 |---|---|---|
-| `MovePacketEvent` | right before the position and rotation packets for the tick go out | yes |
-| `MoveEvent` | before the player's move is applied, `movement()` can be rewritten | yes |
-| `TravelEvent` | before vanilla movement physics for the tick | yes |
-| `MoveRelativeEvent` | after movement input was turned into velocity, read only | |
-| `EntityPushEvent` | an entity pushes you or you push it | yes |
-| `BlockPushEvent` | the game pushes you out of a block you are stuck in | yes |
-| `WebCollisionEvent` | you touch a cobweb, `x()`/`y()`/`z()` of the web | yes |
-| `TimerEvent` | every frame, when the game decides how many ticks to run | |
+| `MoveInputEvent` | yes (never read) | each tick, after the movement keys were sampled |
+| `MoveEvent` | yes | before a client entity applies its movement vector |
+| `MovePacketEvent` | yes | once per tick, before the position and rotation packets go out |
+| `MoveRelativeEvent` | no | after movement input was turned into velocity |
+| `TravelEvent` | yes | before the local player's vanilla physics step |
+| `JumpEvent` | no | the local player jumps |
+| `SlowdownEvent` | no | the game reads the item-use movement multiplier |
+| `FireworkEntitySpeedEvent` | no | a rocket boosts a gliding entity, once per tick per rocket (API 2) |
+| `BlockPushEvent` | yes | the local player is about to be pushed out of a block |
+| `EntityPushEvent` | yes | the local player pushes or is pushed by an entity |
+| `WebCollisionEvent` | yes | the local player collides with a cobweb |
 
-`MovePacketEvent` is the last point where the position the server sees is still yours to change. Every field reads and writes: `x()`, `y()`, `z()`, `yaw()`, `pitch()`, `onGround()`, `sprinting()`. Cancelling it sends nothing at all that tick — the server keeps your last known position.
+### MoveInputEvent
 
-```kotlin
-on<MovePacketEvent> {
-    it.y(it.y() - 0.05)
-    it.onGround(true)
-}
-```
+| Method | Type | Description |
+|---|---|---|
+| `forward()` | `boolean` | forward key held |
+| `forward(value)` | `void` | overrides the forward flag; the game re-reads it |
+| `backward()` | `boolean` | backward key held |
+| `backward(value)` | `void` | overrides the backward flag; the game re-reads it |
+| `left()` | `boolean` | strafe-left key held |
+| `left(value)` | `void` | overrides the left flag; the game re-reads it |
+| `right()` | `boolean` | strafe-right key held |
+| `right(value)` | `void` | overrides the right flag; the game re-reads it |
+| `jump()` | `boolean` | jump key held |
+| `jump(value)` | `void` | overrides the jump flag; the game re-reads it |
+| `sneak()` | `boolean` | sneak key held |
+| `sneak(value)` | `void` | overrides the sneak flag; the game re-reads it |
+| `sprint()` | `boolean` | sprint key held |
+| `sprint(value)` | `void` | overrides the sprint flag; also drives the sprint key state |
+| `moving()` | `boolean` | true when forward, backward, left or right is set |
+| `toInput()` | [`MoveInput`](../actions/prediction.md) | immutable snapshot of the seven flags |
 
-`MoveEvent` is one step lower: `movement()` is the delta the player is about to move by, after input and physics, before collisions. Rewrite it to change where you actually go.
+The game rebuilds the tick's player input from all seven flags. Cancelling does not stop vanilla input — the mixin never reads the flag.
 
-```kotlin
-on<MoveEvent> {
-    it.set(it.x() * 1.4, it.y(), it.z() * 1.4)
-}
-```
+### MoveEvent
 
-`TravelEvent` is lower still — cancel it and vanilla physics does not run for that tick at all: no gravity, no drag, no input. Nothing moves you unless you move yourself.
+| Method | Type | Description |
+|---|---|---|
+| `movement()` | [`Vec`](../game/math.md) | movement delta in blocks for this move call |
+| `movement(value)` | `void` | replaces the whole vector; the game re-reads it |
+| `x()` | `double` | movement X in blocks |
+| `y()` | `double` | movement Y in blocks |
+| `z()` | `double` | movement Z in blocks |
+| `set(x, y, z)` | `void` | replaces the vector component-wise; the game re-reads it |
 
-`MoveRelativeEvent` only reports: `speed()` is the acceleration the game used and `input()` is the raw movement input. Writing to it changes nothing, the game has already applied the value.
+Cancelling skips the whole move call: no displacement and no collision handling.
 
-`TimerEvent` carries `timer()` — the game speed multiplier for the frame, `1f` is normal. It is reset to `1f` every frame, so set it every time you want it to hold.
+### MovePacketEvent
 
-```kotlin
-on<TimerEvent> { it.timer(1.6f) }
-```
+| Method | Type | Description |
+|---|---|---|
+| `x()` | `double` | outgoing packet X in world blocks |
+| `x(value)` | `void` | overrides outgoing X; the sent packet re-reads it |
+| `y()` | `double` | outgoing packet Y in world blocks, feet position |
+| `y(value)` | `void` | overrides outgoing Y; the sent packet re-reads it |
+| `z()` | `double` | outgoing packet Z in world blocks |
+| `z(value)` | `void` | overrides outgoing Z; the sent packet re-reads it |
+| `yaw()` | `float` | outgoing packet yaw in degrees, unclamped |
+| `yaw(value)` | `void` | overrides outgoing yaw; the sent packet re-reads it |
+| `pitch()` | `float` | outgoing packet pitch in degrees, unclamped |
+| `pitch(value)` | `void` | overrides outgoing pitch; the sent packet re-reads it |
+| `onGround()` | `boolean` | outgoing on-ground flag |
+| `onGround(value)` | `void` | overrides the flag; the sent packet re-reads it |
+| `sprinting()` | `boolean` | sprint state used by the sprint packet |
+| `sprinting(value)` | `void` | overrides it; the sprint packet re-reads it |
 
-Nothing clamps that number: `0f` stops time and divides by zero downstream, negatives run it backwards. Keep it sane. The client's own Timer module writes the same value, so whichever of you runs last wins — use `Priority.LAST` if you need it to be you.
+Cancelling sends no position, rotation or sprint packet that tick.
+
+### MoveRelativeEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `speed()` | `float` | movement speed factor applied to the input |
+| `input()` | [`Vec`](../game/math.md) | raw input: x sideways, y upward, z forward, each about -1..1 |
+
+Read-only: nothing written to this event is copied back.
+
+### SlowdownEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `multiplier()` | `float` | item-use movement multiplier, 1.0 = no slowdown |
+| `multiplier(value)` | `void` | overrides it; returned in place of the vanilla value, not clamped |
+
+### FireworkEntitySpeedEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `speed()` | `double` | elytra boost factor, vanilla value 1.5 |
+| `speed(value)` | `void` | overrides the boost for this tick; the game re-reads it |
+| `firework()` | [`Entity`](../game/entities.md) | the firework rocket entity |
+| `shooter()` | [`LivingEntity?`](../game/entities.md) | gliding entity being boosted, null when the rocket has none |
+
+Fires for every rocket in the world, not only your own.
+
+### WebCollisionEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `x()` | `int` | cobweb block X |
+| `y()` | `int` | cobweb block Y |
+| `z()` | `int` | cobweb block Z |
+| `position()` | [`Vec`](../game/math.md) | block position as a vector, a copy |
+
+Cancelling skips the cobweb slowdown.
 
 ## Combat
 
-| Event | When | Cancel |
+| Event | Cancellable | Fires when |
 |---|---|---|
-| `AttackEvent` | you hit an entity, `target()` | yes |
-| `AttackedEvent` | the hit went through, `target()` | |
-| `UseItemEvent` | item use starts, `hand()` | yes |
-| `StopUsingItemEvent` | the client is about to release right click — cancel it to keep eating/drinking/charging | yes |
-| `FinishUsingItemEvent` | an item finished being used — food eaten, potion drunk, `item()` | |
-| `RightClickEvent` | the client is about to process a right click, `hand()` | yes |
-| `JumpEvent` | the player jumped | |
-| `SlowdownEvent` | the game slows movement down (food, shield, bow); `multiplier()` can be rewritten | |
-| `TargetUpdateEvent` | the client's combat target changed | |
+| `AttackEvent` | yes | before the client attacks an entity |
+| `AttackedEvent` | no | after an attack went through |
+| `TargetUpdateEvent` | no | the client's combat target changed or timed out |
 
-`TargetUpdateEvent` carries `previous()` and `target()` — both can be null, and `lost()` is the short way to ask whether the target is gone. It is the *client's* target, published by whatever combat module is running (AttackAura, TriggerBot, AimAssist) — with none of them on, it never fires.
+### AttackEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `target()` | [`Entity`](../game/entities.md) | entity about to be attacked |
+
+Cancelling aborts the attack entirely — no swing, no packet, and the attack cooldown is not reset.
+
+### AttackedEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `target()` | [`Entity`](../game/entities.md) | entity that was just attacked |
+
+### TargetUpdateEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `previous()` | [`Entity?`](../game/entities.md) | target before the change, null when there was none |
+| `target()` | [`Entity?`](../game/entities.md) | new target, null when it was lost or timed out |
+| `lost()` | `boolean` | true when `target()` is null |
+
+Published by the client's target tracker: with no combat module running and no `combat.markTarget(...)` call it never fires.
 
 ## Blocks
 
-| Event | When | Cancel |
+| Event | Cancellable | Fires when |
 |---|---|---|
-| `BlockHitEvent` | the client starts or continues breaking a block, `x()`/`y()`/`z()`, `side()` | yes |
-| `BlockBreakingEvent` | once a tick, before the client advances block breaking | yes |
-| `BlockPlacedEvent` | you placed a block, `block()` | |
+| `BlockBreakingEvent` | yes | every frame the client processes the breaking input |
+| `BlockHitEvent` | yes | the client starts or continues hitting a block |
+| `BlockPlacedEvent` | no | a block is placed in the client world, by any placer |
 
-`BlockBreakingEvent` fires every tick you are in a world, not only while you are digging — `breaking()` tells you which it is. Cancel it and the client skips its breaking step for that tick, including the bookkeeping that stops a break you have walked away from, so cancel it on the ticks you mean and not blindly.
+### BlockBreakingEvent
 
-`BlockPlacedEvent` is your own placements only: it comes from the client's predicted place, so blocks other players put down never reach it — those arrive as plain block updates. It gives you a full [`Block`](../game/world.md), so `id()`, `position()` and everything else is on it directly.
+| Method | Type | Description |
+|---|---|---|
+| `breaking()` | `boolean` | true while the attack key is held down |
+
+Cancelling skips the whole breaking step for that frame, including the abort bookkeeping.
+
+### BlockHitEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `x()` | `int` | block X in world block coordinates |
+| `y()` | `int` | block Y in world block coordinates |
+| `z()` | `int` | block Z in world block coordinates |
+| `side()` | [`Side`](../game/raycast.md) | struck face |
+| `position()` | [`Vec`](../game/math.md) | block position as a vector, a copy |
+
+Fires twice per break flow — at the first hit and at each progress update; cancelling makes both return false, so no hit packet and no progress.
+
+### BlockPlacedEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `block()` | [`Block`](../game/world.md) | placed block snapshot |
+| `id()` | `String` | block registry id |
+| `x()` | `int` | block X in world block coordinates |
+| `y()` | `int` | block Y in world block coordinates |
+| `z()` | `int` | block Z in world block coordinates |
+| `position()` | [`Vec`](../game/math.md) | block position as a vector |
 
 ## Inventory
 
-| Event | When | Cancel |
+| Event | Cancellable | Fires when |
 |---|---|---|
-| `SlotClickEvent` | a slot in an open container was clicked | yes |
-| `EffectEvent` | a status effect on your player was added, refreshed or removed | |
+| `SlotClickEvent` | yes | a slot in a container screen was clicked |
+| `RightClickEvent` | yes | the client runs its right-click step for a hand |
+| `UseItemEvent` | yes | the client is about to send an item-use interaction |
+| `StopUsingItemEvent` | yes | the client is about to stop using the held item |
+| `FinishUsingItemEvent` | no | an item finished being used, food eaten, potion drunk |
 
-`SlotClickEvent` carries `syncId()`, `slotId()`, `button()`, `action()` and `item()` — the stack that is in the slot right now. Cancel it and the click never reaches the server.
+### SlotClickEvent
 
-```kotlin
-on<SlotClickEvent> {
-    if (it.action() == SlotAction.THROW) it.cancel()
-}
-```
+| Method | Type | Description |
+|---|---|---|
+| `syncId()` | `int` | screen handler sync id of the open container |
+| `slotId()` | `int` | slot index in the screen handler, -999 outside the window |
+| `button()` | `int` | mouse button, 0 left and 1 right, or the target hotbar index for SWAP |
+| `action()` | [`SlotAction`](../game/containers.md) | click action type, null maps to PICKUP |
+| `item()` | [`Item`](../game/inventory.md) | stack in the clicked slot |
 
-`EffectEvent` carries `effect()` and `action()`. `action()` is `ADD`, `UPDATE`, `REMOVE` or `PLAYER_INIT`; on `PLAYER_INIT` the player object is only being created and `effect()` is `null`.
+Cancelling drops the click: nothing is processed and no click packet is sent.
+
+### RightClickEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `hand()` | [`Hand`](../game/inventory.md) | hand being used, null maps to MAIN_HAND |
+
+Cancelling skips the whole use step — block and entity interaction included.
+
+### UseItemEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `hand()` | [`Hand`](../game/inventory.md) | hand performing the interaction, null maps to MAIN_HAND |
+
+Cancelling makes the interaction pass, so no item-use packet is sent.
+
+### FinishUsingItemEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `item()` | [`Item`](../game/inventory.md) | stack whose use just completed |
 
 ## Input
 
-| Event | When | Cancel |
+| Event | Cancellable | Fires when |
 |---|---|---|
-| `KeyEvent` | a key or mouse button went down or up | yes |
-| `CharEvent` | a character was typed | yes |
-| `MouseScrollEvent` | the mouse wheel | yes |
-| `MoveInputEvent` | movement input for the tick, fields can be rewritten | yes |
-| `LookInputEvent` | mouse movement, `deltaX`/`deltaY` can be rewritten | yes |
+| `KeyEvent` | yes | a key or mouse button goes down, up or repeats |
+| `CharEvent` | yes | a character is typed into the window |
+| `MouseScrollEvent` | yes | the mouse wheel scrolls |
+| `LookInputEvent` | yes | an entity's look direction changes from cursor movement |
 
-`KeyEvent` carries `key()`, `mods()`, `action()`, plus the short `pressed()`, `released()`, `mouse()` and `matches(Key.G)`.
+### KeyEvent
 
-`MoveInputEvent` is what the game is about to do: `forward()`, `backward()`, `left()`, `right()`, `jump()`, `sneak()`, `sprint()`. Every field both reads and writes:
+| Method | Type | Description |
+|---|---|---|
+| `key()` | [`Key`](../actions/keys.md) | pressed key or mouse button, `Key.UNKNOWN` when unmapped |
+| `mods()` | `int` | GLFW modifier bitmask, 0 for synthetic events |
+| `action()` | [`KeyAction`](../actions/keys.md) | PRESS, RELEASE or REPEAT |
+| `mouse()` | `boolean` | true for mouse buttons |
+| `pressed()` | `boolean` | true when the action is PRESS |
+| `released()` | `boolean` | true when the action is RELEASE |
+| `matches(other)` | `boolean` | true when the key constant is the same |
 
-```kotlin
-on<MoveInputEvent>(priority = Priority.LAST) {
-    it.sprint(true)
-    it.jump(true)
-}
-```
+Cancelling keeps the key out of MC keybinds and screens.
+
+### CharEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `codePoint()` | `int` | Unicode code point of the typed character |
+| `character()` | `String` | the code point as a string, 1 or 2 chars |
+| `mods()` | `int` | GLFW modifier bitmask active while typing |
+
+### MouseScrollEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `vertical()` | `double` | vertical wheel delta, positive is up |
+| `horizontal()` | `double` | horizontal wheel delta, 0 without a tilt wheel |
+
+### LookInputEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `deltaX()` | `double` | horizontal cursor delta, multiplied by 0.15 to get yaw degrees |
+| `deltaX(value)` | `void` | overrides the horizontal delta; the game re-reads it |
+| `deltaY()` | `double` | vertical cursor delta, multiplied by 0.15 to get pitch degrees |
+| `deltaY(value)` | `void` | overrides the vertical delta; the game re-reads it |
+
+Fires for any entity, not only the local player; cancelling leaves yaw and pitch untouched.
 
 ## World and entities
 
-| Event | When | Cancel |
+| Event | Cancellable | Fires when |
 |---|---|---|
-| `EntitySpawnEvent` | an entity appeared, `entity()` | |
-| `EntityRemoveEvent` | an entity went away, `entity()` | |
-| `WorldLoadEvent` | a world loaded — joining a server, changing dimension | |
-| `ScreenCloseEvent` | a screen closed (inventory, chest, menu) | |
-| `PlaySoundEvent` | the world is about to play a sound | yes |
-| `PotionImpactEvent` | a thrown potion hit something | |
-| `ServerConnectEvent` | you started connecting to a server | |
+| `EntitySpawnEvent` | no | an entity was added to the client world |
+| `EntityRemoveEvent` | no | an entity is removed from the client world |
+| `EffectEvent` | no | a status effect on the local player is added, refreshed or removed |
+| `PotionImpactEvent` | no | a thrown potion collided, once per potion entity |
+| `PlaySoundEvent` | yes | a positional world sound is about to be built |
+| `WorldLoadEvent` | no | the client joins a world, respawns or changes dimension |
 
-`WorldLoadEvent` is a good place to reset anything tied to one world.
+### EntitySpawnEvent
 
-`PlaySoundEvent` gives you `id()` and `category()` to read, and `volume()`, `pitch()`, `x()`, `y()`, `z()` to read and rewrite. Cancel it for silence.
+| Method | Type | Description |
+|---|---|---|
+| `entity()` | [`Entity`](../game/entities.md) | entity just added to the world |
 
-```kotlin
-on<PlaySoundEvent> {
-    if (it.id() == "minecraft:entity.player.levelup") it.cancel()
-}
-```
+### EntityRemoveEvent
 
-`PotionImpactEvent` fires once per potion and carries `potion()`, `position()` and `hitEntity()` — the last one is `null` when the potion hit a block instead.
+| Method | Type | Description |
+|---|---|---|
+| `entity()` | [`Entity`](../game/entities.md) | entity being removed from the world |
 
-`ServerConnectEvent` carries `host()`, `port()` and `address()`, and fires before the world loads — earlier than `WorldLoadEvent`.
+Covers despawn, death removal and chunk unload alike; the reason is not exposed.
+
+### EffectEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `effect()` | [`Effect?`](../game/entities.md) | effect snapshot, null only for `PLAYER_INIT` |
+| `action()` | `EffectEvent.Action` | which map operation triggered the event |
+| `added()` | `boolean` | true when the action is `ADD` |
+| `removed()` | `boolean` | true when the action is `REMOVE` |
+
+| Constant | Description |
+|---|---|
+| `ADD` | effect newly inserted into the player's effect map |
+| `UPDATE` | effect key already present, instance replaced |
+| `REMOVE` | effect removed from the map |
+| `PLAYER_INIT` | the local player's effect map was created, `effect()` is null |
+
+### PotionImpactEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `potion()` | [`Entity`](../game/entities.md) | the potion projectile entity |
+| `hitEntity()` | [`Entity?`](../game/entities.md) | entity that was hit, null for block and miss hits |
+| `position()` | [`Vec?`](../game/math.md) | impact position in world blocks, null without a hit result |
+
+### PlaySoundEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `id()` | `String` | sound registry id, empty when unresolvable |
+| `category()` | `String` | lowercased sound category, empty when absent |
+| `volume()` | `float` | sound volume, 1.0 = normal |
+| `volume(value)` | `void` | overrides volume; the sound instance re-reads it |
+| `pitch()` | `float` | pitch multiplier, vanilla range 0.5..2.0 |
+| `pitch(value)` | `void` | overrides pitch; the sound instance re-reads it |
+| `x()` | `double` | sound source X in world blocks |
+| `x(value)` | `void` | overrides source X; the sound instance re-reads it |
+| `y()` | `double` | sound source Y in world blocks |
+| `y(value)` | `void` | overrides source Y; the sound instance re-reads it |
+| `z()` | `double` | sound source Z in world blocks |
+| `z(value)` | `void` | overrides source Z; the sound instance re-reads it |
+| `position()` | [`Vec`](../game/math.md) | current x, y and z as a copy |
+| `position(value)` | `void` | sets x, y and z from the vector |
+
+`id()` and `category()` are read-only. Only sounds routed through the positional world-sound path fire this event; cancelling means the sound is not played.
 
 ## Packets
 
-| Event | When | Cancel |
+| Event | Cancellable | Fires when |
 |---|---|---|
-| `PacketReceiveEvent` | a packet arrived from the server, `packet()` | yes |
-| `PacketSendEvent` | the client is about to send a packet, `packet()` | yes |
+| `PacketReceiveEvent` | yes | a clientbound packet was decoded, before the game handles it |
+| `PacketSendEvent` | yes | a serverbound packet is about to leave the client |
 
-These fire **on the network thread**. Details and the packet list are in [Packets](../actions/packets.md).
+### PacketReceiveEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `packet()` | [`S2CPacket`](../actions/packets.md) | decoded clientbound packet |
+
+Runs on the netty IO thread; inside a bundle each sub-packet fires separately and cancelling removes it from the bundle.
+
+### PacketSendEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `packet()` | [`C2SPacket`](../actions/packets.md) | decoded serverbound packet |
+
+Runs on the calling thread. For both events only packets the client can decode reach a handler, and `EventOptions` is ignored.
 
 ## Rendering
 
-| Event | When | Cancel |
+| Event | Cancellable | Fires when |
 |---|---|---|
-| `Render2DEvent` | every frame, the client overlay layer | |
-| `Render3DEvent` | every frame, in the world | |
-| `BlockOutlineEvent` | the game is about to draw the outline of the block you are looking at | yes |
-| `CameraEvent` | the camera position and rotation for the frame, all writable | yes |
-| `SwingSpeedEvent` | the game asks how long a hand swing lasts | |
-| `RenderItemEvent` | before the swing transform of the first-person item is applied | yes |
-| `FramebufferResizeEvent` | the window changed size | |
-| `PerspectiveEvent` | the point of view changed — F5 or a script | |
+| `Render2DEvent` | no | every frame, in the script 2D pass after the HUD |
+| `Render3DEvent` | no | every frame, during the world render |
+| `CameraEvent` | yes | every frame, after the camera position was computed |
+| `PerspectiveEvent` | no | the point of view changed to a different value (API 2) |
+| `RenderCrosshairEvent` | yes | the vanilla crosshair is about to be drawn (API 2) |
+| `RenderItemEvent` | yes | before the first-person swing transform is applied |
+| `BlockOutlineEvent` | yes | before the targeted block outline is drawn |
+| `SwingSpeedEvent` | no | the game asks how long a hand swing lasts |
 
-`Render2DEvent` carries `render()`, the screen size `width()` × `height()` and `tickDelta()`. `Render3DEvent` carries `render()`, `tickDelta()` and the camera position `camera()`. See [2D render](../ui/render-2d.md) and [3D render](../ui/render-3d.md).
+### Render2DEvent
 
-`BlockOutlineEvent` carries the block coordinates `x()`, `y()`, `z()` and `box()` — the outline shape in world coordinates, so a slab gives you a half-height box. Cancel it and the vanilla outline is gone; draw your own in `Render3DEvent`:
+| Method | Type | Description |
+|---|---|---|
+| `render()` | [`Render`](../ui/render-2d.md) | the shared 2D drawing surface |
+| `tickDelta()` | `float` | partial tick progress, 0..1 |
+| `width()` | `float` | framebuffer width in physical pixels, not GUI-scaled |
+| `height()` | `float` | framebuffer height in physical pixels, not GUI-scaled |
 
-```kotlin
-var target: Box? = null
+### Render3DEvent
 
-on<BlockOutlineEvent> { e ->
-    e.cancel()
-    target = e.box()
-}
+| Method | Type | Description |
+|---|---|---|
+| `render()` | [`Render3D`](../ui/render-3d.md) | the shared world-space drawing surface |
+| `tickDelta()` | `float` | partial tick progress, 0..1 |
+| `camera()` | [`Vec`](../game/math.md) | camera world position in blocks, the origin world draws use |
+| `viewMatrix()` | `float[]` | 16 floats, column-major, cloned per call (API 2) |
+| `projectionMatrix()` | `float[]` | 16 floats, column-major, cloned per call (API 2) |
 
-on<Render3DEvent> { e ->
-    e.render().box(target ?: return@on, Colors.CYAN, false)
-}
-```
+Both render events ignore `EventOptions` and are skipped when nothing is subscribed; `Render3DEvent` also needs a loaded world.
 
-It fires during the world render, before both render events of the same frame, so what you cache is always current. It stops firing the moment you look away — clear your copy in `ClientTickEvent` if nothing arrived.
+### CameraEvent
 
-`CameraEvent` gives you `yaw()`, `pitch()`, `x()`, `y()`, `z()` — all of them read and write. Cancelling skips the rest of the camera update — third-person distance and the sleeping tilt — but keeps the values you set.
+| Method | Type | Description |
+|---|---|---|
+| `yaw()` | `float` | camera yaw in degrees, interpolated by tick delta |
+| `yaw(value)` | `void` | overrides camera yaw; applied to the camera |
+| `pitch()` | `float` | camera pitch in degrees, interpolated by tick delta |
+| `pitch(value)` | `void` | overrides camera pitch; applied to the camera |
+| `x()` | `double` | camera X in world coordinates, interpolated |
+| `x(value)` | `void` | overrides camera X; applied to the camera |
+| `y()` | `double` | camera Y in world coordinates, eye offset included |
+| `y(value)` | `void` | overrides camera Y; applied to the camera |
+| `z()` | `double` | camera Z in world coordinates, interpolated |
+| `z(value)` | `void` | overrides camera Z; applied to the camera |
+| `position()` | [`Vec`](../game/math.md) | current x, y and z as a copy |
+| `position(value)` | `void` | sets x, y and z from the vector |
 
-`SwingSpeedEvent` carries `durationTicks()`: how many ticks one swing takes, `6` by default. Lower it for a faster animation, but not to `0` — swing progress is a division by it.
+Cancelling skips the rest of the camera update — third-person distance and clipping — but the values set here are still applied.
 
-`RenderItemEvent` carries `arm()` and `swingProgress()`. Cancel it and the swing transform is not applied — the item stays still in your hand.
+### PerspectiveEvent
 
-`FramebufferResizeEvent` carries `width()` and `height()` in real pixels — the same space `Render2DEvent` draws in. Use it to drop anything you sized to the old window.
+| Method | Type | Description |
+|---|---|---|
+| `previous()` | [`Perspective`](../actions/control.md#game-settings) | perspective before the change, never null |
+| `current()` | [`Perspective`](../actions/control.md#game-settings) | perspective after the change, never null |
 
-`PerspectiveEvent` carries `previous()` and `current()`, both a `Perspective`. It is the option the player switched, not what a client module forces on the frame — see [Game settings](../actions/control.md#game-settings).
+Setting the same perspective again fires nothing.
+
+### RenderItemEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `arm()` | [`Arm`](../game/inventory.md) | arm being rendered, LEFT or RIGHT |
+| `swingProgress()` | `float` | swing animation progress, 0..1 |
+
+Cancelling leaves the matrix at the hand origin, so the swing transform is skipped for that hand.
+
+### BlockOutlineEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `x()` | `int` | outlined block X in world block coordinates |
+| `y()` | `int` | outlined block Y in world block coordinates |
+| `z()` | `int` | outlined block Z in world block coordinates |
+| `box()` | [`Box`](../game/math.md) | outline shape offset to absolute world coordinates |
+
+Fires only while an outline with a non-empty shape exists, and before both render events of the same frame.
+
+### SwingSpeedEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `durationTicks()` | `int` | hand-swing animation length in ticks, vanilla base 6 |
+| `durationTicks(value)` | `void` | overrides the duration; returned to the game, not clamped |
+
+Local player only; swing progress divides by this value.
 
 ## Modules
 
-| Event | When | Cancel |
+| Event | Cancellable | Fires when |
 |---|---|---|
-| `ModuleToggleEvent` | a client module or a script was switched | |
+| `ModuleToggleEvent` | no | a client module or a script toggled, after the state changed |
 
-Carries `name()`, `enabled()` and `fromScript()` — the last one tells you whether it was a script or a built-in module.
+### ModuleToggleEvent
 
-## What tickDelta is
+| Method | Type | Description |
+|---|---|---|
+| `name()` | `String` | module registry name, or the script toggle name |
+| `enabled()` | `boolean` | state after the toggle |
+| `fromScript()` | `boolean` | true when the toggled unit is a script |
 
-The game thinks 20 times per second but draws far more often. `tickDelta` is a fraction from 0 to 1 telling you how far the frame is past the last tick. You use it so movement on screen is smooth instead of stepping 20 times a second.
+## Everything else
+
+| Event | Cancellable | Fires when |
+|---|---|---|
+| `ServerConnectEvent` | no | the client starts connecting to a multiplayer server |
+| `ScreenCloseEvent` | no | any vanilla screen is closing |
+| `FramebufferResizeEvent` | no | the game window resolution changed |
+
+### ServerConnectEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `host()` | `String` | server hostname, empty when the address is null |
+| `port()` | `int` | server port, 0 when the address is null |
+| `address()` | `String` | host and port joined by a colon |
+
+Fires before the socket is opened, so earlier than `WorldLoadEvent`.
+
+### FramebufferResizeEvent
+
+| Method | Type | Description |
+|---|---|---|
+| `width()` | `int` | framebuffer width in pixels, not GUI-scaled |
+| `height()` | `int` | framebuffer height in pixels, not GUI-scaled |

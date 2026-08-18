@@ -1,115 +1,78 @@
 # Client modules
 
-`client.modules()` gives you Nursultan's built-in modules: you can read their state, switch them, and drive their settings.
-
-## Finding a module
-
-```kotlin
-client.modules().all()             // every module
-client.modules().exists("AttackAura")
-client.modules().find("AttackAura")   // null when missing
-client.modules().get("AttackAura")    // errors when missing
-```
-
-`find` returns `null`, `get` throws a clear error — take whichever suits the spot.
-
-Lookup works by the internal name or by how the module reads in the menu; case, spaces and underscores do not matter:
-
-```kotlin
-client.modules().get("attack aura")
-```
-
-## What you can do with a module
+`client.modules()` reaches the client's own built-in modules and their flattened setting trees. Every reference — to a module, a setting or an entry — is matched with `-`, `_`, `.` and whitespace dropped and the rest lowercased, so `AttackAura`, `attack aura` and `attack-aura` all hit the same module.
 
 ```kotlin
 val aura = client.modules().get("AttackAura")
 
-aura.name()
-aura.displayName()
-aura.enabled()
-aura.setEnabled(true)
-aura.toggle()
-aura.bind()
-```
-
-## Module settings
-
-```kotlin
-aura.settings()                    // every setting as a list
-aura.setting("range")              // one of them, or null
-```
-
-If you know the type, ask for it directly and skip the cast:
-
-```kotlin
-aura.checkBox("...")
-aura.slider("...")
-aura.rangeSlider("...")
-aura.input("...")
-aura.selectable("...")
-aura.combo("...")
-aura.colorPicker("...")
-aura.hotkey("...")
-```
-
-If the setting turns out to be a different type you get a clear error.
-
-## The setting reference
-
-Right-clicking a setting in the menu copies its reference, which looks like this:
-
-```
-module.attackaura.setting.targets.players
-```
-
-That is the most reliable way to reach a setting:
-
-```kotlin
-aura.slider("module.attackaura.setting.range").value(3.5f)
-```
-
-Shorter forms work too — the path inside the module, or the last segment:
-
-```kotlin
-aura.slider("range")
-aura.combo("targets")
-```
-
-Short forms are convenient, but when a module has two settings with similar names the full reference is safer. Case, dots, dashes and underscores are ignored during lookup.
-
-## Setting options
-
-For a `selectable` or a `combo` the options are [entries](../settings/entries.md), and they have references too:
-
-```kotlin
-val targets = aura.combo("targets")
-
-targets.options()                  // option names
-targets.set("players", true)
-targets.set(targets.entry("entry.animals"), false)
-
-val mode = aura.selectable("mode")
-mode.select("silent")
-mode.value().name()
-```
-
-## What you cannot do
-
-A module belongs to the client, not to your script. So:
-
-* you cannot listen for changes to its settings (`onChange`);
-* you cannot change its visibility (`visibleWhen`);
-* you cannot change the unit on its slider (`postfix`);
-* you cannot attach logic to its entries.
-
-All of that is only for your script's own settings.
-
-## Noticing that something was switched
-
-```kotlin
-on<ModuleToggleEvent> { e ->
-    chat.print(e.name() + " -> " + e.enabled())
+chat.print(aura.displayName() + " fov " + aura.slider("fov").value())
+aura.slider("fov").value(120f)
+if (!aura.enabled()) {
+    aura.toggle()
 }
 ```
 
-The event covers both client modules and scripts; `fromScript()` tells you which.
+## Finding a module
+
+**`Modules`**
+
+| Method | Type | Description |
+|---|---|---|
+| `client.modules().all()` | `List<Module>` | every module in registry order, the order the menu shows |
+| `client.modules().exists(name)` | `boolean` | true when a module matches that reference |
+| `client.modules().find(name)` | `Module?` | matching module, null when nothing matches or the name is blank |
+| `client.modules().get(name)` | `Module` | same lookup (throws ScriptException when nothing matches) |
+
+Lookup tries the registry name first, then the spaced display name; the returned list is immutable and holds `DEVELOPMENT` modules only for administrator accounts.
+The wrapper is cached on the module, so every lookup of the same module hands back the same `Module` instance.
+
+## The module
+
+**`Module`**
+
+| Method | Type | Description |
+|---|---|---|
+| `module.name()` | `String` | registry name, no spaces, e.g. `AttackAura` |
+| `module.displayName()` | `String` | name with spaces before capitals, e.g. `Attack Aura` |
+| `module.bind()` | `Bind` | the module's toggle keybind — [Keys and binds](../actions/keys.md) |
+| `module.enabled()` | `boolean` | current toggle state |
+| `module.setEnabled(value)` | `void` | sets the state; ignored when it already matches |
+| `module.toggle()` | `void` | flips the state |
+
+Both writes run at once on the client thread and are queued onto it from any other thread; a module can refuse the change in its own enable/disable code.
+Every state change dispatches `ModuleToggleEvent` — [Event list](../events/reference.md).
+
+## Its settings
+
+**`Module`**
+
+| Method | Type | Description |
+|---|---|---|
+| `module.settings()` | `List<Setting>` | depth-first flattened tree, nested settings included, snapshotted at first access |
+| `module.setting(reference)` | `Setting?` | by stable id, then full name, then leaf name; null when nothing matches |
+| `module.checkBox(reference)` | `CheckBox` | typed lookup (throws ScriptException when missing or of another type) |
+| `module.slider(reference)` | `Slider` | typed lookup (throws ScriptException when missing or of another type) |
+| `module.rangeSlider(reference)` | `RangeSlider` | typed lookup (throws ScriptException when missing or of another type) |
+| `module.input(reference)` | `Input` | typed lookup (throws ScriptException when missing or of another type) |
+| `module.selectable(reference)` | `Selectable` | typed lookup (throws ScriptException when missing or of another type) |
+| `module.combo(reference)` | `Combo` | typed lookup (throws ScriptException when missing or of another type) |
+| `module.colorPicker(reference)` | `ColorPicker` | typed lookup (throws ScriptException when missing or of another type) |
+| `module.hotkey(reference)` | `Hotkey` | typed lookup (throws ScriptException when missing or of another type) |
+
+The members of those setting types are on [Kinds of settings](../settings/types.md); a group header has no script type and comes back as a plain `Setting`.
+A built-in `name()` is the locale key after `.setting.` and `id()` is the whole key (`module.attackaura.setting.aim-range`); right-clicking a setting in the menu copies that key while development mode is on.
+
+## What a module's settings refuse
+
+| Method | Type | Description |
+|---|---|---|
+| `setting.id(stableId)` | `Setting` | throws ScriptException; the id is the module's locale key |
+| `setting.visibleWhen(condition)` | `Setting` | throws ScriptException; the client owns menu visibility |
+| `onChange(listener)` | `CheckBox` `Slider` `RangeSlider` `Input` `Selectable` `Combo` `ColorPicker` | throws ScriptException on all seven setting types |
+| `postfix(unit)` | `Slider` `RangeSlider` | throws ScriptException; the unit comes from the module |
+| `entry.onSelect(action)` | `Entry` | throws ScriptException on a module's entry |
+| `entry.onDeselect(action)` | `Entry` | throws ScriptException on a module's entry |
+| `entry.on(type, options, handler)` | `Subscription` | throws ScriptException on a module's entry |
+
+Reads and value writes work on every built-in setting: `slider.value(v)` and `rangeSlider.value(from, to)` clamp into the module's own `min()..max()`, and each write is dispatched onto the client thread.
+A module's entry is still switched through its own `Selectable`/`Combo` — [Entries with their own logic](../settings/entries.md).

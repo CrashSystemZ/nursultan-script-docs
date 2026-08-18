@@ -1,45 +1,40 @@
 # The project in your IDE
 
-You can write scripts in Notepad, but an IDE gives you autocompletion across the whole API, type checking and go-to-definition. It is a one-time setup.
+The script development folder from the site (`nursultan-scripts-v2.zip`) unpacks into `nursultan-scripts/`, a ready IntelliJ IDEA project: the API jars, the build files and an example script. Inside the client's scripts folder the client refreshes `.sdk/` and both build files on every launch.
 
 ## What to download
 
-The script development folder is on the site. It already contains everything:
-
 | Path | What it is |
 |---|---|
-| `*.kts` | your scripts — `example.kts` is there to start from |
-| `assets/` | fonts, images and data your scripts read — see [the assets folder](../extras/assets.md) |
-| `.sdk/nursultan-script-api-vN.jar` | the API itself, and the script template that tells the IDE what a `.kts` in this folder is |
-| `.sdk/nursultan-script-packets-<version>.jar` | Minecraft packet classes, only needed if your script reads or sends them |
-| `build.gradle.kts`, `settings.gradle.kts` | wire those jars in |
-| `README.md` | the same setup steps as this page, offline |
+| `example.kts` | example script; every `.kts` in the folder root is one script |
+| `assets/` | fonts, images and data the scripts read — see [the assets folder](../extras/assets.md) |
+| `.sdk/nursultan-script-api-v<N>.jar` | the API and the `.kts` script definition; `<N>` is the client's script API version, currently 2 |
+| `.sdk/nursultan-script-packets-<mcVersion>.jar` | Minecraft packet classes, needed only by scripts that read or send packets; the suffix is the client's Minecraft version |
+| `build.gradle.kts`, `settings.gradle.kts` | wire the `.sdk` jars and Kotlin scripting in |
+| `README.md` | the same steps, offline |
 
-`.sdk/` is generated — do not edit anything inside it. When you update the SDK, replace the whole folder.
+`.sdk/` is generated: the client overwrites its jars and deletes every `nursultan-script-*.jar` left from another version. Files are rewritten only when their bytes changed, so an unchanged SDK causes no Gradle re-sync.
 
 ## Open it in IntelliJ IDEA
 
-`File → Open`, pick the folder, "Open as Project", trust it. Gradle syncs once and downloads only the Kotlin plugin.
+1. `File → Open`, pick the folder, "Open as Project", trust the project.
+2. Gradle syncs once and pulls the Kotlin plugin, `kotlin-scripting-jvm` and `kotlin-scripting-common` from Maven Central.
+3. The project sets `jvmToolchain(21)`, so Gradle needs a JDK 21.
 
-## The required step: the script definition
+## The script definition
 
-IntelliJ does not discover custom script definitions on its own, so you have to point it at ours once per project:
+**Settings → Languages & Frameworks → Kotlin → Kotlin Scripting** → *Custom Definitions* → **Search Definitions** → **Nursultan Script** (`.kts`) appears in the list → keep it enabled and **above** *Default Kotlin Script* → **Apply**.
 
-> **Settings → Languages & Frameworks → Kotlin → Kotlin Scripting**
-> → under *Custom Definitions* press **Search Definitions**
-> → **Nursultan Script** (`.kts`) shows up in the list
-> → keep it enabled and **above** *Default Kotlin Script* → **Apply**
-
-Without this every `.kts` is red. Resolution is computed per file, so open a script afterwards to let the IDE work it out. If references still do not resolve, `File → Invalidate Caches → Invalidate and Restart`.
+IntelliJ does not discover custom script definitions on its own: until this is applied every `.kts` is red. Resolution is computed per file, so open a script after applying.
 
 ## Moving it into the game
 
-A finished script is a single `.kts`. Copy it into the client's scripts folder (`%APPDATA%\Nursultan\scripts`) and switch it on in the Scripts tab. Nothing else needs to travel — not `.sdk`, not the build files.
+1. Copy the `.kts` into `%APPDATA%\Nursultan\scripts`; the file name without `.kts` is the script id.
+2. Copy the fonts, images and data it reads into `%APPDATA%\Nursultan\scripts\assets`, keeping the subfolders used in the project.
+3. Switch the script on in the Scripts tab.
 
-If the script reads fonts, images or data, those files travel too — into `%APPDATA%\Nursultan\scripts\assets`, keeping the same subfolders you used while developing.
+`.sdk/` and the build files stay behind — the client does not read them. Saving an already loaded file recompiles and reloads the script in the running game.
 
-Saving a file that is already loaded reloads the script live, so you never restart the game to test an edit.
+## Developing in the game folder
 
-## Developing straight in the game folder
-
-If you would rather not copy anything, you can work directly in the client's scripts folder: put `build.gradle.kts`, `settings.gradle.kts` and `.sdk/` there. The client will see it is a project and keep `.sdk` up to date on every launch. Without those files it leaves the folder alone.
+`%APPDATA%\Nursultan\scripts` counts as the project when it contains `build.gradle.kts` or a `.sdk/` folder; put the whole development folder there and open that path in IDEA. On every launch the client then rebuilds the `.sdk` jars out of itself and rewrites `build.gradle.kts` and `settings.gradle.kts`, so the SDK never lags behind the client. With neither `build.gradle.kts` nor `.sdk/` present the client leaves the folder alone.

@@ -1,262 +1,159 @@
 # Мир и блоки
 
-`world` — это текущий мир. Работает, только пока ты в игре, так что оборачивай в `whenInGame` или проверяй `inGame`.
-
-## Что за мир
+`world` — это `game.world()`. Любой вызов бросает `ScriptStateException`, когда мира нет; чтение блока — снимок на момент вызова.
 
 ```kotlin
-world.dimension()        // "minecraft:overworld" и т.п.
-world.timeTicks()        // сколько мир существует
-world.dayTimeTicks()     // время суток, 0..24000
-world.raining()
-world.thundering()
-world.rainGradient()     // 0..1, насколько сильно идёт прямо сейчас
-world.thunderGradient()  // 0..1, то же самое про грозу
-```
-
-`raining()` переключается в момент начала погоды, а градиент нарастает несколько секунд — именно им удобно плавно гасить эффект.
-
-## Блоки
-
-Блок берётся по координатам или по точке:
-
-```kotlin
-val under = world.block(player.x().toInt(), player.y().toInt() - 1, player.z().toInt())
-val here = world.block(player.position())
-```
-
-Что можно про него спросить:
-
-```kotlin
-under.id()               // "minecraft:stone"
-under.name()             // как называется в игре
-under.x()  under.y()  under.z()
-under.position()
-under.box()              // его коробка в мире
-
-under.air()
-under.solid()
-under.liquid()
-under.opaque()
-under.blocksMovement()
-under.replaceable()      // на его месте можно поставить свой блок: воздух, вода, трава
-
-under.luminance()        // сколько света излучает
-under.hardness()         // как долго ломать
-under.blastResistance()
-under.slipperiness()     // лёд скользкий
-
-under.fullCube()
-under.hasCollision()
-under.hasBlockEntity()   // сундук, табличка, шалкер
-under.emitsRedstone()
-under.toolRequired()     // голыми руками ничего не выпадет
-under.burnable()
-under.randomTicks()
-under.pistonBehavior()   // "normal", "destroy", "block", "push_only"
-under.velocityMultiplier()      // душевой песок замедляет
-under.jumpVelocityMultiplier()  // мёд укорачивает прыжок
-under.opacity()          // сколько света съедает
-under.mapColor()         // его цвет на карте, 0xAARRGGBB
-```
-
-## Состояние блока и теги
-
-Идентификатор блока говорит, *что* это. Состояние говорит, *как* оно поставлено. Именно там живут «открыт ли сундук», «куда повёрнута лестница» и «сколько налито в котёл»:
-
-```kotlin
-val block = world.block(position)
-
-block.properties()          // все свойства как имя -> значение, и то и другое строки
-block.property("facing")    // одно из них, или null, если у блока такого свойства нет
-```
-
-```kotlin
-if (block.property("open") == "true") {
-    chat.print("люк открыт")
+on<ClientTickEvent> {
+    whenInGame {
+        val under = world.block(player.x().toInt(), player.y().toInt() - 1, player.z().toInt())
+        val fluid = under.fluid()
+        val nearby = world.entitiesNear(player.position(), 8.0, filters.attackable())
+        chat.print("${under.id()} ${fluid?.id() ?: "сухо"} ${nearby.size}")
+    }
 }
 ```
 
-Значения всегда строки, потому что набор свойств зависит от блока: `"true"`, `"north"`, `"5"`. Сравнивай их как текст, не жди чисел.
+## Сам мир
 
-Теги группируют блоки так же, как их группирует игра:
+| Метод | Тип | Описание |
+|---|---|---|
+| `world.dimension()` | `String` | ключ измерения, например `minecraft:overworld` |
+| `world.timeTicks()` | `long` | общий возраст мира в тиках |
+| `world.dayTimeTicks()` | `long` | время суток в тиках, длина цикла 24000 |
+| `world.raining()` | `boolean` | в этом мире идёт дождь |
+| `world.thundering()` | `boolean` | в этом мире идёт гроза |
+| `world.rainGradient()` | `float` | сила дождя 0..1 |
+| `world.thunderGradient()` | `float` | сила грозы 0..1 |
+| `world.biome(position)` | `String?` | id биома в позиции, округлённой вниз |
+| `world.topY(x, z)` | `int` | y над верхним не-воздушным блоком, нижний y в непрогруженных |
 
-```kotlin
-block.tags()                     // все теги, в которых блок состоит
-block.hasTag("mineable/pickaxe")
-block.hasTag("minecraft:logs")   // префикс необязателен
-```
+## Прочитать блок
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `world.block(x, y, z)` | `Block` | снимок состояния блока, `void_air` за границами мира |
+| `world.block(position)` | `Block` | то же, координаты `Vec` округляются вниз |
+| `block.id()` | `String` | id блока, например `minecraft:stone` |
+| `block.name()` | `String` | локализованное имя блока |
+| `block.x()` | `int` | координата x блока |
+| `block.y()` | `int` | координата y блока |
+| `block.z()` | `int` | координата z блока |
+| `block.position()` | `Vec` | координаты угла блока |
+| `block.box()` | `Box` | куб 1×1×1 на этой позиции, не форма блока |
+
+`Vec` и `Box` описаны на странице [Векторы, коробки, углы](math.md).
+
+## Состояние блока
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `block.air()` | `boolean` | состояние — воздух |
+| `block.solid()` | `boolean` | состояние твёрдое |
+| `block.liquid()` | `boolean` | состояние — жидкий блок |
+| `block.opaque()` | `boolean` | состояние непрозрачное |
+| `block.blocksMovement()` | `boolean` | состояние блокирует движение |
+| `block.replaceable()` | `boolean` | на место этого состояния можно поставить блок |
+| `block.fullCube()` | `boolean` | состояние — полный куб на этой позиции |
+| `block.hasCollision()` | `boolean` | форма коллизии на этой позиции не пустая |
+| `block.luminance()` | `int` | излучаемый свет 0..15 |
+| `block.opacity()` | `int` | поглощение света 0..15 |
+| `block.hardness()` | `float` | прочность на слом здесь, -1 у неломаемого |
+| `block.blastResistance()` | `float` | сопротивление взрыву |
+| `block.slipperiness()` | `float` | трение, по умолчанию 0.6, у льда 0.98 |
+| `block.velocityMultiplier()` | `float` | множитель горизонтальной скорости |
+| `block.jumpVelocityMultiplier()` | `float` | множитель скорости прыжка |
+| `block.emitsRedstone()` | `boolean` | состояние даёт редстоун-сигнал |
+| `block.toolRequired()` | `boolean` | для дропа нужен подходящий инструмент |
+| `block.burnable()` | `boolean` | состояние горючее |
+| `block.randomTicks()` | `boolean` | состояние получает случайные тики |
+| `block.pistonBehavior()` | `String` | строчными: normal, destroy, block, ignore, push_only |
+| `block.mapColor()` | `int` | цвет на карте как ARGB, альфа принудительно 0xFF |
+
+## Свойства и теги
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `block.properties()` | `Map<String, String>` | все свойства состояния как имя -> значение, неизменяемая, в порядке вставки |
+| `block.property(name)` | `String?` | одно значение по имени без учёта регистра |
+| `block.tags()` | `List<String>` | id тегов блока |
+| `block.hasTag(tagId)` | `boolean` | блок в этом теге, ведущий `#` и неймспейс необязательны (бросает `ScriptException`, когда tagId пустой или не парсится) |
 
 ## Блок-сущности
 
-Сундук, табличка, волт, шалкер — такие блоки несут данные, о которых ни идентификатор, ни состояние ничего не говорят. `blockEntity()` доводит до них, а на обычном блоке возвращает `null`:
+| Метод | Тип | Описание |
+|---|---|---|
+| `block.hasBlockEntity()` | `boolean` | состояние объявляет блок-сущность |
+| `block.blockEntity()` | `BlockEntity?` | блок-сущность на этой позиции (только главный поток) |
+| `world.blockEntitiesIn(box)` | `List<BlockEntity>` | блок-сущности, чей центр блока внутри коробки, неизменяемый список (только главный поток) (бросает `ScriptException`, когда коробка шире 32×32 чанков) |
+| `blockEntity.type()` | `String` | id типа блок-сущности, например `minecraft:vault` |
+| `blockEntity.x()` | `int` | координата x блока |
+| `blockEntity.y()` | `int` | координата y блока |
+| `blockEntity.z()` | `int` | координата z блока |
+| `blockEntity.position()` | `Vec` | координаты блока |
+| `blockEntity.displayItem()` | `Item?` | предмет волта или добыча подозрительного блока, иначе null |
+| `blockEntity.nbt()` | `String` | клиентский nbt строкой, пустая строка без мира |
 
-```kotlin
-val vault = world.block(position).blockEntity() ?: return
-
-vault.type()          // "minecraft:vault"
-vault.x()  vault.y()  vault.z()
-vault.position()
-vault.displayItem()   // предмет, который он тебе показывает, или null
-vault.nbt()           // всё, что сервер про него прислал
-```
-
-`displayItem()` — это награда, крутящаяся внутри волта, и закопанная добыча внутри подозрительного песка или гравия:
-
-```kotlin
-on<ClientTickEvent> {
-    whenInGame {
-        val hit = raycast.crosshair(5.0)
-        if (hit !is Hit.OnBlock) return@whenInGame
-        val loot = world.block(hit.blockX(), hit.blockY(), hit.blockZ())
-            .blockEntity()?.displayItem() ?: return@whenInGame
-        chat.print("в этом волте ${loot.name()}")
-    }
-}
-```
-
-Это обычный [предмет](inventory.md), так что `id()`, `name()`, `isA("heavy_core")`, `enchantments()` и всё остальное на нём работает.
-
-На всё прочее есть `nbt()` — сырые данные строкой, ровно как их пишет Minecraft:
-
-```kotlin
-val sign = world.block(position).blockEntity() ?: return
-if (sign.type() == "minecraft:sign") {
-    chat.print(sign.nbt())
-}
-```
-
-## Найти блок-сущности вокруг
-
-Вместо того чтобы самому обходить координаты, спрашивай сразу целый объём:
-
-```kotlin
-val vaults = world.blockEntitiesIn(Box.around(player.position(), 16.0))
-    .filter { it.type() == "minecraft:vault" }
-
-for (vault in vaults) {
-    val loot = vault.displayItem() ?: continue
-    if (loot.isA("heavy_core")) {
-        chat.print("тяжёлое ядро на ${vault.x()} ${vault.y()} ${vault.z()}")
-    }
-}
-```
-
-Блок засчитывается, когда его центр внутри коробки. Коробка не может быть шире 32×32 чанков — это и так больше, чем у тебя вообще может быть прогружено.
-
-Что учесть.
-
-**Ты видишь только то, что сервер тебе прислал.** Крутящийся предмет волта приходит, потому что клиенту его надо нарисовать; содержимое сундука не приходит, пока ты сундук не откроешь, — так что блок-сущность сундука есть, но она пустая. Это правило самого Minecraft, а не ограничение API: в клиенте больше этого не знает никто.
-
-**Оба вызова работают только на клиентском потоке.** Из обработчика пакетов оборачивай в `onClientThread { }`, иначе прилетит `ScriptThreadException`. Если тебе нужен только момент изменения блок-сущности, `S2CBlockEntityUpdatePacket` несёт те же данные в `nbt()` и его можно читать прямо там — см. [Пакеты](../actions/packets.md).
-
-**Ничего из этого не достаёт до непрогруженных чанков.** За пределами дальности прорисовки блок-сущности просто нет.
+Блок-сущность несёт только то, что уже прислал сервер: предмет волта есть, содержимое закрытого сундука — нет.
+`displayItem()` возвращает обычный [предмет](inventory.md).
 
 ## Жидкости
 
-```kotlin
-val fluid = world.block(position).fluid() ?: return
+| Метод | Тип | Описание |
+|---|---|---|
+| `block.fluid()` | `Fluid?` | состояние жидкости здесь, включая залитые водой блоки, null у сухого |
+| `fluid.id()` | `String` | id жидкости, например `minecraft:water` |
+| `fluid.level()` | `int` | уровень жидкости 1..8, 8 у источника |
+| `fluid.still()` | `boolean` | источник, а не течение |
+| `fluid.height()` | `float` | отрисованная высота жидкости 0..1 |
 
-fluid.id()        // "minecraft:water"
-fluid.level()     // 0..8, насколько блок заполнен
-fluid.still()     // источник, а не течение
-fluid.height()    // 0..1, докуда жидкость реально достаёт
-```
+## Свет
 
-У сухого блока `fluid()` — `null`. Вода внутри залитой водой лестницы считается: блок при этом `minecraft:oak_stairs`, а жидкость — вода.
+| Метод | Тип | Описание |
+|---|---|---|
+| `world.lightLevel(x, y, z)` | `int` | отрисованная освещённость 0..15, с учётом темноты |
+| `world.blockLight(x, y, z)` | `int` | свет от блоков 0..15 |
+| `world.skyLight(x, y, z)` | `int` | свет от неба 0..15, без поправки на время суток |
 
-Ещё пара полезных вещей про пространство:
+## Сущности в мире
 
-```kotlin
-world.lightLevel(x, y, z)      // освещённость
-world.blockLight(x, y, z)      // только от факелов и ламп
-world.skyLight(x, y, z)        // только от неба
-world.biome(position)          // "minecraft:plains"
-world.topY(x, z)               // высота самого верхнего блока
-world.collisionsIn(box)        // все коллизии внутри коробки
-world.isFree(box)              // пусто ли там
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `world.entityCount()` | `int` | количество прогруженных сущностей |
+| `world.entities()` | `List<Entity>` | все прогруженные сущности, свой игрок включён, новый изменяемый список |
+| `world.entities(filter)` | `List<Entity>` | сущности, прошедшие фильтр, null-фильтр пропускает всех |
+| `world.entitiesIn(box)` | `List<Entity>` | сущности, чей хитбокс пересекает коробку |
+| `world.entitiesIn(box, filter)` | `List<Entity>` | то же с фильтром, null-фильтр пропускает всех |
+| `world.entitiesNear(origin, radiusBlocks, filter)` | `List<Entity>` | сущности в сфере радиусом в блоках (бросает `ScriptException`, когда radiusBlocks <= 0) |
+| `world.players()` | `List<PlayerEntity>` | прогруженные игроки, неизменяемый список |
+| `world.players(filter)` | `List<PlayerEntity>` | игроки, прошедшие фильтр, неизменяемый список |
+| `world.entityByName(name)` | `Entity?` | первая сущность с таким отображаемым именем, без учёта регистра |
+| `world.entityById(entityId)` | `Entity?` | сущность с таким сетевым id |
+| `world.entityByUuid(uuid)` | `Entity?` | линейный поиск по uuid (бросает `ScriptException`, когда строка не uuid) |
+| `world.nearestEntity(origin, radiusBlocks, filter)` | `Entity?` | ближайшая подходящая сущность в радиусе (бросает `ScriptException`, когда radiusBlocks <= 0) |
 
-`lightLevel` — это то, что игра реально рисует. Разделяй, когда важно, *почему* в точке темно: `skyLight` под землёй равен нулю в любое время суток, а `blockLight` — везде, где никто не поставил факел.
+Что можно спросить у сущности и какие есть готовые фильтры — [Сущности и фильтры](entities.md).
 
-## Коробки
+## Столкновения
 
-`Box` — прямоугольный объём. Он есть у сущностей и блоков, и его можно собрать самому:
+| Метод | Тип | Описание |
+|---|---|---|
+| `world.collisionsIn(box)` | `List<Box>` | коробки жёстко сталкивающихся сущностей внутри, коллизии блоков не входят |
+| `world.isFree(box)` | `boolean` | ни одна сталкивающаяся сущность не пересекает коробку, блоки не проверяются |
 
-```kotlin
-val around = Box.around(player.position(), 8.0)
+## Удалить и спрятать
 
-around.center()
-around.sizeX()
-around.expand(1.0)             // раздуть во все стороны
-around.contract(0.5)
-around.offset(0.0, 1.0, 0.0)
-around.contains(point)
-around.intersects(other)
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `world.removeEntity(entity)` | `boolean` | клиентское удаление по обёртке, false при null (только главный поток) |
+| `world.removeEntity(entityId)` | `boolean` | клиентское удаление по сетевому id, false для своего игрока (только главный поток) |
+| `world.unhideEntities()` | `void` | снимает флаг [скрытия](entities.md#как-спрятать) со всех прогруженных сущностей |
 
-## Сущности вокруг
-
-```kotlin
-world.entities()                                    // все
-world.entities(filters.player())                    // с фильтром
-world.entitiesIn(Box.around(player.position(), 8.0))
-world.entitiesNear(player.position(), 8.0, filters.attackable())
-world.players()
-world.entityCount()
-
-world.entityById(id)
-world.entityByUuid(uuid)
-world.entityByName("Notch")
-world.nearestEntity(player.position(), 16.0, filters.monster())
-```
-
-Всё, что возвращает одну сущность, может вернуть `null` — значит, не нашлось.
-
-Про фильтры и что можно спросить у сущности — [Сущности и фильтры](entities.md).
-
-## Удалить сущность
-
-Сущность можно убрать из того мира, который видишь ты:
-
-```kotlin
-world.removeEntity(entity)       // по сущности
-world.removeEntity(entityId)     // по id, если больше ничего нет
-```
-
-Возвращает `true`, когда что-то действительно убрали, и `false`, когда сущности уже не было — а также `false` на твоего собственного игрока, его не удалить.
-
-Это только твоя копия мира и ничего больше. У сервера сущность на месте, он продолжает слать про неё обновления, а другие игроки видят её там же, где и раньше. Всё, что она с тобой делала — хитбокс на пути, взрыв, урон — продолжает происходить; ты лишь перестал её рисовать и вести локально. Пришлёт сервер её заново, на перезагрузке чанка или телепорте, — она вернётся.
-
-```kotlin
-on<ClientTickEvent> {
-    whenInGame {
-        for (entity in world.entities(filters.item())) {
-            world.removeEntity(entity)
-        }
-    }
-}
-```
-
-Что учесть. Работает только на клиентском потоке — из обработчика пакетов оборачивай в `onClientThread { }`, иначе прилетит `ScriptThreadException`. И удаление поднимает `EntityRemoveEvent`, в том числе твой собственный обработчик, так что удалять изнутри него стоит только осознанно.
-
-## Вернуть спрятанные сущности
-
-```kotlin
-world.unhideEntities()
-```
-
-Снимает разом все `entity.hidden(true)` — см. [Как спрятать](entities.md#как-спрятать). Скрытие не принадлежит скрипту, который его поставил, поэтому этой строке место в твоём `onDisable`. С самими сущностями ничего не происходит: они никуда не девались, ты просто их не рисовал.
+Удаление только локальное: у сервера сущность остаётся и вернётся на перезагрузке чанка, а каждое удаление поднимает `EntityRemoveEvent`.
 
 ## Звуки и частицы
 
-```kotlin
-world.playSound("minecraft:entity.experience_orb.pickup", 1f, 1f)
-world.playSound("minecraft:block.anvil.land", position, 1f, 0.8f)
-
-world.spawnParticle("minecraft:flame", position, Vec.ZERO)
-```
-
-Без позиции звук играет там, где ты. Громкость и высота тона — обычные значения Minecraft: `1f` это нормально, `2f` выше, `0.5f` ниже.
-
-Всё это видно и слышно **только тебе** — сервер об этом не знает.
+| Метод | Тип | Описание |
+|---|---|---|
+| `world.spawnParticle(particleId, position, velocity)` | `void` | частица только у тебя, null-скорость означает нулевую (бросает `ScriptException` на неизвестной частице) |
+| `world.playSound(soundId, position, volume, pitch)` | `void` | звук только у тебя в точке, категория PLAYERS (бросает `ScriptException` на неизвестном звуке) |
+| `world.playSound(soundId, volume, pitch)` | `void` | звук только у тебя у слушателя, категория PLAYERS (бросает `ScriptException` на неизвестном звуке) |

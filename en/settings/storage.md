@@ -1,97 +1,79 @@
 # Saving data
 
-Setting values are saved for you — you never write those anywhere. Configs are for everything else: counters, lists, homes, stats.
-
-## Quick start
-
-`storage` is the default config every script gets:
+`storage` is the script's default config; `config("name")` opens another one. Every value is a string, and the file lives at `%APPDATA%/Nursultan/configs/<uid>/scripts/<scriptId>/<name>.dat`.
 
 ```kotlin
-val runs = storage.getInt("runs", 0) + 1
-storage.put("runs", runs)
-storage.save()
+var runs = 0
 
-chat.print("run number $runs")
+onEnable {
+    runs = storage.getInt("runs", 0) + 1
+}
+
+onDisable {
+    storage.put("runs", runs)
+    storage.save()
+}
 ```
 
-Values live in memory and `save()` writes them to disk. Forgetting to save is not fatal: anything unsaved is flushed when the script unloads.
+## Opening one
 
-## Several configs
+| Method | Type | Description |
+|---|---|---|
+| `config(name)` | `Config` | opens this script's named config, cached per name |
+| `configs.open(name)` | `Config` | same as `config(name)` |
+| `configs.names()` | `List<String>` | this script's config files on disk, alphabetical |
+| `configs.exists(name)` | `boolean` | config file exists on disk |
+| `configs.delete(name)` | `void` | deletes the file and empties the open instance |
 
-If you have a lot of unrelated data, split it into files:
+A name is trimmed, lowercased and must match `^[a-z0-9][a-z0-9_-]{0,31}$`, otherwise `ScriptException`.
+`storage` is the config named `storage`.
 
-```kotlin
-val stats = config("stats")
-val homes = config("homes")
+## Reading
 
-stats.put("kills", stats.getInt("kills", 0) + 1)
-stats.save()
-```
+| Method | Type | Description |
+|---|---|---|
+| `storage.name()` | `String` | the config's lowercased name |
+| `storage.has(key)` | `boolean` | key present in memory |
+| `storage.get(key, fallback)` | `String` | stored value, fallback when absent |
+| `storage.getInt(key, fallback)` | `int` | parsed as int, fallback when absent or unparsable |
+| `storage.getLong(key, fallback)` | `long` | parsed as long, fallback when absent or unparsable |
+| `storage.getDouble(key, fallback)` | `double` | parsed as double, fallback when absent or unparsable |
+| `storage.getBoolean(key, fallback)` | `boolean` | true only for `true` ignoring case, fallback when absent |
+| `storage.getList(key)` | `List<String>` | stored list, empty when absent (API 2) |
+| `storage.getList(key, fallback)` | `List<String>` | stored list, copy of fallback when absent (API 2) |
+| `storage.getIntList(key)` | `List<Integer>` | list parsed as ints, unparsable entries dropped (API 2) |
+| `storage.getDoubleList(key)` | `List<Double>` | list parsed as doubles, unparsable entries dropped (API 2) |
 
-A config name is 1 to 32 characters of `a-z`, `0-9`, `_` and `-`.
+A blank key throws `ScriptException` on every method that takes one.
+A value written with `put` reads back through `getList` as a single-element list.
 
-```kotlin
-configs.names()            // which configs already exist on disk
-configs.exists("stats")
-configs.delete("stats")
-```
+## Writing
 
-## What a config can do
+| Method | Type | Description |
+|---|---|---|
+| `storage.put(key, value: String)` | `void` | stores the string (throws over 65536 chars) |
+| `storage.put(key, value: Int)` | `void` | stores the decimal text |
+| `storage.put(key, value: Long)` | `void` | stores the decimal text |
+| `storage.put(key, value: Double)` | `void` | stores the decimal text |
+| `storage.put(key, value: Boolean)` | `void` | stores `true` or `false` |
+| `storage.putList(key, values)` | `void` | stores a `List<String>` (API 2) |
+| `storage.putIntList(key, values)` | `void` | stores a `List<Integer>` as text (API 2) |
+| `storage.putDoubleList(key, values)` | `void` | stores a `List<Double>` as text (API 2) |
+| `storage.remove(key)` | `void` | drops the key |
+| `storage.clear()` | `void` | drops every key in memory |
 
-```kotlin
-storage.get("name", "default")
-storage.getInt("count", 0)
-storage.getLong("time", 0L)
-storage.getDouble("ratio", 1.0)
-storage.getBoolean("on", false)
+A config holds 4096 keys; adding one more throws `ScriptException`.
+`put` throws `NullPointerException` on a null value, the list writers throw `ScriptException` on a null element.
 
-storage.put("name", "text")
-storage.put("count", 5)
-storage.put("on", true)
+## The file
 
-storage.has("count")
-storage.remove("count")
-storage.clear()
-storage.keys()             // every key
-storage.dirty()            // are there unsaved changes
+| Method | Type | Description |
+|---|---|---|
+| `storage.keys()` | `Set<String>` | immutable copy of the current key set |
+| `storage.dirty()` | `boolean` | values differ from the last save or load |
+| `storage.save()` | `void` | writes the file and clears `dirty()` |
+| `storage.load()` | `void` | re-reads the file, dropping unsaved changes |
+| `storage.delete()` | `void` | deletes the file and empties the values in memory |
 
-storage.save()
-storage.load()             // re-read from disk, dropping unsaved changes
-storage.delete()           // delete the file
-```
-
-The second argument of `get*` is what to return when the key is missing. If the key holds junk that will not parse as a number, you get it back too.
-
-## Storing more than strings
-
-A config stores string-to-string pairs. Anything else you lay out across keys yourself:
-
-```kotlin
-// a list
-storage.put("homes", homes.joinToString(","))
-val homes = storage.get("homes", "").split(",").filter { it.isNotEmpty() }
-
-// an object
-storage.put("home.base.x", x)
-storage.put("home.base.y", y)
-storage.put("home.base.z", z)
-
-// find every home
-val names = storage.keys()
-    .filter { it.startsWith("home.") && it.endsWith(".x") }
-    .map { it.removePrefix("home.").removeSuffix(".x") }
-```
-
-## Where it lives
-
-Files are stored per script, compressed and encrypted, in the client's config folder. There is nothing to edit there by hand — the format is internal.
-
-Limits: up to 4096 keys per config and up to 64 KiB per value. Hit one and you get a clear error.
-
-## When to save
-
-`save()` writes the file right away, so do not call it every tick. Sensible places:
-
-* in a command handler, after the player changed something;
-* in `onDisable` and `onUnload`;
-* every few seconds via [`everyTicks`](../extras/tasks.md) if data keeps piling up.
+Every open config with `dirty()` is saved when the script is unloaded or reloaded.
+The file is Zstd-compressed obfuscated MessagePack; io failures are logged, never thrown.

@@ -1,105 +1,63 @@
 # Your own commands
 
-A script can add a client command — the same kind as `.party` or `.macros`: with Tab completion.
-
-## A simple command
-
-```kotlin
-command("ping") {
-    runs { reply("pong") }
-}
-```
-
-Done: `.ping` in chat answers "pong".
-
-## Subcommands
+`command("name") { }` registers a `.`-prefixed client command that lives as long as the script is switched on. Arguments are the raw tail after the node path, split on runs of whitespace.
 
 ```kotlin
 command("home") {
-    usage("<set|go|list>")
+    usage("<go|list>")
     alias("h")
-
-    sub("set") {
-        usage("<name>")
-        runs {
-            storage.put("home." + arg(0), player.position().toString())
-            storage.save()
-            reply("home " + arg(0) + " saved")
-        }
-    }
-
     sub("go") {
-        usage("<name>")
-        runs {
-            val target = storage.get("home." + arg(0), "")
-            if (target.isEmpty()) replyError("no home named " + arg(0)) else reply("home is at " + target)
-        }
-    }
-
-    sub("list") {
-        runs {
-            val homes = storage.keys().filter { it.startsWith("home.") }
-            reply("homes: " + homes.size)
-        }
+        completes(0, "base", "farm")
+        runs { reply("going to " + arg(0)) }
     }
 }
 ```
 
-`usage` is the hint in the error message, `alias` is a second name for the command. Subcommands can nest inside each other.
+## Declaring one
 
-## Arguments
+| Method | Type | Description |
+|---|---|---|
+| `command(name) { }` | `Subscription` | registers the command and its aliases (throws `ScriptException` when the name is blank, multi-word, a client command, taken by another script, or the command has neither `runs` nor `sub`) |
+| `usage(text)` | `Unit` | usage text appended to missing-argument errors, null becomes `""` |
+| `alias(name)` | `Unit` | extra label for the same command tree (throws `ScriptException` when blank, multi-word or taken) |
+| `runs { }` | `Unit` | body run on the client thread when this node is invoked, throws are logged |
+| `sub(name) { }` | `Unit` | subcommand, unlimited nesting, label lowercased to one word |
+| `completes(argIndex, options)` | `Unit` | completion supplier for the 0-based argument, filtered by prefix, case-insensitive (throws `ScriptException` when argIndex < 0) |
+| `completes(argIndex, vararg options)` | `Unit` | fixed completion list for that argument slot |
 
-Inside `runs { }` you get:
+The name is trimmed, lowercased and loses one leading prefix character; while the script is off the command stops answering and leaves tab completion, but the name stays claimed.
+A completion supplier runs while the player types; a throw inside it is logged and yields no suggestions.
 
-```kotlin
-arg(0)                  // first argument, errors if missing
-argOr(0, "default")
-intArg(0)
-doubleArg(0)
-booleanArg(0)           // true/on/yes/1 and false/off/no/0
-args()                  // every argument as a list
-argCount()
-rest()                  // everything after the command as one string
-rest(1)                 // everything from the second argument on
-label()                 // how the command was called
-```
+## The Java builder
 
-`arg(0)` and the typed variants throw a clear error by themselves when an argument is missing or the wrong shape — you do not write those checks.
+| Method | Type | Description |
+|---|---|---|
+| `client.commands().command(name)` | `CommandBuilder` | starts a definition (throws `ScriptException` when the name is empty or contains a space) |
+| `client.commands().prefix()` | `String` | client command prefix as a one-char string, `.` by default |
+| `usage(usage)` | `CommandBuilder` | usage text appended to missing-argument errors, null becomes `""` |
+| `alias(alias)` | `CommandBuilder` | extra label for the same node (throws `ScriptException` on an empty or multi-word alias) |
+| `runs(handler)` | `CommandBuilder` | handler run on the client thread (throws `ScriptException` on a null handler) |
+| `sub(name, body)` | `CommandBuilder` | defines or extends a subcommand (throws `ScriptException` on an empty name or null body) |
+| `completes(argIndex, options)` | `CommandBuilder` | completion supplier for the 0-based argument slot (throws `ScriptException` when argIndex < 0 or options is null) |
+| `completes(argIndex, options...)` | `CommandBuilder` | fixed completion list, null array means no options |
+| `register()` | `Subscription` | registers the label and every alias (throws `ScriptException` when the node has neither `runs` nor `sub`, the label is a client command, or another script owns it) |
 
-## Answering
+Nothing is registered until `register()`; the Kotlin `command(name) { }` form calls it for you.
+`unsubscribe()` on the returned subscription drops the label and every alias — [Subscribing](../events/basics.md).
 
-```kotlin
-reply("done")
-replyError("that will not work")
-```
+## Inside `runs`
 
-Both are seen by you only.
-
-## Tab completion
-
-```kotlin
-sub("go") {
-    completes(0) {
-        storage.keys()
-            .filter { it.startsWith("home.") }
-            .map { it.removePrefix("home.") }
-    }
-    runs { ... }
-}
-```
-
-`completes(index) { ... }` supplies options for one argument. The lambda runs while the player types, so keep it cheap — no world walks, no disk reads.
-
-A fixed list is shorter:
-
-```kotlin
-completes(0, "toggle", "hold", "action")
-```
-
-## Taken names
-
-A command name is claimed across the whole client. If it already exists — in another script or in the client itself — registration fails with a clear error. Names are compared without case, so `.Home` and `.home` are the same thing.
-
-## Commands and the switch
-
-A script's commands only work while the script is **on**. Switch it off and the command stops answering and disappears from completions, but the name stays claimed so nobody else takes it.
+| Method | Type | Description |
+|---|---|---|
+| `label()` | `String` | full node path, e.g. `home go` |
+| `args()` | `List<String>` | arguments after the node path |
+| `argCount()` | `int` | number of arguments |
+| `arg(index)` | `String` | 0-based argument (throws `ScriptException` naming the position and the usage text when out of range) |
+| `argOr(index, fallback)` | `String` | argument, or fallback when the index is out of range |
+| `intArg(index)` | `int` | argument parsed as int (throws `ScriptException` when missing or not a whole number) |
+| `doubleArg(index)` | `double` | argument parsed as double (throws `ScriptException` when missing or not a number) |
+| `booleanArg(index)` | `boolean` | accepts true/on/yes/1 and false/off/no/0, case-insensitive (throws `ScriptException` otherwise) |
+| `rest()` | `String` | the whole argument tail as one string |
+| `rest(fromIndex)` | `String` | arguments from that index joined with single spaces, whole tail when fromIndex <= 0, `""` past the end |
+| `reply(message)` | `void` | prints `[<label>] message` into your own chat |
+| `replyError(message)` | `void` | identical output to `reply`, no separate styling |
