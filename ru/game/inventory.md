@@ -139,7 +139,7 @@ on<PrePlayerTickEvent> {
 | `item.useAction()` | `String` | действие использования: `none`, `eat`, `bow`, `block` |
 | `item.disablesBlocking()` | `boolean` | компонент WEAPON сбивает блок щитом |
 | `item.enchantments()` | `Map<String, Integer>` | идентификатор зачарования к уровню, порядок вставки |
-| `item.enchantmentLevel(id)` | `int` | уровень по точному id, 0 если нет, без подстановки пространства |
+| `item.enchantmentLevel(id)` | `int` | уровень по id, 0 если нет, `minecraft:` подставляется (бросает `ScriptException` на пустом id) |
 | `item.attributeModifiers()` | `List<AttributeModifier>` | записи ATTRIBUTE_MODIFIERS, пусто если компонента нет |
 | `item.containerItems()` | `List<Item>` | содержимое CONTAINER, иначе BUNDLE_CONTENTS, иначе пусто |
 

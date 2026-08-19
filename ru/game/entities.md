@@ -157,6 +157,7 @@ on<ClientTickEvent> {
 | `living.hasEffect(effectId)` | `boolean` | активен эффект ровно с этим полным id |
 | `living.effects()` | `List<Effect>` | снимки всех активных эффектов |
 | `living.effect(effectId)` | `Effect?` | активный эффект по точному полному id, null если его нет |
+| `living.visibleEffects()` | `List<String>` | id эффектов, снятые с частиц зелья, без уровня и длительности (API 3) |
 
 Id эффектов сравниваются точно: `hasEffect("minecraft:speed")` попадает, `hasEffect("speed")` — нет.
 

@@ -157,6 +157,7 @@ The flag outlives the script being switched off — [`world.unhideEntities()`](w
 | `living.hasEffect(effectId)` | `boolean` | an effect with that exact namespaced id is active |
 | `living.effects()` | `List<Effect>` | snapshots of every active status effect |
 | `living.effect(effectId)` | `Effect?` | one active effect by exact namespaced id, null when absent |
+| `living.visibleEffects()` | `List<String>` | effect ids read off the potion particles, no amplifier or duration (API 3) |
 
 Effect ids are compared exactly: `hasEffect("minecraft:speed")` matches, `hasEffect("speed")` does not.
 

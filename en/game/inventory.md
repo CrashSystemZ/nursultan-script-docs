@@ -139,7 +139,7 @@ Slots of an open chest or server menu are addressed by [Containers](containers.m
 | `item.useAction()` | `String` | lowercase use action: `none`, `eat`, `bow`, `block` |
 | `item.disablesBlocking()` | `boolean` | WEAPON component disables shield blocking |
 | `item.enchantments()` | `Map<String, Integer>` | namespaced enchantment id to level, insertion-ordered |
-| `item.enchantmentLevel(id)` | `int` | level for that exact id, 0 when absent, no namespace default |
+| `item.enchantmentLevel(id)` | `int` | level for that id, 0 when absent, `minecraft:` added when unqualified (throws `ScriptException` when the id is blank) |
 | `item.attributeModifiers()` | `List<AttributeModifier>` | ATTRIBUTE_MODIFIERS entries, empty when absent |
 | `item.containerItems()` | `List<Item>` | CONTAINER contents, else BUNDLE_CONTENTS, else empty |
 

@@ -43,6 +43,15 @@ A null `mode` is treated as `NEAREST`; both `attackPoint` overloads throw `Scrip
 | `MULTI_POINT` | best of an 11×11 grid over the visible faces, each candidate ray-checked |
 | `TRIANGLE` | one point per visible face, ranked by reach then mouse delta |
 
+## Explosion damage
+
+| Method | Type | Description |
+|---|---|---|
+| `combat.explosionExposure(target, source)` | `float` | share of the hitbox 0..1 that blocks do not shield (API 3) (main thread only) |
+| `combat.explosionDamage(target, source, power)` | `float` | damage before armor and effects, 0 outside the radius (API 3) (main thread only) (throws `ScriptException` when `power` is 0 or less) |
+| `combat.explosionDamageTaken(target, source, power)` | `float` | the same after armor, resistance and protection (API 3) (main thread only) (throws `ScriptException` when `power` is 0 or less) |
+| `combat.damageAfterArmor(target, damage)` | `float` | damage left after armor points and toughness, weapon armor piercing ignored (API 3) |
+
 ## Using an item
 
 | Method | Type | Description |

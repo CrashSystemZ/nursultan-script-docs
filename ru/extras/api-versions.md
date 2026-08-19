@@ -1,6 +1,6 @@
 # Версии API
 
-`ApiVersion.CURRENT` равен 2. `requireApi(n)` не даёт скрипту загрузиться на клиенте постарше указанного, но от ошибки компиляции он не спасает: имя, которого в старом SDK нет, не скомпилируется вообще.
+`ApiVersion.CURRENT` равен 3. `requireApi(n)` не даёт скрипту загрузиться на клиенте постарше указанного, но от ошибки компиляции он не спасает: имя, которого в старом SDK нет, не скомпилируется вообще.
 
 ```kotlin
 requireApi(2)
@@ -16,44 +16,13 @@ val mesh = gpu.indexedMesh(format)
 
 | Метод | Тип | Описание |
 |---|---|---|
-| `ApiVersion.CURRENT` | `int` | версия скриптового API этого клиента, сейчас 2 |
+| `ApiVersion.CURRENT` | `int` | версия скриптового API этого клиента, сейчас 3 |
 | `ApiVersion.require(minimum)` | `void` | статический (бросает `ScriptApiException`, когда `CURRENT` < `minimum`) |
 | `requireApi(minimum)` | `Unit` | форма `ApiVersion.require` из DSL (бросает `ScriptApiException`, когда `CURRENT` < `minimum`) |
 
 У `ApiVersion` приватный конструктор: экземпляра нет, только два статических члена.
-К каждой ошибке `Unresolved reference` клиент дописывает `this client provides v2`, а компиляция идёт раньше первой строки.
-
-## Что нового во 2
-
-| Появилось во 2 | Где описано |
-|---|---|
-| `Client.user()`, `assets()`, `clipboard()`, `gpu()`; `Game.recipes()`, `settings()` | [Как устроен скрипт](../start/lifecycle.md) |
-| `Assets` — корень `assets` | [Папка assets](assets.md) |
-| `base64(...)`, `base64Encode(...)`, `font(name, bytes)`, `image(name, bytes)` | [Папка assets](assets.md) |
-| `Clipboard` — корень `clipboard` | [Сообщения](../ui/messages.md) |
-| `User`, `DiscordUser` — корень `user` | [Твой аккаунт](user.md) |
-| `Config.getList`, `getIntList`, `getDoubleList`, `putList`, `putIntList`, `putDoubleList` | [Сохранение данных](../settings/storage.md) |
-| `Hunger` — `player.hunger()` | [Свой игрок](../game/player.md) |
-| `SelfPlayer.attackCooldown(tickDelta)`, `cooldownPeriod()`, `ticksSinceLastAttack()` | [Свой игрок](../game/player.md) |
-| `LivingEntity.swinging()`, `swingTicks()` | [Сущности и фильтры](../game/entities.md) |
-| `GameSettings`, `Perspective` — корень `gameSettings` | [Движение](../actions/control.md) |
-| `Recipes`, `RecipeEntry`, `RecipeKind` — корень `recipes` | [Контейнеры](../game/containers.md) |
-| `Container.Batch.onFinish`, `Inventory.Batch.onFinish` | [Контейнеры](../game/containers.md), [Инвентарь и предметы](../game/inventory.md) |
-| `Item.buildable()` | [Инвентарь и предметы](../game/inventory.md) |
-| `Item.cooldownProgress()`, `cooldownProgress(tickDelta)`, `setCooldown(ticks)`, `removeCooldown()` | [Инвентарь и предметы](../game/inventory.md) |
-| `TabEntry.pingMs(value)` | [Сервер, табло, таблист](../game/server.md) |
-| `input(name, value, placeholder)`, `input(parent, name, value, placeholder)` | [Виды настроек](../settings/types.md) |
-| `Gpu` и 11 типов GPU | [Своя геометрия](../ui/gpu.md) |
-| `Weight` и перегрузки `Render` с насыщенностью | [Рендер 2D](../ui/render-2d.md) |
-| `blur(x, y, width, height, radius, argb, tl, tr, bl, br)` | [Рендер 2D](../ui/render-2d.md) |
-| `Shader.setMat4(uniform, float[])`, `Shader.set(uniform, texture, filter, wrap)` | [Шейдеры](../ui/shaders.md) |
-| `EventOptions(ignoreCancelled)` | [Подписка на события](../events/basics.md) |
-| `FireworkEntitySpeedEvent` | [Список событий](../events/reference.md) |
-| `PerspectiveEvent` | [Список событий](../events/reference.md) |
-| `RenderCrosshairEvent` | [Список событий](../events/reference.md) |
-| `Render3DEvent.viewMatrix()`, `projectionMatrix()` | [Список событий](../events/reference.md) |
-
-Ничего не закрыто пометкой по отдельным членам: всё перечисленное есть в клиенте v2 безусловно, а `requireApi(2)` — единственная проверка.
+К каждой ошибке `Unresolved reference` клиент дописывает `this client provides v3`, а компиляция идёт раньше первой строки.
+Ничего не закрыто пометкой по отдельным членам: всё перечисленное есть в клиенте своей версии безусловно, а `requireApi(n)` — единственная проверка.
 Записи пакетов следуют за версией Minecraft, а не за этим номером — см. [Пакеты](../actions/packets.md).
 
 ## Что больше ничего не делает

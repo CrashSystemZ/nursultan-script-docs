@@ -1,6 +1,6 @@
 # API versions
 
-`ApiVersion.CURRENT` is 2. `requireApi(n)` fails the script at load when the running client is older; it cannot rescue a compile error, because a name that does not exist on the older SDK never compiles in the first place.
+`ApiVersion.CURRENT` is 3. `requireApi(n)` fails the script at load when the running client is older; it cannot rescue a compile error, because a name that does not exist on the older SDK never compiles in the first place.
 
 ```kotlin
 requireApi(2)
@@ -16,44 +16,13 @@ val mesh = gpu.indexedMesh(format)
 
 | Method | Type | Description |
 |---|---|---|
-| `ApiVersion.CURRENT` | `int` | script API version of this client, currently 2 |
+| `ApiVersion.CURRENT` | `int` | script API version of this client, currently 3 |
 | `ApiVersion.require(minimum)` | `void` | static (throws `ScriptApiException` when `CURRENT` < `minimum`) |
 | `requireApi(minimum)` | `Unit` | the DSL form of `ApiVersion.require` (throws `ScriptApiException` when `CURRENT` < `minimum`) |
 
 `ApiVersion` has a private constructor: there is no instance, only the two static members.
-The client appends `this client provides v2` to every `Unresolved reference` compile error, and compilation happens before the first line runs.
-
-## What is new in 2
-
-| Added in 2 | Documented on |
-|---|---|
-| `Client.user()`, `assets()`, `clipboard()`, `gpu()`; `Game.recipes()`, `settings()` | [How a script works](../start/lifecycle.md) |
-| `Assets` — the `assets` root | [The assets folder](assets.md) |
-| `base64(...)`, `base64Encode(...)`, `font(name, bytes)`, `image(name, bytes)` | [The assets folder](assets.md) |
-| `Clipboard` — the `clipboard` root | [Messages](../ui/messages.md) |
-| `User`, `DiscordUser` — the `user` root | [Your account](user.md) |
-| `Config.getList`, `getIntList`, `getDoubleList`, `putList`, `putIntList`, `putDoubleList` | [Saving data](../settings/storage.md) |
-| `Hunger` — `player.hunger()` | [Your player](../game/player.md) |
-| `SelfPlayer.attackCooldown(tickDelta)`, `cooldownPeriod()`, `ticksSinceLastAttack()` | [Your player](../game/player.md) |
-| `LivingEntity.swinging()`, `swingTicks()` | [Entities and filters](../game/entities.md) |
-| `GameSettings`, `Perspective` — the `gameSettings` root | [Movement](../actions/control.md) |
-| `Recipes`, `RecipeEntry`, `RecipeKind` — the `recipes` root | [Containers](../game/containers.md) |
-| `Container.Batch.onFinish`, `Inventory.Batch.onFinish` | [Containers](../game/containers.md), [Inventory and items](../game/inventory.md) |
-| `Item.buildable()` | [Inventory and items](../game/inventory.md) |
-| `Item.cooldownProgress()`, `cooldownProgress(tickDelta)`, `setCooldown(ticks)`, `removeCooldown()` | [Inventory and items](../game/inventory.md) |
-| `TabEntry.pingMs(value)` | [Server, scoreboard, tab list](../game/server.md) |
-| `input(name, value, placeholder)`, `input(parent, name, value, placeholder)` | [Kinds of settings](../settings/types.md) |
-| `Gpu` and the 11 GPU types | [Your own geometry](../ui/gpu.md) |
-| `Weight` and the weight overloads on `Render` | [2D render](../ui/render-2d.md) |
-| `blur(x, y, width, height, radius, argb, tl, tr, bl, br)` | [2D render](../ui/render-2d.md) |
-| `Shader.setMat4(uniform, float[])`, `Shader.set(uniform, texture, filter, wrap)` | [Shaders](../ui/shaders.md) |
-| `EventOptions(ignoreCancelled)` | [Subscribing](../events/basics.md) |
-| `FireworkEntitySpeedEvent` | [Event list](../events/reference.md) |
-| `PerspectiveEvent` | [Event list](../events/reference.md) |
-| `RenderCrosshairEvent` | [Event list](../events/reference.md) |
-| `Render3DEvent.viewMatrix()`, `projectionMatrix()` | [Event list](../events/reference.md) |
-
-Nothing is gated per member: every addition above is present unconditionally in a v2 client, and `requireApi(2)` is the only check that exists.
+The client appends `this client provides v3` to every `Unresolved reference` compile error, and compilation happens before the first line runs.
+Nothing is gated per member: every addition above is present unconditionally in a client of that version, and `requireApi(n)` is the only check that exists.
 Packet records follow the Minecraft version, not this number — see [Packets](../actions/packets.md).
 
 ## Things that no longer do anything

@@ -55,6 +55,8 @@ on<ClientTickEvent> {
 | `block.replaceable()` | `boolean` | a placed block can replace this state |
 | `block.fullCube()` | `boolean` | state is a full cube at this position |
 | `block.hasCollision()` | `boolean` | collision shape at this position is non-empty |
+| `block.collisionBoxes()` | `List<Box>` | collision shape parts in world coordinates, empty when none (API 3) |
+| `block.outlineBoxes()` | `List<Box>` | outline shape parts in world coordinates, empty when none (API 3) |
 | `block.luminance()` | `int` | emitted light 0..15 |
 | `block.opacity()` | `int` | light attenuation 0..15 |
 | `block.hardness()` | `float` | breaking hardness at this position, -1 for unbreakable |
@@ -138,7 +140,12 @@ Entity members and the ready-made filters are on [Entities and filters](entities
 | Method | Type | Description |
 |---|---|---|
 | `world.collisionsIn(box)` | `List<Box>` | boxes of hard-colliding entities in the box, block collisions excluded |
+| `world.blockCollisionsIn(box)` | `List<Box>` | block collision shape parts intersecting the box, entities excluded (API 3) |
 | `world.isFree(box)` | `boolean` | no colliding entity intersects the box, block collisions not checked |
+| `world.isBlockSpaceFree(box)` | `boolean` | no block collision intersects the box, entities not checked (API 3) |
+
+A partial block reports one box per shape part: a fence gives the post and every connected arm, a slab one half-height box.
+These are the same shapes `raycast.blocks(...)` clips against; `block.box()` stays the plain 1×1×1 cube.
 
 ## Removing and hiding
 
