@@ -466,8 +466,14 @@ Setting the same perspective again fires nothing.
 |---|---|---|
 | `arm()` | [`Arm`](../game/inventory.md) | arm being rendered, LEFT or RIGHT |
 | `swingProgress()` | `float` | swing animation progress, 0..1 |
+| `translate(x, y, z)` | `void` | moves the item in hand space (API 3) |
+| `rotateX(degrees)` | `void` | rotates the item around the X axis (API 3) |
+| `rotateY(degrees)` | `void` | rotates the item around the Y axis (API 3) |
+| `rotateZ(degrees)` | `void` | rotates the item around the Z axis (API 3) |
+| `rotate(degrees, axisX, axisY, axisZ)` | `void` | rotates around an arbitrary axis, zero axis ignored (API 3) |
+| `scale(x, y, z)` | `void` | scales the item per axis (API 3) |
 
-Cancelling leaves the matrix at the hand origin, so the swing transform is skipped for that hand.
+Cancelling leaves the matrix at the hand origin, so the swing transform is skipped for that hand. Cancel plus your own transforms is a custom swing animation.
 
 ### BlockOutlineEvent
 
