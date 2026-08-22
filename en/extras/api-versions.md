@@ -1,6 +1,6 @@
 # API versions
 
-`ApiVersion.CURRENT` is 3. `requireApi(n)` fails the script at load when the running client is older; it cannot rescue a compile error, because a name that does not exist on the older SDK never compiles in the first place.
+`ApiVersion.CURRENT` is 4. `requireApi(n)` fails the script at load when the running client is older; it cannot rescue a compile error, because a name that does not exist on the older SDK never compiles in the first place.
 
 ```kotlin
 requireApi(2)
@@ -16,12 +16,12 @@ val mesh = gpu.indexedMesh(format)
 
 | Method | Type | Description |
 |---|---|---|
-| `ApiVersion.CURRENT` | `int` | script API version of this client, currently 3 |
+| `ApiVersion.CURRENT` | `int` | script API version of this client, currently 4 |
 | `ApiVersion.require(minimum)` | `void` | static (throws `ScriptApiException` when `CURRENT` < `minimum`) |
 | `requireApi(minimum)` | `Unit` | the DSL form of `ApiVersion.require` (throws `ScriptApiException` when `CURRENT` < `minimum`) |
 
 `ApiVersion` has a private constructor: there is no instance, only the two static members.
-The client appends `this client provides v3` to every `Unresolved reference` compile error, and compilation happens before the first line runs.
+The client appends `this client provides v4` to every `Unresolved reference` compile error, and compilation happens before the first line runs.
 Nothing is gated per member: every addition above is present unconditionally in a client of that version, and `requireApi(n)` is the only check that exists.
 Packet records follow the Minecraft version, not this number — see [Packets](../actions/packets.md).
 

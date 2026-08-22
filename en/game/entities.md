@@ -1,6 +1,6 @@
 # Entities and filters
 
-Every entity you get from [the world](world.md), a [ray](raycast.md) or an event is a live wrapper: each getter reads the wrapped Minecraft entity at call time, and it keeps reading it after the entity leaves the world, so `alive()` is what tells you it is gone. `LivingEntity`, `PlayerEntity` and `TextDisplay` add members on top of `Entity`; the local player is a [`SelfPlayer`](player.md).
+Every entity you get from [the world](world.md), a [ray](raycast.md) or an event is a live wrapper: each getter reads the wrapped Minecraft entity at call time, and it keeps reading it after the entity leaves the world, so `alive()` is what tells you it is gone. `LivingEntity`, `PlayerEntity`, `TextDisplay` and `ItemEntity` add members on top of `Entity`; the local player is a [`SelfPlayer`](player.md).
 
 ```kotlin
 on<ClientTickEvent> {
@@ -25,10 +25,12 @@ on<ClientTickEvent> {
 | `entity.customName()` | `String?` | plain custom name, null when there is none |
 | `entity.isLiving()` | `boolean` | wrapped entity is a living entity |
 | `entity.isPlayer()` | `boolean` | wrapped entity is a player |
+| `entity.isItem()` | `boolean` | wrapped entity is a dropped item |
 | `entity.isSelf()` | `boolean` | wrapped entity is the local player |
 | `entity.asLiving()` | `LivingEntity?` | same entity as `LivingEntity`, null otherwise |
 | `entity.asPlayer()` | `PlayerEntity?` | same entity as `PlayerEntity`, null otherwise |
 | `entity.asTextDisplay()` | `TextDisplay?` | same entity as `TextDisplay`, null otherwise |
+| `entity.asItemEntity()` | `ItemEntity?` | same entity as `ItemEntity`, null otherwise |
 
 ## Position and size
 
@@ -215,6 +217,14 @@ Effect ids are compared exactly: `hasEffect("minecraft:speed")` matches, `hasEff
 | `display.styledText()` | `Text` | styled text of the display |
 
 A text display has no custom name: `hasCustomName()` is false and `customName()` is null on it.
+
+## Item entities
+
+| Method | Type | Description |
+|---|---|---|
+| `item.stack()` | [`Item`](inventory.md) | the dropped stack, read at call time |
+
+`filters.item()` selects them; `stack()` wraps the live stack, so a count merged on the ground shows up in the next call.
 
 ## Poses
 
