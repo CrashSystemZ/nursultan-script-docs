@@ -8,7 +8,7 @@
 |---|---|
 | `example.kts` | пример скрипта; каждый `.kts` в корне папки — отдельный скрипт |
 | `assets/` | шрифты, картинки и данные, которые читают скрипты — см. [папку assets](../extras/assets.md) |
-| `.sdk/nursultan-script-api-v<N>.jar` | само API и определение `.kts`; `<N>` — версия script API клиента, сейчас 3 |
+| `.sdk/nursultan-script-api-v<N>.jar` | само API и определение `.kts`; `<N>` — версия script API клиента, сейчас 4 |
 | `.sdk/nursultan-script-packets-<mcVersion>.jar` | классы пакетов Minecraft, нужны только скриптам, которые их читают или шлют; суффикс — версия Minecraft клиента |
 | `build.gradle.kts`, `settings.gradle.kts` | подключают джарки из `.sdk` и Kotlin-скриптинг |
 | `README.md` | те же шаги офлайн |

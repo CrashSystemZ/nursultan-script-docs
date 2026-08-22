@@ -1,6 +1,6 @@
 # Версии API
 
-`ApiVersion.CURRENT` равен 3. `requireApi(n)` не даёт скрипту загрузиться на клиенте постарше указанного, но от ошибки компиляции он не спасает: имя, которого в старом SDK нет, не скомпилируется вообще.
+`ApiVersion.CURRENT` равен 4. `requireApi(n)` не даёт скрипту загрузиться на клиенте постарше указанного, но от ошибки компиляции он не спасает: имя, которого в старом SDK нет, не скомпилируется вообще.
 
 ```kotlin
 requireApi(2)
@@ -16,12 +16,12 @@ val mesh = gpu.indexedMesh(format)
 
 | Метод | Тип | Описание |
 |---|---|---|
-| `ApiVersion.CURRENT` | `int` | версия скриптового API этого клиента, сейчас 3 |
+| `ApiVersion.CURRENT` | `int` | версия скриптового API этого клиента, сейчас 4 |
 | `ApiVersion.require(minimum)` | `void` | статический (бросает `ScriptApiException`, когда `CURRENT` < `minimum`) |
 | `requireApi(minimum)` | `Unit` | форма `ApiVersion.require` из DSL (бросает `ScriptApiException`, когда `CURRENT` < `minimum`) |
 
 У `ApiVersion` приватный конструктор: экземпляра нет, только два статических члена.
-К каждой ошибке `Unresolved reference` клиент дописывает `this client provides v3`, а компиляция идёт раньше первой строки.
+К каждой ошибке `Unresolved reference` клиент дописывает `this client provides v4`, а компиляция идёт раньше первой строки.
 Ничего не закрыто пометкой по отдельным членам: всё перечисленное есть в клиенте своей версии безусловно, а `requireApi(n)` — единственная проверка.
 Записи пакетов следуют за версией Minecraft, а не за этим номером — см. [Пакеты](../actions/packets.md).
 
