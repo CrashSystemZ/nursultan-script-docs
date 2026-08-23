@@ -64,3 +64,5 @@
   * [Строитель мостов](examples/bridge-builder.md)
   * [Автосуп](examples/auto-soup.md)
   * [Помощник на анархии](examples/anarchyhelper.md)
+
+* [AutoBuy](autobuy/README.md)

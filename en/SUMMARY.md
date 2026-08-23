@@ -64,3 +64,5 @@
   * [Bridge builder](examples/bridge-builder.md)
   * [Auto soup](examples/auto-soup.md)
   * [Anarchy helper](examples/anarchyhelper.md)
+
+* [AutoBuy](autobuy/README.md)
