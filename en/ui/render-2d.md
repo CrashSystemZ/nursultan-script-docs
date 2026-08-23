@@ -189,7 +189,7 @@ Every colour is an `int` shaped `0xAARRGGBB`.
 | `r.pushScissor(x, y, width, height)` | `void` | clips later commands to the rect, intersected with the enclosing one |
 | `r.popScissor()` | `void` | restores the previous clip, no-op when nothing is pushed |
 
-The clip applies at the command's place in the queue, so only what is issued between push and pop is cut; an unbalanced push ends with the frame. Blur reads the framebuffer unclipped and only its output is clipped.
+The clip applies at the command's place in the queue, so only what is issued between push and pop is cut; an unbalanced push is closed when the handler returns, so it never reaches another script. Blur reads the framebuffer unclipped and only its output is clipped.
 
 ## A world point on the screen
 
