@@ -1,6 +1,6 @@
 # Сущности и фильтры
 
-Любая сущность, которую ты берёшь из [мира](world.md), из [луча](raycast.md) или из события, — живая обёртка: каждый геттер читает завёрнутую сущность Minecraft в момент вызова и продолжает читать её после того, как та ушла из мира, так что о пропаже говорит `alive()`. `LivingEntity`, `PlayerEntity` и `TextDisplay` добавляют методы поверх `Entity`; локальный игрок — это [`SelfPlayer`](player.md).
+Любая сущность, которую ты берёшь из [мира](world.md), из [луча](raycast.md) или из события, — живая обёртка: каждый геттер читает завёрнутую сущность Minecraft в момент вызова и продолжает читать её после того, как та ушла из мира, так что о пропаже говорит `alive()`. `LivingEntity`, `PlayerEntity`, `TextDisplay` и `ItemEntity` добавляют методы поверх `Entity`; локальный игрок — это [`SelfPlayer`](player.md).
 
 ```kotlin
 on<ClientTickEvent> {
@@ -26,9 +26,11 @@ on<ClientTickEvent> {
 | `entity.isLiving()` | `boolean` | завёрнутая сущность живая |
 | `entity.isPlayer()` | `boolean` | завёрнутая сущность — игрок |
 | `entity.isSelf()` | `boolean` | завёрнутая сущность — локальный игрок |
+| `entity.isItem()` | `boolean` | завёрнутая сущность — выброшенный предмет (API 4) |
 | `entity.asLiving()` | `LivingEntity?` | та же сущность как `LivingEntity`, иначе null |
 | `entity.asPlayer()` | `PlayerEntity?` | та же сущность как `PlayerEntity`, иначе null |
 | `entity.asTextDisplay()` | `TextDisplay?` | та же сущность как `TextDisplay`, иначе null |
+| `entity.asItemEntity()` | `ItemEntity?` | та же сущность как `ItemEntity`, иначе null (API 4) |
 
 ## Позиция и размер
 
@@ -215,6 +217,14 @@ Id эффектов сравниваются точно: `hasEffect("minecraft:s
 | `display.styledText()` | `Text` | оформленный текст дисплея |
 
 У текстового дисплея нет кастомного имени: `hasCustomName()` на нём false, а `customName()` — null.
+
+### ItemEntity
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `itemEntity.stack()` | [`Item`](inventory.md) | стак, лежащий на земле, оборачивается на каждый вызов (API 4) |
+
+Достаётся через `entity.asItemEntity()`; все методы `Entity` работают и на нём.
 
 ## Позы
 

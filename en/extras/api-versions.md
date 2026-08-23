@@ -1,6 +1,6 @@
 # API versions
 
-`ApiVersion.CURRENT` is 3. `requireApi(n)` fails the script at load when the running client is older; it cannot rescue a compile error, because a name that does not exist on the older SDK never compiles in the first place.
+`ApiVersion.CURRENT` is 5. `requireApi(n)` fails the script at load when the running client is older; it cannot rescue a compile error, because a name that does not exist on the older SDK never compiles in the first place.
 
 ```kotlin
 requireApi(2)
@@ -16,14 +16,83 @@ val mesh = gpu.indexedMesh(format)
 
 | Method | Type | Description |
 |---|---|---|
-| `ApiVersion.CURRENT` | `int` | script API version of this client, currently 3 |
+| `ApiVersion.CURRENT` | `int` | script API version of this client, currently 5 |
 | `ApiVersion.require(minimum)` | `void` | static (throws `ScriptApiException` when `CURRENT` < `minimum`) |
 | `requireApi(minimum)` | `Unit` | the DSL form of `ApiVersion.require` (throws `ScriptApiException` when `CURRENT` < `minimum`) |
 
-`ApiVersion` has a private constructor: there is no instance, only the two static members.
-The client appends `this client provides v3` to every `Unresolved reference` compile error, and compilation happens before the first line runs.
-Nothing is gated per member: every addition above is present unconditionally in a client of that version, and `requireApi(n)` is the only check that exists.
+`ApiVersion` has a private constructor: no instance, only the two static members, and the client appends `this client provides v5` to every `Unresolved reference` compile error.
 Packet records follow the Minecraft version, not this number — see [Packets](../actions/packets.md).
+
+## What each version added
+
+### API 3
+
+| Added in 3 | Documented on |
+|---|---|
+| `combat.explosionExposure(target, source)` | [Interaction](../actions/interaction.md) |
+| `combat.explosionDamage(target, source, power)` | [Interaction](../actions/interaction.md) |
+| `combat.explosionDamageTaken(target, source, power)` | [Interaction](../actions/interaction.md) |
+| `combat.damageAfterArmor(target, damage)` | [Interaction](../actions/interaction.md) |
+| `living.visibleEffects()` | [Entities and filters](../game/entities.md) |
+| `block.collisionBoxes()` | [World and blocks](../game/world.md) |
+| `block.outlineBoxes()` | [World and blocks](../game/world.md) |
+| `world.blockCollisionsIn(box)` | [World and blocks](../game/world.md) |
+| `world.isBlockSpaceFree(box)` | [World and blocks](../game/world.md) |
+| `RenderItemEvent.translate(x, y, z)` | [Event list](../events/reference.md) |
+| `RenderItemEvent.rotate(degrees, axisX, axisY, axisZ)` | [Event list](../events/reference.md) |
+| `RenderItemEvent.rotateX(degrees)` | [Event list](../events/reference.md) |
+| `RenderItemEvent.rotateY(degrees)` | [Event list](../events/reference.md) |
+| `RenderItemEvent.rotateZ(degrees)` | [Event list](../events/reference.md) |
+| `RenderItemEvent.scale(x, y, z)` | [Event list](../events/reference.md) |
+| `RenderItemEvent.Matrix` | [Event list](../events/reference.md) |
+
+### API 4
+
+| Added in 4 | Documented on |
+|---|---|
+| `client.party()` | [How a script works](../start/lifecycle.md) |
+| `party` | [Party messages](party.md) |
+| `Party` | [Party messages](party.md) |
+| `PartyChannel` | [Party messages](party.md) |
+| `PartyMember` | [Party messages](party.md) |
+| `PartyMessage` | [Party messages](party.md) |
+| `PartyShapedMessage` | [Party messages](party.md) |
+| `PartyMessageKind` | [Party messages](party.md) |
+| `PartyFields` | [Party messages](party.md) |
+| `PartyShape` | [Party messages](party.md) |
+| `PartyShapeBuilder` | [Party messages](party.md) |
+| `PartyField` | [Party messages](party.md) |
+| `PartyFieldType` | [Party messages](party.md) |
+| `PartyWire` | [Party messages](party.md) |
+| `PartyStruct` | [Party messages](party.md) |
+| `PartyShapedWriter` | [Party messages](party.md) |
+| `PartyPayloadWriter` | [Party messages](party.md) |
+| `PartyPayloadReader` | [Party messages](party.md) |
+| `PartyTarget` | [Party messages](party.md) |
+| `PartyTargetKind` | [Party messages](party.md) |
+| `SenderRule` | [Party messages](party.md) |
+| `PartySendResult` | [Party messages](party.md) |
+| 43 `nursultan.dsl` party helpers — `shape`, the field builders, `send`, `publish`, the typed field readers | [Party messages](party.md) |
+| `nursultan.party.*` as a default import | [Party messages](party.md) |
+| `entity.isItem()` | [Entities and filters](../game/entities.md) |
+| `entity.asItemEntity()` | [Entities and filters](../game/entities.md) |
+| `ItemEntity` | [Entities and filters](../game/entities.md) |
+
+### API 5
+
+| Added in 5 | Documented on |
+|---|---|
+| `party.code()` | [Party messages](party.md) |
+| `PartyMember.color()` | [Party messages](party.md) |
+| `PartyMember.position()` | [Party messages](party.md) |
+| `PartyMember.positionAge()` | [Party messages](party.md) |
+| `player.serverSprinting()` | [Your player](../game/player.md) |
+| `player.velocity(value)` | [Your player](../game/player.md) |
+| `render.pushScissor(x, y, width, height)` | [2D render](../ui/render-2d.md) |
+| `render.popScissor()` | [2D render](../ui/render-2d.md) |
+
+Nothing is gated per member: every addition above is present unconditionally in a client of that version, and `requireApi(n)` is the only check that exists.
+API 1 is the surface that carries no marker at all; API 2 members are marked `(API 2)` in the tables of the page that documents them.
 
 ## Things that no longer do anything
 

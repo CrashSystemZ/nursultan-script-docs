@@ -191,6 +191,16 @@ Every colour is an `int` shaped `0xAARRGGBB`.
 | `p.x()` | `float` | screen X in framebuffer px, 0 when not visible |
 | `p.y()` | `float` | screen Y in framebuffer px, 0 when not visible |
 
+## Clipping
+
+| Method | Type | Description |
+|---|---|---|
+| `r.pushScissor(x, y, width, height)` | `void` | clips later draws to the rect, intersected with the enclosing one (API 5) |
+| `r.popScissor()` | `void` | drops one clip level (API 5) (no effect: the scissor stack is empty) |
+
+The rect is in framebuffer px, rounded and clamped to the frame; a negative width or height becomes 0.
+Every scissor a render handler leaves open is dropped when that handler returns.
+
 ## Shaders
 
 | Method | Type | Description |

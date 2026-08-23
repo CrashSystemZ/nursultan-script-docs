@@ -64,5 +64,4 @@ Clicks and hovers only fire from a message that is in the chat log; text drawn t
 | `copy()` | `Text` | deep copy of the component and its children, safe to mutate |
 | `string()` | `String` | flattened plain text, no formatting codes |
 | `toJson()` | `String` | text-component json (throws `ScriptException` when encoding fails) |
-
-`toString()` returns the same value as `string()`.
+| `toString()` | `String` | same value as `string()` |

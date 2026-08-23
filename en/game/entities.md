@@ -1,6 +1,6 @@
 # Entities and filters
 
-Every entity you get from [the world](world.md), a [ray](raycast.md) or an event is a live wrapper: each getter reads the wrapped Minecraft entity at call time, and it keeps reading it after the entity leaves the world, so `alive()` is what tells you it is gone. `LivingEntity`, `PlayerEntity` and `TextDisplay` add members on top of `Entity`; the local player is a [`SelfPlayer`](player.md).
+Every entity you get from [the world](world.md), a [ray](raycast.md) or an event is a live wrapper: each getter reads the wrapped Minecraft entity at call time, and it keeps reading it after the entity leaves the world, so `alive()` is what tells you it is gone. `LivingEntity`, `PlayerEntity`, `TextDisplay` and `ItemEntity` add members on top of `Entity`; the local player is a [`SelfPlayer`](player.md).
 
 ```kotlin
 on<ClientTickEvent> {
@@ -26,9 +26,11 @@ on<ClientTickEvent> {
 | `entity.isLiving()` | `boolean` | wrapped entity is a living entity |
 | `entity.isPlayer()` | `boolean` | wrapped entity is a player |
 | `entity.isSelf()` | `boolean` | wrapped entity is the local player |
+| `entity.isItem()` | `boolean` | wrapped entity is a dropped item stack (API 4) |
 | `entity.asLiving()` | `LivingEntity?` | same entity as `LivingEntity`, null otherwise |
 | `entity.asPlayer()` | `PlayerEntity?` | same entity as `PlayerEntity`, null otherwise |
 | `entity.asTextDisplay()` | `TextDisplay?` | same entity as `TextDisplay`, null otherwise |
+| `entity.asItemEntity()` | `ItemEntity?` | same entity as `ItemEntity`, null otherwise (API 4) |
 
 ## Position and size
 
@@ -215,6 +217,14 @@ Effect ids are compared exactly: `hasEffect("minecraft:speed")` matches, `hasEff
 | `display.styledText()` | `Text` | styled text of the display |
 
 A text display has no custom name: `hasCustomName()` is false and `customName()` is null on it.
+
+### ItemEntity
+
+| Method | Type | Description |
+|---|---|---|
+| `itemEntity.stack()` | [`Item`](inventory.md) | the stack lying on the ground, wrapped on each call (API 4) |
+
+Reached with `entity.asItemEntity()`; every `Entity` member works on it too.
 
 ## Poses
 

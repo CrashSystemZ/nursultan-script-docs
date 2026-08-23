@@ -1,6 +1,6 @@
 # Версии API
 
-`ApiVersion.CURRENT` равен 3. `requireApi(n)` не даёт скрипту загрузиться на клиенте постарше указанного, но от ошибки компиляции он не спасает: имя, которого в старом SDK нет, не скомпилируется вообще.
+`ApiVersion.CURRENT` равен 5. `requireApi(n)` не даёт скрипту загрузиться на клиенте постарше указанного, но от ошибки компиляции он не спасает: имя, которого в старом SDK нет, не скомпилируется вообще.
 
 ```kotlin
 requireApi(2)
@@ -16,14 +16,83 @@ val mesh = gpu.indexedMesh(format)
 
 | Метод | Тип | Описание |
 |---|---|---|
-| `ApiVersion.CURRENT` | `int` | версия скриптового API этого клиента, сейчас 3 |
+| `ApiVersion.CURRENT` | `int` | версия скриптового API этого клиента, сейчас 5 |
 | `ApiVersion.require(minimum)` | `void` | статический (бросает `ScriptApiException`, когда `CURRENT` < `minimum`) |
 | `requireApi(minimum)` | `Unit` | форма `ApiVersion.require` из DSL (бросает `ScriptApiException`, когда `CURRENT` < `minimum`) |
 
-У `ApiVersion` приватный конструктор: экземпляра нет, только два статических члена.
-К каждой ошибке `Unresolved reference` клиент дописывает `this client provides v3`, а компиляция идёт раньше первой строки.
-Ничего не закрыто пометкой по отдельным членам: всё перечисленное есть в клиенте своей версии безусловно, а `requireApi(n)` — единственная проверка.
+У `ApiVersion` приватный конструктор: экземпляра нет, только два статических члена, а к каждой ошибке `Unresolved reference` клиент дописывает `this client provides v5`.
 Записи пакетов следуют за версией Minecraft, а не за этим номером — см. [Пакеты](../actions/packets.md).
+
+## Что добавила каждая версия
+
+### API 3
+
+| Добавлено в 3 | Где описано |
+|---|---|
+| `combat.explosionExposure(target, source)` | [Взаимодействие](../actions/interaction.md) |
+| `combat.explosionDamage(target, source, power)` | [Взаимодействие](../actions/interaction.md) |
+| `combat.explosionDamageTaken(target, source, power)` | [Взаимодействие](../actions/interaction.md) |
+| `combat.damageAfterArmor(target, damage)` | [Взаимодействие](../actions/interaction.md) |
+| `living.visibleEffects()` | [Сущности и фильтры](../game/entities.md) |
+| `block.collisionBoxes()` | [Мир и блоки](../game/world.md) |
+| `block.outlineBoxes()` | [Мир и блоки](../game/world.md) |
+| `world.blockCollisionsIn(box)` | [Мир и блоки](../game/world.md) |
+| `world.isBlockSpaceFree(box)` | [Мир и блоки](../game/world.md) |
+| `RenderItemEvent.translate(x, y, z)` | [Список событий](../events/reference.md) |
+| `RenderItemEvent.rotate(degrees, axisX, axisY, axisZ)` | [Список событий](../events/reference.md) |
+| `RenderItemEvent.rotateX(degrees)` | [Список событий](../events/reference.md) |
+| `RenderItemEvent.rotateY(degrees)` | [Список событий](../events/reference.md) |
+| `RenderItemEvent.rotateZ(degrees)` | [Список событий](../events/reference.md) |
+| `RenderItemEvent.scale(x, y, z)` | [Список событий](../events/reference.md) |
+| `RenderItemEvent.Matrix` | [Список событий](../events/reference.md) |
+
+### API 4
+
+| Добавлено в 4 | Где описано |
+|---|---|
+| `client.party()` | [Как устроен скрипт](../start/lifecycle.md) |
+| `party` | [Сообщения в группе](party.md) |
+| `Party` | [Сообщения в группе](party.md) |
+| `PartyChannel` | [Сообщения в группе](party.md) |
+| `PartyMember` | [Сообщения в группе](party.md) |
+| `PartyMessage` | [Сообщения в группе](party.md) |
+| `PartyShapedMessage` | [Сообщения в группе](party.md) |
+| `PartyMessageKind` | [Сообщения в группе](party.md) |
+| `PartyFields` | [Сообщения в группе](party.md) |
+| `PartyShape` | [Сообщения в группе](party.md) |
+| `PartyShapeBuilder` | [Сообщения в группе](party.md) |
+| `PartyField` | [Сообщения в группе](party.md) |
+| `PartyFieldType` | [Сообщения в группе](party.md) |
+| `PartyWire` | [Сообщения в группе](party.md) |
+| `PartyStruct` | [Сообщения в группе](party.md) |
+| `PartyShapedWriter` | [Сообщения в группе](party.md) |
+| `PartyPayloadWriter` | [Сообщения в группе](party.md) |
+| `PartyPayloadReader` | [Сообщения в группе](party.md) |
+| `PartyTarget` | [Сообщения в группе](party.md) |
+| `PartyTargetKind` | [Сообщения в группе](party.md) |
+| `SenderRule` | [Сообщения в группе](party.md) |
+| `PartySendResult` | [Сообщения в группе](party.md) |
+| 43 хелпера группы в `nursultan.dsl` — `shape`, объявления полей, `send`, `publish`, типизированное чтение полей | [Сообщения в группе](party.md) |
+| `nursultan.party.*` в импортах по умолчанию | [Сообщения в группе](party.md) |
+| `entity.isItem()` | [Сущности и фильтры](../game/entities.md) |
+| `entity.asItemEntity()` | [Сущности и фильтры](../game/entities.md) |
+| `ItemEntity` | [Сущности и фильтры](../game/entities.md) |
+
+### API 5
+
+| Добавлено в 5 | Где описано |
+|---|---|
+| `party.code()` | [Сообщения в группе](party.md) |
+| `PartyMember.color()` | [Сообщения в группе](party.md) |
+| `PartyMember.position()` | [Сообщения в группе](party.md) |
+| `PartyMember.positionAge()` | [Сообщения в группе](party.md) |
+| `player.serverSprinting()` | [Свой игрок](../game/player.md) |
+| `player.velocity(value)` | [Свой игрок](../game/player.md) |
+| `render.pushScissor(x, y, width, height)` | [Рендер 2D](../ui/render-2d.md) |
+| `render.popScissor()` | [Рендер 2D](../ui/render-2d.md) |
+
+Ничего не закрыто пометкой по отдельным членам: всё перечисленное выше есть в клиенте своей версии безусловно, а `requireApi(n)` — единственная проверка.
+API 1 — это та часть, у которой пометки нет вообще; члены API 2 помечены `(API 2)` в таблицах той страницы, которая их описывает.
 
 ## Что больше ничего не делает
 

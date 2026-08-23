@@ -48,6 +48,14 @@ on<ClientTickEvent> {
 Two settings with the same name under the same parent throw `IllegalArgumentException`; every creator throws `ScriptStateException` once the script is unloaded.
 `hotkey` takes a `Key` from [Keys and binds](../actions/keys.md).
 
+### SettingHost
+
+| Method | Type | Description |
+|---|---|---|
+| `settings()` | `List<Setting>` | every setting the script created, creation order, immutable |
+
+`SettingHost` is the interface the creators above are declared on; nested settings are in the list too.
+
 ## The `by` delegate
 
 | Method | Type | Description |

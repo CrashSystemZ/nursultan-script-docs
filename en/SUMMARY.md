@@ -2,6 +2,8 @@
 
 * [What this is](README.md)
 
+## Scripting
+
 * [Getting started](start/README.md)
   * [Your first script](start/first-script.md)
   * [The project in your IDE](start/ide.md)
@@ -54,6 +56,7 @@
   * [Your account](extras/user.md)
   * [Timers and tasks](extras/tasks.md)
   * [Waypoints](extras/waypoints.md)
+  * [Party messages](extras/party.md)
   * [The assets folder](extras/assets.md)
   * [Sandbox and limits](extras/limits.md)
   * [API versions](extras/api-versions.md)
@@ -64,5 +67,7 @@
   * [Bridge builder](examples/bridge-builder.md)
   * [Auto soup](examples/auto-soup.md)
   * [Anarchy helper](examples/anarchyhelper.md)
+
+## Client guides
 
 * [AutoBuy](autobuy/README.md)

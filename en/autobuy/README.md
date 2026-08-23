@@ -141,19 +141,24 @@ While the menu is open and the link is alive, **your movement is blocked** — w
 
 ## If something doesn't work
 
-**"Port for AutoBuy not found…"**
+### "Port for AutoBuy not found…"
+
 The buyer isn't running, or it started after the checker. Check in order: the second client is open, its mode is "Buyer", it is in a world, the module is enabled, and the chat showed "AutoBuy is running on port …". Order matters: buyer first, checker second.
 
-**The clients don't see each other**
+### The clients don't see each other
+
 Both must be the same version and run on the same computer — they find each other through a file in the game folder. Different versions mean different folders.
 
-**Nothing gets bought even though listings exist**
+### Nothing gets bought even though listings exist
+
 Usually the price: "Max Price for Item" is still zero, or below market. Also check that the item's switch is on, that the listing's count isn't below "Min Count", and that durability clears the threshold. And make sure the buyer can actually afford it.
 
-**The auto-parser won't start**
+### The auto-parser won't start
+
 It refuses to run while the clients are linked. Disable the module on one of them, run the parser, then link them back up.
 
-**The auto-parser skipped an item**
+### The auto-parser skipped an item
+
 That means nothing is listed right now, or no listing passed the checks. The old price is left alone — the parser never writes a zero.
 
 ---

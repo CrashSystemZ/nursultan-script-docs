@@ -2,6 +2,8 @@
 
 * [Что это](README.md)
 
+## Скрипты
+
 * [Начало](start/README.md)
   * [Первый скрипт](start/first-script.md)
   * [Проект в IDE](start/ide.md)
@@ -54,6 +56,7 @@
   * [Твой аккаунт](extras/user.md)
   * [Таймеры и задачи](extras/tasks.md)
   * [Путевые точки](extras/waypoints.md)
+  * [Сообщения в группе](extras/party.md)
   * [Папка assets](extras/assets.md)
   * [Песочница и лимиты](extras/limits.md)
   * [Версии API](extras/api-versions.md)
@@ -64,5 +67,7 @@
   * [Строитель мостов](examples/bridge-builder.md)
   * [Автосуп](examples/auto-soup.md)
   * [Помощник на анархии](examples/anarchyhelper.md)
+
+## Гайды по клиенту
 
 * [AutoBuy](autobuy/README.md)
