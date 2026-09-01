@@ -8,7 +8,7 @@ The script development folder from the site (`nursultan-scripts-v5.zip`) unpacks
 |---|---|
 | `example.kts` | example script; every `.kts` in the folder root is one script |
 | `assets/` | fonts, images and data the scripts read — see [the assets folder](../extras/assets.md) |
-| `.sdk/nursultan-script-api-v<N>.jar` | the API and the `.kts` script definition; `<N>` is the client's script API version, currently 5 |
+| `.sdk/nursultan-script-api-v<N>.jar` | the API and the `.kts` script definition; `<N>` is the client's script API version, currently 7 |
 | `.sdk/nursultan-script-packets-<mcVersion>.jar` | Minecraft packet classes, needed only by scripts that read or send packets; the suffix is the client's Minecraft version |
 | `build.gradle.kts`, `settings.gradle.kts` | wire the `.sdk` jars and Kotlin scripting in |
 | `README.md` | the same steps, offline |

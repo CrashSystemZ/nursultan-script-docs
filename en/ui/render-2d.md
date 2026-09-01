@@ -201,6 +201,16 @@ Every colour is an `int` shaped `0xAARRGGBB`.
 The rect is in framebuffer px, rounded and clamped to the frame; a negative width or height becomes 0.
 Every scissor a render handler leaves open is dropped when that handler returns.
 
+## Blending
+
+| Method | Type | Description |
+|---|---|---|
+| `r.blend()` | `BlendMode` | mode applied to later shapes and textures, ALPHA when a handler starts (API 7) |
+| `r.blend(mode)` | `void` | sets it for later shapes and textures, null means ALPHA (API 7) |
+
+Text, items, heads, blur and shader quads keep their own blending; the modes are listed on [Your own geometry](gpu.md#blendmode).
+`INVERT` flips every pixel under the shape, weighted by its alpha — the blend of the vanilla crosshair.
+
 ## Shaders
 
 | Method | Type | Description |

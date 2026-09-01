@@ -115,6 +115,9 @@ Packet records follow the Minecraft version, not this number — see [Packets](.
 | `entity.fallDistanceBlocks(value)` | [Entities and filters](../game/entities.md) |
 | `entity.noClip()` | [Entities and filters](../game/entities.md) |
 | `entity.noClip(value)` | [Entities and filters](../game/entities.md) |
+| `render.blend()` | [2D render](../ui/render-2d.md) |
+| `render.blend(mode)` | [2D render](../ui/render-2d.md) |
+| `BlendMode.INVERT` | [Your own geometry](../ui/gpu.md) |
 
 Nothing is gated per member: every addition above is present unconditionally in a client of that version, and `requireApi(n)` is the only check that exists.
 API 1 is the surface that carries no marker at all; API 2 members are marked `(API 2)` in the tables of the page that documents them.

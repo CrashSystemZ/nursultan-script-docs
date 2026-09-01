@@ -115,6 +115,9 @@ val mesh = gpu.indexedMesh(format)
 | `entity.fallDistanceBlocks(value)` | [Сущности и фильтры](../game/entities.md) |
 | `entity.noClip()` | [Сущности и фильтры](../game/entities.md) |
 | `entity.noClip(value)` | [Сущности и фильтры](../game/entities.md) |
+| `render.blend()` | [Рендер 2D](../ui/render-2d.md) |
+| `render.blend(mode)` | [Рендер 2D](../ui/render-2d.md) |
+| `BlendMode.INVERT` | [Своя геометрия](../ui/gpu.md) |
 
 Ничего не закрыто пометкой по отдельным членам: всё перечисленное выше есть в клиенте своей версии безусловно, а `requireApi(n)` — единственная проверка.
 API 1 — это та часть, у которой пометки нет вообще; члены API 2 помечены `(API 2)` в таблицах той страницы, которая их описывает.

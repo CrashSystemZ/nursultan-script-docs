@@ -127,6 +127,7 @@ The GL buffer is created on first use, and that first write must happen on the r
 | `BlendMode.ALPHA` | `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`, the fallback for a null mode |
 | `BlendMode.PREMULTIPLIED` | `ONE, ONE_MINUS_SRC_ALPHA` on colour and alpha |
 | `BlendMode.ADDITIVE` | `SRC_ALPHA, ONE` on colour and alpha |
+| `BlendMode.INVERT` | `ONE_MINUS_DST_COLOR, ONE_MINUS_SRC_COLOR` on colour, `ONE, ZERO` on alpha, the blend of the vanilla crosshair (API 7) |
 
 ### DepthMode
 
