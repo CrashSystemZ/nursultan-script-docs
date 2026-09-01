@@ -47,8 +47,11 @@ on<ClientTickEvent> {
 | `entity.height()` | `float` | hitbox height in blocks |
 | `entity.rotation()` | [`Rotation`](math.md#rotation) | yaw and pitch in degrees |
 | `entity.yaw()` | `float` | yaw in degrees |
+| `entity.yaw(value)` | `void` | sets yaw client-side (API 7) |
 | `entity.pitch()` | `float` | pitch in degrees, -90..90 |
+| `entity.pitch(value)` | `void` | sets pitch client-side (API 7) |
 | `entity.velocity()` | `Vec` | velocity in blocks per tick |
+| `entity.velocity(value)` | `void` | sets velocity client-side; a server update overwrites it (API 7) |
 | `entity.distanceTo(other)` | `double` | distance between positions in blocks (throws `ScriptStateException` when `other` is not a world entity) |
 | `entity.distanceTo(point)` | `double` | distance from the position to a point in blocks |
 
@@ -77,8 +80,11 @@ on<ClientTickEvent> {
 | `entity.airTicks()` | `int` | remaining air in ticks |
 | `entity.maxAirTicks()` | `int` | maximum air in ticks |
 | `entity.fallDistanceBlocks()` | `double` | accumulated fall distance in blocks |
+| `entity.fallDistanceBlocks(value)` | `void` | sets the accumulated fall distance in blocks (API 7) |
 | `entity.silent()` | `boolean` | silent flag |
 | `entity.noGravity()` | `boolean` | no-gravity flag |
+| `entity.noClip()` | `boolean` | entity moves through blocks (API 7) |
+| `entity.noClip(value)` | `void` | sets the no-clip flag client-side (API 7) |
 | `entity.age()` | `int` | ticks the entity has existed on the client |
 
 `invisible(true)` hides the model and not the nametag, and display entities ignore the flag entirely.

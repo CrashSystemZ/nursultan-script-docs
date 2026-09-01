@@ -1,14 +1,12 @@
 # Повороты
 
-`rotations` — это `client.rotations()`. Применённый поворот записывается в следующий пакет движения, то есть его видит сервер; угол квантуется по шагу чувствительности мыши.
+`rotations` — это `client.rotations()`. Применённый поворот записывается в следующий пакет движения как есть, то есть его видит сервер; клиент больше не снапит его к шагу мыши за тебя, а угол, который реально уйдёт, даёт `rotations.quantized(rotation)`.
 
 ```kotlin
 on<PrePlayerTickEvent> {
     val target = combat.target() ?: return@on
-    rotations.apply(
-        rotations.lookAt(target),
-        RotationOptions.DEFAULT.priority(RotationPriority.NOW)
-    )
+    val aim = rotations.quantized(rotations.lookAt(target))
+    rotations.apply(aim, RotationOptions.DEFAULT.priority(RotationPriority.NOW))
 }
 ```
 
@@ -29,6 +27,10 @@ on<PrePlayerTickEvent> {
 |---|---|---|
 | `rotations.lookAt(point)` | `Rotation` | yaw/pitch от позиции глаз к точке `Vec` |
 | `rotations.lookAt(entity)` | `Rotation` | yaw/pitch к точке атаки `NEAREST` этой сущности |
+| `rotations.quantized(rotation)` | `Rotation` | копия, снапнутая к сетке чувствительности мыши (API 6) |
+
+`quantized` кладёт на шаг мыши обе оси, разворачивает yaw в систему координат игрока и зажимает pitch в -90..90 градусов.
+Рейкаст по квантованному значению проверяет ровно тот угол, который ты применишь.
 
 Сам `Rotation` — на странице [Векторы, коробки, углы](../game/math.md#rotation), точки атаки — на странице [Взаимодействие](interaction.md#куда-бить).
 
@@ -39,30 +41,31 @@ on<PrePlayerTickEvent> {
 | `rotations.apply(rotation)` | `void` | ставит в очередь с `RotationOptions.DEFAULT` (только главный поток) |
 | `rotations.apply(rotation, options)` | `void` | ставит в очередь, null-опции означают `DEFAULT` (только главный поток) |
 
-Применяется на ближайшем pre-player-tick и снапится к кванту мыши с дизерингом; один вызов действует один тик.
+Применяется на ближайшем pre-player-tick ровно в том виде, в каком ты его передал; один вызов действует один тик.
 Ничего не делает, пока поворот держит блокировку обработчика, и бросает `ScriptStateException` без игрока или мира.
 
 ## Настройки поворота
 
 | Метод | Тип | Описание |
 |---|---|---|
-| `RotationOptions.DEFAULT` | `RotationOptions` | статическое поле `(NORMAL, false, false, false, false, FAST)` |
+| `RotationOptions.DEFAULT` | `RotationOptions` | статическое поле `(NORMAL, false, BackRotations.SNAP)` |
 | `options.priority()` | `RotationPriority` | место в очереди поворотов этого тика |
 | `options.priority(value)` | `RotationOptions` | копия с новым приоритетом |
 | `options.strongCorrection()` | `boolean` | true отключает ремап WASD, движение идёт по подменённому yaw |
 | `options.strongCorrection(value)` | `RotationOptions` | копия с новым значением |
-| `options.smoothBackRotation()` | `boolean` | true возвращает голову плавно, false — рывком |
-| `options.smoothBackRotation(value)` | `RotationOptions` | копия с новым значением |
-| `options.backRotation()` | `BackRotation` | форма возврата, читается только при `smoothBackRotation` |
+| `options.backRotation()` | `BackRotation` | форма возврата головы к камере |
 | `options.backRotation(value)` | `RotationOptions` | копия с новым значением |
-| `options.clientSide()` | `boolean` | хранимый флаг (устарело, ничего не делает: поворот всегда уходит на сервер) |
-| `options.clientSide(value)` | `RotationOptions` | копия с новым значением (устарело, ничего не делает: поворот всегда уходит на сервер) |
-| `options.normalizeMouseMovement()` | `boolean` | хранимый флаг (устарело, ничего не делает: угол всегда снапится к шагу мыши) |
-| `options.normalizeMouseMovement(value)` | `RotationOptions` | копия с новым значением (устарело, ничего не делает: угол всегда снапится к шагу мыши) |
+| `options.smoothBackRotation()` | `boolean` | хранимый флаг (устарело, используй `backRotation`) |
+| `options.smoothBackRotation(value)` | `RotationOptions` | копия с новым значением, true превращает возврат `SNAP` в `HUMANIZED` (устарело, используй `backRotation`) |
+| `options.clientSide()` | `boolean` | хранимый флаг (устарело) (ничего не делает: поворот всегда уходит на сервер) |
+| `options.clientSide(value)` | `RotationOptions` | копия с новым значением (устарело) (ничего не делает: поворот всегда уходит на сервер) |
+| `options.normalizeMouseMovement()` | `boolean` | хранимый флаг (устарело, используй `rotations.quantized`) (ничего не делает: значение нигде не читается) |
+| `options.normalizeMouseMovement(value)` | `RotationOptions` | копия с новым значением (устарело, используй `rotations.quantized`) (ничего не делает: значение нигде не читается) |
 | `RotationOptions(priority, clientSide, strongCorrection, smoothBackRotation, normalizeMouseMovement, backRotation)` | `RotationOptions` | канонический конструктор (бросает `NullPointerException`, если `priority` или `backRotation` null) |
+| `RotationOptions(priority, strongCorrection, backRotation)` | `RotationOptions` | конструктор без устаревших флагов (API 6) |
 
 Запись неизменяемая: каждый сеттер возвращает копию, а `DEFAULT` не меняется.
-Четыре устаревших члена собраны на странице [Что больше ничего не делает](../extras/api-versions.md#что-больше-ничего-не-делает).
+Устаревшие члены собраны на странице [Что больше ничего не делает](../extras/api-versions.md#что-больше-ничего-не-делает).
 
 ## Порядок внутри тика
 
@@ -76,9 +79,25 @@ on<PrePlayerTickEvent> {
 
 Повороты, поставленные в очередь за один тик, применяются в порядке `LATER` → `NORMAL` → `NOW`, поэтому старший приоритет записывается последним.
 
-### BackRotation
+## Возврат головы
 
-| Константа | Описание |
-|---|---|
-| `FAST` | 50% лерпа за тик к камере, через 20 тиков рывком |
-| `SMOOTH` | до 12 градусов за тик по каждой оси, через 26 тиков рывком |
+| Метод | Тип | Описание |
+|---|---|---|
+| `BackRotations.SNAP` | `BackRotation` | 1 тик, возвращает голову сразу, значение в `DEFAULT` (API 6) |
+| `BackRotations.INSTANT` | `BackRotation` | 2 тика, половина дельты и следом остаток (API 6) |
+| `BackRotations.HUMANIZED` | `BackRotation` | 20 тиков по записанным человеческим дельтам (API 6) |
+| `BackRotation.FAST` | `BackRotation` | тот же возврат, что у `BackRotations.SNAP` (устарело, используй `BackRotations.SNAP`) |
+| `BackRotation.SMOOTH` | `BackRotation` | тот же возврат, что у `BackRotations.HUMANIZED` (устарело, используй `BackRotations.HUMANIZED`) |
+
+Когда поворот больше никто не применяет, обработчик уводит подменённую голову обратно к камере той `BackRotation`, что стояла в последних применённых опциях.
+
+### Своя форма возврата
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `BackRotation.step(from, to, tick)` | `Rotation?` | угол на этот тик, null — возврат закончен (API 6) |
+| `BackRotation.maxTicks()` | `int` | сколько тиков даётся возврату, по умолчанию 20 (API 6) |
+| `backRotation(maxTicks) { from, to, tick -> }` | `BackRotation` | форма интерфейса из DSL, `maxTicks` по умолчанию 20 (API 6) |
+
+`from` — куда смотрит подменённая голова, `to` — куда смотрит настоящая камера, `tick` считается с нуля.
+Твои шаги применяются как есть, поэтому квантуй их сам; обработчик завершает возврат, когда доходит до `maxTicks`.

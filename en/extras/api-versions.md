@@ -1,6 +1,6 @@
 # API versions
 
-`ApiVersion.CURRENT` is 5. `requireApi(n)` fails the script at load when the running client is older; it cannot rescue a compile error, because a name that does not exist on the older SDK never compiles in the first place.
+`ApiVersion.CURRENT` is 7. `requireApi(n)` fails the script at load when the running client is older; it cannot rescue a compile error, because a name that does not exist on the older SDK never compiles in the first place.
 
 ```kotlin
 requireApi(2)
@@ -16,11 +16,11 @@ val mesh = gpu.indexedMesh(format)
 
 | Method | Type | Description |
 |---|---|---|
-| `ApiVersion.CURRENT` | `int` | script API version of this client, currently 5 |
+| `ApiVersion.CURRENT` | `int` | script API version of this client, currently 7 |
 | `ApiVersion.require(minimum)` | `void` | static (throws `ScriptApiException` when `CURRENT` < `minimum`) |
 | `requireApi(minimum)` | `Unit` | the DSL form of `ApiVersion.require` (throws `ScriptApiException` when `CURRENT` < `minimum`) |
 
-`ApiVersion` has a private constructor: no instance, only the two static members, and the client appends `this client provides v5` to every `Unresolved reference` compile error.
+`ApiVersion` has a private constructor: no instance, only the two static members, and the client appends `this client provides v7` to every `Unresolved reference` compile error.
 Packet records follow the Minecraft version, not this number — see [Packets](../actions/packets.md).
 
 ## What each version added
@@ -91,6 +91,31 @@ Packet records follow the Minecraft version, not this number — see [Packets](.
 | `render.pushScissor(x, y, width, height)` | [2D render](../ui/render-2d.md) |
 | `render.popScissor()` | [2D render](../ui/render-2d.md) |
 
+### API 6
+
+| Added in 6 | Documented on |
+|---|---|
+| `rotations.quantized(rotation)` | [Rotations](../actions/rotations.md) |
+| `BackRotation` | [Rotations](../actions/rotations.md) |
+| `BackRotation.step(from, to, tick)` | [Rotations](../actions/rotations.md) |
+| `BackRotation.maxTicks()` | [Rotations](../actions/rotations.md) |
+| `BackRotations` | [Rotations](../actions/rotations.md) |
+| `BackRotations.SNAP` | [Rotations](../actions/rotations.md) |
+| `BackRotations.INSTANT` | [Rotations](../actions/rotations.md) |
+| `BackRotations.HUMANIZED` | [Rotations](../actions/rotations.md) |
+| `backRotation(maxTicks) { }` | [Rotations](../actions/rotations.md) |
+
+### API 7
+
+| Added in 7 | Documented on |
+|---|---|
+| `entity.yaw(value)` | [Entities and filters](../game/entities.md) |
+| `entity.pitch(value)` | [Entities and filters](../game/entities.md) |
+| `entity.velocity(value)` | [Entities and filters](../game/entities.md) |
+| `entity.fallDistanceBlocks(value)` | [Entities and filters](../game/entities.md) |
+| `entity.noClip()` | [Entities and filters](../game/entities.md) |
+| `entity.noClip(value)` | [Entities and filters](../game/entities.md) |
+
 Nothing is gated per member: every addition above is present unconditionally in a client of that version, and `requireApi(n)` is the only check that exists.
 API 1 is the surface that carries no marker at all; API 2 members are marked `(API 2)` in the tables of the page that documents them.
 
@@ -118,11 +143,23 @@ Targets: type, method, field, parameter, record component.
 | `EntryScope.on(type, priority, ignoreCancelled) { }` | `Subscription` | discards the argument (deprecated, drop the argument) |
 | `RotationOptions.clientSide()` | `boolean` | record component and its accessor (deprecated) (no effect: the rotation always reaches the server) |
 | `RotationOptions.clientSide(value)` | `RotationOptions` | copy carrying the value (deprecated) (no effect: the rotation always reaches the server) |
-| `RotationOptions.normalizeMouseMovement()` | `boolean` | record component and its accessor (deprecated) (no effect: the angle is always snapped to a mouse step) |
-| `RotationOptions.normalizeMouseMovement(value)` | `RotationOptions` | copy carrying the value (deprecated) (no effect: the angle is always snapped to a mouse step) |
+| `RotationOptions.normalizeMouseMovement()` | `boolean` | record component and its accessor (deprecated, use `rotations.quantized`) (no effect: the value is never read) |
+| `RotationOptions.normalizeMouseMovement(value)` | `RotationOptions` | copy carrying the value (deprecated, use `rotations.quantized`) (no effect: the value is never read) |
 
 All eleven still compile and still store what you give them; nothing reads the stored value.
 The order that replaced `Priority` is on [Subscribing](../events/basics.md#priority-does-nothing), the two rotation flags on [Rotations](../actions/rotations.md#options).
+Every one of them raises a compile warning in the script console, with the line it sits on.
+
+### Deprecated but still working
+
+| Member | Type | Description |
+|---|---|---|
+| `RotationOptions.smoothBackRotation()` | `boolean` | record component and its accessor (deprecated, use `backRotation`) |
+| `RotationOptions.smoothBackRotation(value)` | `RotationOptions` | true turns a `SNAP` return into `HUMANIZED` (deprecated, use `backRotation`) |
+| `BackRotation.FAST` | `BackRotation` | the return `BackRotations.SNAP` gives (deprecated, use `BackRotations.SNAP`) |
+| `BackRotation.SMOOTH` | `BackRotation` | the return `BackRotations.HUMANIZED` gives (deprecated, use `BackRotations.HUMANIZED`) |
+
+These four are aliases, not stubs: they kept their old shape of return when API 6 rewrote it, so a script written before it behaves the same.
 
 ## What a bump costs
 

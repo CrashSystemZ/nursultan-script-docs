@@ -1,6 +1,6 @@
 # Версии API
 
-`ApiVersion.CURRENT` равен 5. `requireApi(n)` не даёт скрипту загрузиться на клиенте постарше указанного, но от ошибки компиляции он не спасает: имя, которого в старом SDK нет, не скомпилируется вообще.
+`ApiVersion.CURRENT` равен 7. `requireApi(n)` не даёт скрипту загрузиться на клиенте постарше указанного, но от ошибки компиляции он не спасает: имя, которого в старом SDK нет, не скомпилируется вообще.
 
 ```kotlin
 requireApi(2)
@@ -16,11 +16,11 @@ val mesh = gpu.indexedMesh(format)
 
 | Метод | Тип | Описание |
 |---|---|---|
-| `ApiVersion.CURRENT` | `int` | версия скриптового API этого клиента, сейчас 5 |
+| `ApiVersion.CURRENT` | `int` | версия скриптового API этого клиента, сейчас 7 |
 | `ApiVersion.require(minimum)` | `void` | статический (бросает `ScriptApiException`, когда `CURRENT` < `minimum`) |
 | `requireApi(minimum)` | `Unit` | форма `ApiVersion.require` из DSL (бросает `ScriptApiException`, когда `CURRENT` < `minimum`) |
 
-У `ApiVersion` приватный конструктор: экземпляра нет, только два статических члена, а к каждой ошибке `Unresolved reference` клиент дописывает `this client provides v5`.
+У `ApiVersion` приватный конструктор: экземпляра нет, только два статических члена, а к каждой ошибке `Unresolved reference` клиент дописывает `this client provides v7`.
 Записи пакетов следуют за версией Minecraft, а не за этим номером — см. [Пакеты](../actions/packets.md).
 
 ## Что добавила каждая версия
@@ -91,6 +91,31 @@ val mesh = gpu.indexedMesh(format)
 | `render.pushScissor(x, y, width, height)` | [Рендер 2D](../ui/render-2d.md) |
 | `render.popScissor()` | [Рендер 2D](../ui/render-2d.md) |
 
+### API 6
+
+| Добавлено в 6 | Где описано |
+|---|---|
+| `rotations.quantized(rotation)` | [Повороты](../actions/rotations.md) |
+| `BackRotation` | [Повороты](../actions/rotations.md) |
+| `BackRotation.step(from, to, tick)` | [Повороты](../actions/rotations.md) |
+| `BackRotation.maxTicks()` | [Повороты](../actions/rotations.md) |
+| `BackRotations` | [Повороты](../actions/rotations.md) |
+| `BackRotations.SNAP` | [Повороты](../actions/rotations.md) |
+| `BackRotations.INSTANT` | [Повороты](../actions/rotations.md) |
+| `BackRotations.HUMANIZED` | [Повороты](../actions/rotations.md) |
+| `backRotation(maxTicks) { }` | [Повороты](../actions/rotations.md) |
+
+### API 7
+
+| Добавлено в 7 | Где описано |
+|---|---|
+| `entity.yaw(value)` | [Сущности и фильтры](../game/entities.md) |
+| `entity.pitch(value)` | [Сущности и фильтры](../game/entities.md) |
+| `entity.velocity(value)` | [Сущности и фильтры](../game/entities.md) |
+| `entity.fallDistanceBlocks(value)` | [Сущности и фильтры](../game/entities.md) |
+| `entity.noClip()` | [Сущности и фильтры](../game/entities.md) |
+| `entity.noClip(value)` | [Сущности и фильтры](../game/entities.md) |
+
 Ничего не закрыто пометкой по отдельным членам: всё перечисленное выше есть в клиенте своей версии безусловно, а `requireApi(n)` — единственная проверка.
 API 1 — это та часть, у которой пометки нет вообще; члены API 2 помечены `(API 2)` в таблицах той страницы, которая их описывает.
 
@@ -118,11 +143,23 @@ API 1 — это та часть, у которой пометки нет воо
 | `EntryScope.on(type, priority, ignoreCancelled) { }` | `Subscription` | аргумент выбрасывается (устарело, убери аргумент) |
 | `RotationOptions.clientSide()` | `boolean` | компонент записи и его аксессор (устарело) (ничего не делает: поворот всегда уходит на сервер) |
 | `RotationOptions.clientSide(value)` | `RotationOptions` | копия с этим значением (устарело) (ничего не делает: поворот всегда уходит на сервер) |
-| `RotationOptions.normalizeMouseMovement()` | `boolean` | компонент записи и его аксессор (устарело) (ничего не делает: угол всегда снапится к шагу мыши) |
-| `RotationOptions.normalizeMouseMovement(value)` | `RotationOptions` | копия с этим значением (устарело) (ничего не делает: угол всегда снапится к шагу мыши) |
+| `RotationOptions.normalizeMouseMovement()` | `boolean` | компонент записи и его аксессор (устарело, используй `rotations.quantized`) (ничего не делает: значение нигде не читается) |
+| `RotationOptions.normalizeMouseMovement(value)` | `RotationOptions` | копия с этим значением (устарело, используй `rotations.quantized`) (ничего не делает: значение нигде не читается) |
 
 Все одиннадцать компилируются и хранят то, что ты передал; сохранённое значение никто не читает.
 Порядок, который пришёл на смену `Priority`, — на странице [Подписка на события](../events/basics.md#приоритет-ничего-не-делает), два флага поворота — на странице [Повороты](../actions/rotations.md#настройки-поворота).
+Каждый из них даёт предупреждение компиляции в консоли скрипта, со строкой, на которой он стоит.
+
+### Устарело, но работает
+
+| Член | Тип | Описание |
+|---|---|---|
+| `RotationOptions.smoothBackRotation()` | `boolean` | компонент записи и его аксессор (устарело, используй `backRotation`) |
+| `RotationOptions.smoothBackRotation(value)` | `RotationOptions` | true превращает возврат `SNAP` в `HUMANIZED` (устарело, используй `backRotation`) |
+| `BackRotation.FAST` | `BackRotation` | тот же возврат, что у `BackRotations.SNAP` (устарело, используй `BackRotations.SNAP`) |
+| `BackRotation.SMOOTH` | `BackRotation` | тот же возврат, что у `BackRotations.HUMANIZED` (устарело, используй `BackRotations.HUMANIZED`) |
+
+Эти четыре — псевдонимы, а не заглушки: при переписывании возврата головы в API 6 они сохранили прежнюю форму, поэтому скрипт, написанный до него, ведёт себя так же.
 
 ## Во что обходится повышение
 

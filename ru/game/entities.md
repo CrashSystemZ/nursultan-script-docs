@@ -47,8 +47,11 @@ on<ClientTickEvent> {
 | `entity.height()` | `float` | высота хитбокса в блоках |
 | `entity.rotation()` | [`Rotation`](math.md#rotation) | yaw и pitch в градусах |
 | `entity.yaw()` | `float` | yaw в градусах |
+| `entity.yaw(value)` | `void` | ставит yaw только на клиенте (API 7) |
 | `entity.pitch()` | `float` | pitch в градусах, -90..90 |
+| `entity.pitch(value)` | `void` | ставит pitch только на клиенте (API 7) |
 | `entity.velocity()` | `Vec` | скорость в блоках за тик |
+| `entity.velocity(value)` | `void` | ставит скорость на клиенте; обновление с сервера перезапишет (API 7) |
 | `entity.distanceTo(other)` | `double` | расстояние между позициями в блоках (бросает `ScriptStateException`, если `other` не сущность мира) |
 | `entity.distanceTo(point)` | `double` | расстояние от позиции до точки в блоках |
 
@@ -77,8 +80,11 @@ on<ClientTickEvent> {
 | `entity.airTicks()` | `int` | остаток воздуха в тиках |
 | `entity.maxAirTicks()` | `int` | максимум воздуха в тиках |
 | `entity.fallDistanceBlocks()` | `double` | накопленная высота падения в блоках |
+| `entity.fallDistanceBlocks(value)` | `void` | ставит накопленную высоту падения в блоках (API 7) |
 | `entity.silent()` | `boolean` | флаг беззвучности |
 | `entity.noGravity()` | `boolean` | флаг отсутствия гравитации |
+| `entity.noClip()` | `boolean` | сущность проходит сквозь блоки (API 7) |
+| `entity.noClip(value)` | `void` | ставит флаг прохождения сквозь блоки на клиенте (API 7) |
 | `entity.age()` | `int` | сколько тиков сущность существует на клиенте |
 
 `invisible(true)` прячет модель, но не неймтег, а дисплеи флаг игнорируют вовсе.
