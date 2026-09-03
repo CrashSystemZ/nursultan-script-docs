@@ -40,6 +40,7 @@ on<PrePlayerTickEvent> {
 |---|---|---|
 | `rotations.apply(rotation)` | `void` | ставит в очередь с `RotationOptions.DEFAULT` (только главный поток) |
 | `rotations.apply(rotation, options)` | `void` | ставит в очередь, null-опции означают `DEFAULT` (только главный поток) |
+| `rotations.locked()` | `boolean` | хендлер занят другим поворотом, и `apply` сейчас ничего не делает |
 
 Применяется на ближайшем pre-player-tick ровно в том виде, в каком ты его передал; один вызов действует один тик.
 Ничего не делает, пока поворот держит блокировку обработчика, и бросает `ScriptStateException` без игрока или мира.

@@ -20,9 +20,12 @@ on<ClientTickEvent> {
 | `slots.select(hotbarSlot)` | `HeldSlot` | selects the hotbar slot, syncs it, returns a restore handle (main thread only) (throws `ScriptException` when the slot is not a hotbar slot) |
 | `slots.selectSilently(hotbarSlot)` | `void` | selects and syncs the slot, records nothing to restore (main thread only) (throws `ScriptException` when the slot is not a hotbar slot) |
 | `slots.sync()` | `void` | resends the currently selected hotbar slot to the server (main thread only) |
+| `slots.hold(hotbarSlot)` | `HeldSlot` | reuses the live handle when that slot is already selected, selects it otherwise (main thread only) |
+| `slots.selected()` | `Slot` | hotbar slot selected right now |
 | `slots.using(slot) { }` | `T` | selects, runs the block, calls `restoreWhenSafe()` in a `finally` (main thread only) |
 
-All four throw `ScriptStateException` when there is no world and after the script is unloaded. Every live handle of a script is restored silently when the script unloads.
+All of them throw `ScriptStateException` when there is no world and after the script is unloaded. Every live handle of a script is restored silently when the script unloads.
+A deferred restore happens on a tick of the client's own, so a handle is not proof of what the hand holds: `hold` and `holding()` compare against the slot that is really selected.
 
 ## The handle
 
@@ -30,6 +33,7 @@ All four throw `ScriptStateException` when there is no world and after the scrip
 |---|---|---|
 | `originalSlot()` | `int` | hotbar index 0..8 selected when `select` ran |
 | `slot()` | `int` | hotbar index 0..8 this handle selected |
+| `holding()` | `boolean` | that slot is still the selected one and the handle is not spent |
 | `restore()` | `void` | switches back now and syncs it |
 | `restoreWhenSafe()` | `void` | switches back on a later tick with no attack |
 | `keep()` | `void` | drops the pending restore, the slot stays selected |

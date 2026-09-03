@@ -41,6 +41,8 @@ on<ClientTickEvent> {
 | `entity.y()` | `double` | current world Y in blocks |
 | `entity.z()` | `double` | current world Z in blocks |
 | `entity.previousPosition()` | `Vec` | position at the previous tick |
+| `entity.serverPosition()` | `Vec` | position the server last sent, ahead of the client interpolation, `position()` for entities that never lerp |
+| `entity.interpolating()` | `boolean` | the client is still lerping towards `serverPosition()` |
 | `entity.renderPosition()` | `Vec` | tick-interpolated position used for drawing |
 | `entity.box()` | [`Box`](math.md#box) | bounding box in world coordinates |
 | `entity.width()` | `float` | hitbox width in blocks |

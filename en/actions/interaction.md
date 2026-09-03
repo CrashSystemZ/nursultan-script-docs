@@ -48,7 +48,9 @@ A null `mode` is treated as `NEAREST`; both `attackPoint` overloads throw `Scrip
 | Method | Type | Description |
 |---|---|---|
 | `combat.explosionExposure(target, source)` | `float` | share of the hitbox 0..1 that blocks do not shield (API 3) (main thread only) |
+| `combat.explosionExposure(target, source, cover)` | `float` | same, counting boxes that are not in the world yet (main thread only) |
 | `combat.explosionDamage(target, source, power)` | `float` | damage before armor and effects, 0 outside the radius (API 3) (main thread only) (throws `ScriptException` when `power` is 0 or less) |
+| `combat.explosionDamage(target, source, power, cover)` | `float` | same, counting boxes that are not in the world yet (main thread only) (throws `ScriptException` when `power` is 0 or less) |
 | `combat.explosionDamageTaken(target, source, power)` | `float` | the same after armor, resistance and protection (API 3) (main thread only) (throws `ScriptException` when `power` is 0 or less) |
 | `combat.damageAfterArmor(target, damage)` | `float` | damage left after armor points and toughness, weapon armor piercing ignored (API 3) |
 
@@ -69,6 +71,8 @@ The game calls `stopUsingItem` itself on the next tick while the use key is not 
 |---|---|---|
 | `interaction.useBlock(x, y, z, side, hand)` | `void` | interacts with the centre of that block face (main thread only) |
 | `interaction.placeBlock(x, y, z, side, hand)` | `void` | identical to `useBlock`, delegates to it (main thread only) |
+| `interaction.useBlock(x, y, z, side, hand, hit)` | `void` | interacts at that exact point on the face instead of its centre (main thread only) |
+| `interaction.placeBlock(x, y, z, side, hand, hit)` | `void` | the same with a hit point, delegates to `useBlock` (main thread only) |
 | `interaction.startBreaking(x, y, z, side)` | `void` | begins breaking that block (main thread only) |
 | `interaction.continueBreaking(x, y, z, side)` | `boolean` | advances breaking, true when the block broke (main thread only) |
 | `interaction.stopBreaking()` | `void` | cancels the current breaking progress (main thread only) |

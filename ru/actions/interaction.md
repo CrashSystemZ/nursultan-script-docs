@@ -48,7 +48,9 @@ Null в `mode` считается за `NEAREST`; обе перегрузки `a
 | Метод | Тип | Описание |
 |---|---|---|
 | `combat.explosionExposure(target, source)` | `float` | доля хитбокса 0..1, которую блоки не закрывают (API 3) (только главный поток) |
+| `combat.explosionExposure(target, source, cover)` | `float` | то же с учётом коробок, которых в мире ещё нет (только главный поток) |
 | `combat.explosionDamage(target, source, power)` | `float` | урон до брони и эффектов, 0 за радиусом (API 3) (только главный поток) (бросает `ScriptException`, если `power` не больше 0) |
+| `combat.explosionDamage(target, source, power, cover)` | `float` | то же с учётом коробок, которых в мире ещё нет (только главный поток) (бросает `ScriptException`, если `power` не больше 0) |
 | `combat.explosionDamageTaken(target, source, power)` | `float` | то же после брони, сопротивления и защиты (API 3) (только главный поток) (бросает `ScriptException`, если `power` не больше 0) |
 | `combat.damageAfterArmor(target, damage)` | `float` | остаток урона после единиц брони и прочности, пробитие оружием не учтено (API 3) |
 
@@ -69,6 +71,8 @@ Null в `mode` считается за `NEAREST`; обе перегрузки `a
 |---|---|---|
 | `interaction.useBlock(x, y, z, side, hand)` | `void` | взаимодействует с центром этой грани блока (только главный поток) |
 | `interaction.placeBlock(x, y, z, side, hand)` | `void` | то же самое, что `useBlock`, делегирует ему (только главный поток) |
+| `interaction.useBlock(x, y, z, side, hand, hit)` | `void` | взаимодействует в этой точке грани, а не в её центре (только главный поток) |
+| `interaction.placeBlock(x, y, z, side, hand, hit)` | `void` | то же самое с точкой попадания, делегирует `useBlock` (только главный поток) |
 | `interaction.startBreaking(x, y, z, side)` | `void` | начинает ломать этот блок (только главный поток) |
 | `interaction.continueBreaking(x, y, z, side)` | `boolean` | продвигает ломание, true когда блок сломался (только главный поток) |
 | `interaction.stopBreaking()` | `void` | отменяет текущий прогресс ломания (только главный поток) |
