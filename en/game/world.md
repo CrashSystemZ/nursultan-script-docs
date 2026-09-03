@@ -142,6 +142,9 @@ Entity members and the ready-made filters are on [Entities and filters](entities
 | `world.collisionsIn(box)` | `List<Box>` | boxes of hard-colliding entities in the box, block collisions excluded |
 | `world.blockCollisionsIn(box)` | `List<Box>` | block collision shape parts intersecting the box, entities excluded (API 3) |
 | `world.isFree(box)` | `boolean` | no colliding entity intersects the box, block collisions not checked |
+| `world.canPlace(itemId, x, y, z)` | `boolean` | that block item fits there: cell replaceable, state allowed, space empty (throws `ScriptException` when the item is not a block) |
+| `world.respawnAnchorWorks(x, y, z)` | `boolean` | a respawn anchor sets spawn here instead of exploding |
+| `world.blockPending(x, y, z)` | `boolean` | the block there is your own prediction the server has not acknowledged yet |
 | `world.isBlockSpaceFree(box)` | `boolean` | no block collision intersects the box, entities not checked (API 3) |
 
 A partial block reports one box per shape part: a fence gives the post and every connected arm, a slab one half-height box.

@@ -40,6 +40,7 @@ Raycasting the quantised value checks the exact angle you are about to apply.
 |---|---|---|
 | `rotations.apply(rotation)` | `void` | queues it with `RotationOptions.DEFAULT` (main thread only) |
 | `rotations.apply(rotation, options)` | `void` | queues it, null options mean `DEFAULT` (main thread only) |
+| `rotations.locked()` | `boolean` | another rotation holds the handler, so `apply` does nothing right now |
 
 Applied at the next pre-player-tick exactly as given; one call covers one tick.
 Does nothing while another rotation holds the handler lock, and throws `ScriptStateException` with no player or world.

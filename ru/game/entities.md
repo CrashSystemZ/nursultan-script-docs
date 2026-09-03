@@ -41,6 +41,8 @@ on<ClientTickEvent> {
 | `entity.y()` | `double` | текущий Y в блоках |
 | `entity.z()` | `double` | текущий Z в блоках |
 | `entity.previousPosition()` | `Vec` | позиция на прошлом тике |
+| `entity.serverPosition()` | `Vec` | позиция, которую последней прислал сервер, впереди клиентской интерполяции; `position()` для сущностей без интерполяции |
+| `entity.interpolating()` | `boolean` | клиент всё ещё едет к `serverPosition()` |
 | `entity.renderPosition()` | `Vec` | позиция с интерполяцией тика, для отрисовки |
 | `entity.box()` | [`Box`](math.md#box) | хитбокс в координатах мира |
 | `entity.width()` | `float` | ширина хитбокса в блоках |
