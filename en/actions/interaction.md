@@ -75,6 +75,7 @@ The game calls `stopUsingItem` itself on the next tick while the use key is not 
 | `interaction.placeBlock(x, y, z, side, hand, hit)` | `void` | the same with a hit point, delegates to `useBlock` (main thread only) |
 | `interaction.startBreaking(x, y, z, side)` | `void` | begins breaking that block (main thread only) |
 | `interaction.continueBreaking(x, y, z, side)` | `boolean` | advances breaking, true when the block broke (main thread only) |
+| `interaction.pendingAck()` | `boolean` | a block use or attack of yours is still waiting for the server's acknowledgement |
 | `interaction.stopBreaking()` | `void` | cancels the current breaking progress (main thread only) |
 | `interaction.breakingBlock()` | `boolean` | true while a block is being broken, false when out of world |
 

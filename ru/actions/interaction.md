@@ -75,6 +75,7 @@ Null в `mode` считается за `NEAREST`; обе перегрузки `a
 | `interaction.placeBlock(x, y, z, side, hand, hit)` | `void` | то же самое с точкой попадания, делегирует `useBlock` (только главный поток) |
 | `interaction.startBreaking(x, y, z, side)` | `void` | начинает ломать этот блок (только главный поток) |
 | `interaction.continueBreaking(x, y, z, side)` | `boolean` | продвигает ломание, true когда блок сломался (только главный поток) |
+| `interaction.pendingAck()` | `boolean` | твоё использование блока или удар ещё ждёт подтверждения сервера |
 | `interaction.stopBreaking()` | `void` | отменяет текущий прогресс ломания (только главный поток) |
 | `interaction.breakingBlock()` | `boolean` | true пока блок ломается, false вне мира |
 
