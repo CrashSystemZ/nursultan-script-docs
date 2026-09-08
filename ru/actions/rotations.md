@@ -56,6 +56,8 @@ on<PrePlayerTickEvent> {
 | `options.strongCorrection(value)` | `RotationOptions` | копия с новым значением |
 | `options.backRotation()` | `BackRotation` | форма возврата головы к камере |
 | `options.backRotation(value)` | `RotationOptions` | копия с новым значением |
+| `options.lock()` | `boolean` | поворот применяется сразу и запирает хендлер на тик |
+| `options.lock(value)` | `RotationOptions` | копия с новым значением; true отдаёт тик этому `apply` целиком: поздние `apply` и модули отбрасываются, аура атаки пропускает удар |
 | `options.smoothBackRotation()` | `boolean` | хранимый флаг (устарело, используй `backRotation`) |
 | `options.smoothBackRotation(value)` | `RotationOptions` | копия с новым значением, true превращает возврат `SNAP` в `HUMANIZED` (устарело, используй `backRotation`) |
 | `options.clientSide()` | `boolean` | хранимый флаг (устарело) (ничего не делает: поворот всегда уходит на сервер) |

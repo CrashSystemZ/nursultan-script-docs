@@ -56,6 +56,8 @@ Does nothing while another rotation holds the handler lock, and throws `ScriptSt
 | `options.strongCorrection(value)` | `RotationOptions` | copy with a new value |
 | `options.backRotation()` | `BackRotation` | shape of the return to the camera |
 | `options.backRotation(value)` | `RotationOptions` | copy with a new value |
+| `options.lock()` | `boolean` | the rotation is applied at once and locks the handler for the tick |
+| `options.lock(value)` | `RotationOptions` | copy with a new value; true makes `apply` win the tick outright: later `apply` calls and modules are dropped, the attack aura skips its hit |
 | `options.smoothBackRotation()` | `boolean` | stored flag (deprecated, use `backRotation`) |
 | `options.smoothBackRotation(value)` | `RotationOptions` | copy with a new value, true turns a `SNAP` return into `HUMANIZED` (deprecated, use `backRotation`) |
 | `options.clientSide()` | `boolean` | stored flag (deprecated) (no effect: the rotation always reaches the server) |
