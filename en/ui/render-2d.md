@@ -182,6 +182,62 @@ Every colour is an `int` shaped `0xAARRGGBB`.
 | `Colors.fade(argb, factor)` | `int` | multiplies alpha by factor clamped 0..1 |
 | `Colors.mix(first, second, amount)` | `int` | per-channel lerp including alpha, amount clamped 0..1 |
 
+## Client theme
+
+The colours the client menu and HUD draw with. `theme` is the DSL root, `client.theme()` the same object; every value is ARGB read at the moment of the call, so the accent-derived ones change as soon as the user picks another accent.
+
+| Method | Type | Description |
+|---|---|---|
+| `theme.defaultAccent()` | `int` | accent before the user picked one, `0xFF8BACFF` (API 8) |
+| `theme.accent()` | `int` | current menu accent, follows the client settings (API 8) |
+| `theme.accentBg()` | `int` | translucent accent fill of a selected item (API 8) |
+| `theme.accentBorder()` | `int` | accent border of a selected item (API 8) |
+| `theme.background()` | `int` | window background (API 8) |
+| `theme.border()` | `int` | window border (API 8) |
+| `theme.divider()` | `int` | divider line, white at 2% alpha (API 8) |
+| `theme.textPrimary()` | `int` | main text, opaque white (API 8) |
+| `theme.textSecondary()` | `int` | secondary text, white at 72% alpha (API 8) |
+| `theme.textTertiary()` | `int` | hint text, white at 48% alpha (API 8) |
+| `theme.textQuaternary()` | `int` | faint text, white at 24% alpha (API 8) |
+| `theme.textInactive()` | `int` | disabled text, `0xFF929292` (API 8) |
+| `theme.textOnBrand()` | `int` | text over `accent()`, black on a bright accent (API 8) |
+| `theme.iconSecondary()` | `int` | secondary icon, white at 72% alpha (API 8) |
+| `theme.iconTertiary()` | `int` | hint icon, white at 48% alpha (API 8) |
+| `theme.iconQuaternary()` | `int` | faint icon, white at 24% alpha (API 8) |
+| `theme.iconOnBrand()` | `int` | icon over `accent()`, black on a bright accent (API 8) |
+| `theme.backgroundBase()` | `int` | base menu layer (API 8) |
+| `theme.backgroundSurface()` | `int` | panel over the base layer (API 8) |
+| `theme.backgroundModal()` | `int` | modal window (API 8) |
+| `theme.backgroundElevated()` | `int` | raised panel (API 8) |
+| `theme.backgroundSurfaceSolid()` | `int` | opaque `backgroundSurface()` (API 8) |
+| `theme.backgroundElevatedSolid()` | `int` | opaque `backgroundElevated()` (API 8) |
+| `theme.backgroundScrollSurface()` | `int` | scrollbar track (API 8) |
+| `theme.backgroundScrollBar()` | `int` | scrollbar thumb (API 8) |
+| `theme.backgroundScrollBarHover()` | `int` | scrollbar thumb under the cursor (API 8) |
+| `theme.backgroundScrollBarActive()` | `int` | scrollbar thumb while dragged (API 8) |
+| `theme.backgroundActive()` | `int` | pressed or hovered item, white at 8% alpha (API 8) |
+| `theme.borderSurface()` | `int` | panel border, white at 2% alpha (API 8) |
+| `theme.fieldSurface()` | `int` | input field fill (API 8) |
+| `theme.fieldItem()` | `int` | item inside an input field (API 8) |
+| `theme.fieldSurfaceDisabled()` | `int` | disabled input field fill (API 8) |
+| `theme.effectShadow()` | `int` | drop shadow (API 8) |
+| `theme.groupLabel()` | `int` | group heading text (API 8) |
+| `theme.surfaceBg()` | `int` | card fill (API 8) |
+| `theme.surfaceBorder()` | `int` | card border (API 8) |
+| `theme.surfaceBorderActive()` | `int` | border of the active card (API 8) |
+| `theme.surfaceHeaderBg()` | `int` | card header fill (API 8) |
+| `theme.hudBackground()` | `int` | HUD element fill (API 8) |
+| `theme.hudShadow()` | `int` | HUD element shadow (API 8) |
+| `theme.sliderTrack()` | `int` | slider track, follows the accent (API 8) |
+| `theme.sliderFill()` | `int` | slider filled part, follows the accent (API 8) |
+| `theme.sliderThumb()` | `int` | slider thumb, follows the accent (API 8) |
+| `theme.sliderKnob()` | `int` | slider knob centre, opaque white (API 8) |
+| `theme.switchOnBg()` | `int` | enabled switch fill, follows the accent (API 8) |
+| `theme.switchOnBorder()` | `int` | enabled switch border, follows the accent (API 8) |
+| `theme.switchOnThumb()` | `int` | enabled switch thumb, follows the accent (API 8) |
+| `theme.switchOffBg()` | `int` | disabled switch fill, white at 8% alpha (API 8) |
+| `theme.switchOffThumb()` | `int` | disabled switch thumb, white at 48% alpha (API 8) |
+
 ## A world point on the screen
 
 | Method | Type | Description |

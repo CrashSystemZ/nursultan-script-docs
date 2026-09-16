@@ -83,6 +83,7 @@ whenInGame { enabled = true }
 | `rotations` | `Rotations` | подмена yaw/pitch для сервера — [Повороты](../actions/rotations.md) |
 | `prediction` | `Prediction` | предсказание движения и снарядов — [Предсказание](../actions/prediction.md) |
 | `gpu` | `Gpu` | реестр мешей и пайплайнов — [Своя геометрия](../ui/gpu.md) (API 2) |
+| `theme` | `Theme` | цвета меню и HUD клиента — [Рендер 2D](../ui/render-2d.md#тема-клиента) (API 8) |
 
 `player`, `world`, `inventory`, `container`, `recipes`, `interaction`, `raycast` и `control` бросают `ScriptStateException` вне мира; проверка — `inGame`.
 Любой корень бросает `ScriptStateException` после выгрузки скрипта.
@@ -117,6 +118,7 @@ whenInGame { enabled = true }
 | `client.shaders()` | `Shaders` | реестр шейдеров этого скрипта — [Шейдеры](../ui/shaders.md) |
 | `client.gpu()` | `Gpu` | реестр GPU-буферов и пайплайнов скрипта (API 2) |
 | `client.textures()` | `Textures` | реестр текстур этого скрипта — [Рендер 2D](../ui/render-2d.md) |
+| `client.theme()` | `Theme` | цвета меню и HUD клиента — [Рендер 2D](../ui/render-2d.md#тема-клиента) (API 8) |
 
 `client.fps()`, `tick()`, `millis()`, `nanos()`, `tickDelta()` и `onClientThread()` описаны на странице [Таймеры и задачи](../extras/tasks.md).
 

@@ -1,6 +1,6 @@
 # Версии API
 
-`ApiVersion.CURRENT` равен 7. `requireApi(n)` не даёт скрипту загрузиться на клиенте постарше указанного, но от ошибки компиляции он не спасает: имя, которого в старом SDK нет, не скомпилируется вообще.
+`ApiVersion.CURRENT` равен 8. `requireApi(n)` не даёт скрипту загрузиться на клиенте постарше указанного, но от ошибки компиляции он не спасает: имя, которого в старом SDK нет, не скомпилируется вообще.
 
 ```kotlin
 requireApi(2)
@@ -16,11 +16,11 @@ val mesh = gpu.indexedMesh(format)
 
 | Метод | Тип | Описание |
 |---|---|---|
-| `ApiVersion.CURRENT` | `int` | версия скриптового API этого клиента, сейчас 7 |
+| `ApiVersion.CURRENT` | `int` | версия скриптового API этого клиента, сейчас 8 |
 | `ApiVersion.require(minimum)` | `void` | статический (бросает `ScriptApiException`, когда `CURRENT` < `minimum`) |
 | `requireApi(minimum)` | `Unit` | форма `ApiVersion.require` из DSL (бросает `ScriptApiException`, когда `CURRENT` < `minimum`) |
 
-У `ApiVersion` приватный конструктор: экземпляра нет, только два статических члена, а к каждой ошибке `Unresolved reference` клиент дописывает `this client provides v7`.
+У `ApiVersion` приватный конструктор: экземпляра нет, только два статических члена, а к каждой ошибке `Unresolved reference` клиент дописывает `this client provides v8`.
 Записи пакетов следуют за версией Minecraft, а не за этим номером — см. [Пакеты](../actions/packets.md).
 
 ## Что добавила каждая версия
@@ -118,6 +118,14 @@ val mesh = gpu.indexedMesh(format)
 | `render.blend()` | [Рендер 2D](../ui/render-2d.md) |
 | `render.blend(mode)` | [Рендер 2D](../ui/render-2d.md) |
 | `BlendMode.INVERT` | [Своя геометрия](../ui/gpu.md) |
+
+### API 8
+
+| Добавлено в 8 | Где описано |
+|---|---|
+| `client.theme()` | [Как устроен скрипт](../start/lifecycle.md) |
+| `theme` | [Рендер 2D](../ui/render-2d.md) |
+| `Theme` | [Рендер 2D](../ui/render-2d.md) |
 
 Ничего не закрыто пометкой по отдельным членам: всё перечисленное выше есть в клиенте своей версии безусловно, а `requireApi(n)` — единственная проверка.
 API 1 — это та часть, у которой пометки нет вообще; члены API 2 помечены `(API 2)` в таблицах той страницы, которая их описывает.
