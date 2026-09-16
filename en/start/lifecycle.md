@@ -83,7 +83,8 @@ The top level runs once, at load. While the script is off its handlers, commands
 | `rotations` | `Rotations` | server-side yaw/pitch spoofing — [Rotations](../actions/rotations.md) |
 | `prediction` | `Prediction` | movement and projectile prediction — [Prediction](../actions/prediction.md) |
 | `gpu` | `Gpu` | mesh and pipeline registry — [Your own geometry](../ui/gpu.md) (API 2) |
-| `theme` | `Theme` | client menu and HUD colours — [2D render](../ui/render-2d.md#client-theme) (API 8) |
+| `theme` | `Theme` | client menu and HUD colours and scales — [2D render](../ui/render-2d.md#client-theme) (API 8) |
+| `language` | `String` | client interface language, `en` or `ru` (API 8) |
 
 `player`, `world`, `inventory`, `container`, `recipes`, `interaction`, `raycast` and `control` throw `ScriptStateException` outside a world; `inGame` is the guard.
 Every root throws `ScriptStateException` after the script has been unloaded.
@@ -118,7 +119,8 @@ Every root throws `ScriptStateException` after the script has been unloaded.
 | `client.shaders()` | `Shaders` | per-script shader registry — [Shaders](../ui/shaders.md) |
 | `client.gpu()` | `Gpu` | per-script GPU buffer and pipeline registry (API 2) |
 | `client.textures()` | `Textures` | per-script texture registry — [2D render](../ui/render-2d.md) |
-| `client.theme()` | `Theme` | client menu and HUD colours — [2D render](../ui/render-2d.md#client-theme) (API 8) |
+| `client.theme()` | `Theme` | client menu and HUD colours and scales — [2D render](../ui/render-2d.md#client-theme) (API 8) |
+| `client.language()` | `String` | client interface language, `en` or `ru` (API 8) |
 
 `client.fps()`, `tick()`, `millis()`, `nanos()`, `tickDelta()` and `onClientThread()` are documented on [Timers and tasks](../extras/tasks.md).
 

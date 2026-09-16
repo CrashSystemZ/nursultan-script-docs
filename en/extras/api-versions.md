@@ -124,6 +124,8 @@ Packet records follow the Minecraft version, not this number — see [Packets](.
 | Added in 8 | Documented on |
 |---|---|
 | `client.theme()` | [How a script works](../start/lifecycle.md) |
+| `client.language()` | [How a script works](../start/lifecycle.md) |
+| `language` | [How a script works](../start/lifecycle.md) |
 | `theme` | [2D render](../ui/render-2d.md) |
 | `Theme` | [2D render](../ui/render-2d.md) |
 

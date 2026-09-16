@@ -184,7 +184,7 @@ Every colour is an `int` shaped `0xAARRGGBB`.
 
 ## Client theme
 
-The colours the client menu and HUD draw with. `theme` is the DSL root, `client.theme()` the same object; every value is ARGB read at the moment of the call, so the accent-derived ones change as soon as the user picks another accent.
+The colours and scales the client menu and HUD draw with. `theme` is the DSL root, `client.theme()` the same object; every colour is ARGB, every value is read at the moment of the call, so the accent-derived ones change as soon as the user picks another accent.
 
 | Method | Type | Description |
 |---|---|---|
@@ -237,6 +237,8 @@ The colours the client menu and HUD draw with. `theme` is the DSL root, `client.
 | `theme.switchOnThumb()` | `int` | enabled switch thumb, follows the accent (API 8) |
 | `theme.switchOffBg()` | `int` | disabled switch fill, white at 8% alpha (API 8) |
 | `theme.switchOffThumb()` | `int` | disabled switch thumb, white at 48% alpha (API 8) |
+| `theme.menuScale()` | `float` | menu scale setting, 1, 1.25, 1.5 or 2 (API 8) |
+| `theme.hudScale()` | `float` | HUD scale setting, 1, 1.25, 1.5 or 2 (API 8) |
 
 ## A world point on the screen
 
