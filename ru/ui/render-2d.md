@@ -190,8 +190,6 @@ on<Render2DEvent> { e ->
 |---|---|---|
 | `theme.defaultAccent()` | `int` | акцент до выбора пользователем, `0xFF8BACFF` (API 8) |
 | `theme.accent()` | `int` | текущий акцент меню, следует настройкам клиента (API 8) |
-| `theme.accentBg()` | `int` | полупрозрачная акцентная заливка выбранного элемента (API 8) |
-| `theme.accentBorder()` | `int` | акцентная рамка выбранного элемента (API 8) |
 | `theme.background()` | `int` | фон окна (API 8) |
 | `theme.border()` | `int` | рамка окна (API 8) |
 | `theme.divider()` | `int` | линия-разделитель, белый с альфой 2% (API 8) |
@@ -221,20 +219,8 @@ on<Render2DEvent> { e ->
 | `theme.fieldItem()` | `int` | элемент внутри поля ввода (API 8) |
 | `theme.fieldSurfaceDisabled()` | `int` | заливка неактивного поля ввода (API 8) |
 | `theme.effectShadow()` | `int` | отбрасываемая тень (API 8) |
-| `theme.groupLabel()` | `int` | текст заголовка группы (API 8) |
-| `theme.surfaceBg()` | `int` | заливка карточки (API 8) |
 | `theme.surfaceBorder()` | `int` | рамка карточки (API 8) |
-| `theme.surfaceBorderActive()` | `int` | рамка активной карточки (API 8) |
-| `theme.surfaceHeaderBg()` | `int` | заливка шапки карточки (API 8) |
-| `theme.hudBackground()` | `int` | заливка элемента HUD (API 8) |
 | `theme.hudShadow()` | `int` | тень элемента HUD (API 8) |
-| `theme.sliderTrack()` | `int` | дорожка слайдера, следует акценту (API 8) |
-| `theme.sliderFill()` | `int` | заполненная часть слайдера, следует акценту (API 8) |
-| `theme.sliderThumb()` | `int` | ползунок слайдера, следует акценту (API 8) |
-| `theme.sliderKnob()` | `int` | центр ручки слайдера, непрозрачный белый (API 8) |
-| `theme.switchOnBg()` | `int` | заливка включённого переключателя, следует акценту (API 8) |
-| `theme.switchOnBorder()` | `int` | рамка включённого переключателя, следует акценту (API 8) |
-| `theme.switchOnThumb()` | `int` | кружок включённого переключателя, следует акценту (API 8) |
 | `theme.switchOffBg()` | `int` | заливка выключенного переключателя, белый с альфой 8% (API 8) |
 | `theme.switchOffThumb()` | `int` | кружок выключенного переключателя, белый с альфой 48% (API 8) |
 | `theme.menuScale()` | `float` | настройка масштаба меню: 1, 1.25, 1.5 или 2 (API 8) |

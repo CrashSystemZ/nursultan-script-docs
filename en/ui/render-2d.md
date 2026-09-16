@@ -190,8 +190,6 @@ The colours and scales the client menu and HUD draw with. `theme` is the DSL roo
 |---|---|---|
 | `theme.defaultAccent()` | `int` | accent before the user picked one, `0xFF8BACFF` (API 8) |
 | `theme.accent()` | `int` | current menu accent, follows the client settings (API 8) |
-| `theme.accentBg()` | `int` | translucent accent fill of a selected item (API 8) |
-| `theme.accentBorder()` | `int` | accent border of a selected item (API 8) |
 | `theme.background()` | `int` | window background (API 8) |
 | `theme.border()` | `int` | window border (API 8) |
 | `theme.divider()` | `int` | divider line, white at 2% alpha (API 8) |
@@ -221,20 +219,8 @@ The colours and scales the client menu and HUD draw with. `theme` is the DSL roo
 | `theme.fieldItem()` | `int` | item inside an input field (API 8) |
 | `theme.fieldSurfaceDisabled()` | `int` | disabled input field fill (API 8) |
 | `theme.effectShadow()` | `int` | drop shadow (API 8) |
-| `theme.groupLabel()` | `int` | group heading text (API 8) |
-| `theme.surfaceBg()` | `int` | card fill (API 8) |
 | `theme.surfaceBorder()` | `int` | card border (API 8) |
-| `theme.surfaceBorderActive()` | `int` | border of the active card (API 8) |
-| `theme.surfaceHeaderBg()` | `int` | card header fill (API 8) |
-| `theme.hudBackground()` | `int` | HUD element fill (API 8) |
 | `theme.hudShadow()` | `int` | HUD element shadow (API 8) |
-| `theme.sliderTrack()` | `int` | slider track, follows the accent (API 8) |
-| `theme.sliderFill()` | `int` | slider filled part, follows the accent (API 8) |
-| `theme.sliderThumb()` | `int` | slider thumb, follows the accent (API 8) |
-| `theme.sliderKnob()` | `int` | slider knob centre, opaque white (API 8) |
-| `theme.switchOnBg()` | `int` | enabled switch fill, follows the accent (API 8) |
-| `theme.switchOnBorder()` | `int` | enabled switch border, follows the accent (API 8) |
-| `theme.switchOnThumb()` | `int` | enabled switch thumb, follows the accent (API 8) |
 | `theme.switchOffBg()` | `int` | disabled switch fill, white at 8% alpha (API 8) |
 | `theme.switchOffThumb()` | `int` | disabled switch thumb, white at 48% alpha (API 8) |
 | `theme.menuScale()` | `float` | menu scale setting, 1, 1.25, 1.5 or 2 (API 8) |
