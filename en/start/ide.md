@@ -1,6 +1,6 @@
 # The project in your IDE
 
-The script development folder from the site (`nursultan-scripts-v5.zip`) unpacks into `nursultan-scripts/`, a ready IntelliJ IDEA project: the API jars, the build files and an example script.. Inside the client's scripts folder the client refreshes `.sdk/` and both build files on every launch.
+The script development folder from the site (`nursultan-scripts-v5.zip`) unpacks into `nursultan-scripts/`, a ready IntelliJ IDEA project: the API jars, the build files and an example script. Inside the client's scripts folder the client refreshes `.sdk/` and both build files on every launch.
 
 ## What to download
 
