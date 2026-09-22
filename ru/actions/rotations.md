@@ -40,10 +40,10 @@ on<PrePlayerTickEvent> {
 |---|---|---|
 | `rotations.apply(rotation)` | `void` | ставит в очередь с `RotationOptions.DEFAULT` (только главный поток) |
 | `rotations.apply(rotation, options)` | `void` | ставит в очередь, null-опции означают `DEFAULT` (только главный поток) |
-| `rotations.locked()` | `boolean` | хендлер занят другим поворотом, и `apply` сейчас ничего не делает |
+| `rotations.locked()` | `boolean` | обработчик заперт на этот тик, `apply` без `lock` ничего не делает (API 6) |
 
-Применяется на ближайшем pre-player-tick ровно в том виде, в каком ты его передал; один вызов действует один тик.
-Ничего не делает, пока поворот держит блокировку обработчика, и бросает `ScriptStateException` без игрока или мира.
+Применяется на ближайшем pre-player-tick ровно в том виде, в каком ты его передал, а с `lock` — прямо внутри вызова; один вызов действует один тик.
+Ничего не делает, пока обработчик заперт, только поворот с `lock` заменяет прежний с `lock`; бросает `ScriptStateException` без игрока или мира.
 
 ## Настройки поворота
 
@@ -56,15 +56,16 @@ on<PrePlayerTickEvent> {
 | `options.strongCorrection(value)` | `RotationOptions` | копия с новым значением |
 | `options.backRotation()` | `BackRotation` | форма возврата головы к камере |
 | `options.backRotation(value)` | `RotationOptions` | копия с новым значением |
-| `options.lock()` | `boolean` | поворот применяется сразу и запирает хендлер на тик |
-| `options.lock(value)` | `RotationOptions` | копия с новым значением; true отдаёт тик этому `apply` целиком: поздние `apply` и модули отбрасываются, аура атаки пропускает удар |
+| `options.lock()` | `boolean` | true применяет поворот сразу и запирает обработчик, аура атаки пропускает этот тик (API 7) |
+| `options.lock(value)` | `RotationOptions` | копия с новым значением (API 7) |
 | `options.smoothBackRotation()` | `boolean` | хранимый флаг (устарело, используй `backRotation`) |
 | `options.smoothBackRotation(value)` | `RotationOptions` | копия с новым значением, true превращает возврат `SNAP` в `HUMANIZED` (устарело, используй `backRotation`) |
 | `options.clientSide()` | `boolean` | хранимый флаг (устарело) (ничего не делает: поворот всегда уходит на сервер) |
 | `options.clientSide(value)` | `RotationOptions` | копия с новым значением (устарело) (ничего не делает: поворот всегда уходит на сервер) |
 | `options.normalizeMouseMovement()` | `boolean` | хранимый флаг (устарело, используй `rotations.quantized`) (ничего не делает: значение нигде не читается) |
 | `options.normalizeMouseMovement(value)` | `RotationOptions` | копия с новым значением (устарело, используй `rotations.quantized`) (ничего не делает: значение нигде не читается) |
-| `RotationOptions(priority, clientSide, strongCorrection, smoothBackRotation, normalizeMouseMovement, backRotation)` | `RotationOptions` | канонический конструктор (бросает `NullPointerException`, если `priority` или `backRotation` null) |
+| `RotationOptions(priority, clientSide, strongCorrection, smoothBackRotation, normalizeMouseMovement, backRotation, lock)` | `RotationOptions` | канонический конструктор (API 7) (бросает `NullPointerException`, если `priority` или `backRotation` null) |
+| `RotationOptions(priority, clientSide, strongCorrection, smoothBackRotation, normalizeMouseMovement, backRotation)` | `RotationOptions` | то же с `lock` = false (бросает `NullPointerException`, если `priority` или `backRotation` null) |
 | `RotationOptions(priority, strongCorrection, backRotation)` | `RotationOptions` | конструктор без устаревших флагов (API 6) |
 
 Запись неизменяемая: каждый сеттер возвращает копию, а `DEFAULT` не меняется.

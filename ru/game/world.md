@@ -25,6 +25,7 @@ on<ClientTickEvent> {
 | `world.rainGradient()` | `float` | сила дождя 0..1 |
 | `world.thunderGradient()` | `float` | сила грозы 0..1 |
 | `world.biome(position)` | `String?` | id биома в позиции, округлённой вниз |
+| `world.respawnAnchorWorks(x, y, z)` | `boolean` | якорь возрождения здесь ставит точку спавна, а не взрывается (API 6) |
 | `world.topY(x, z)` | `int` | y над верхним не-воздушным блоком, нижний y в непрогруженных |
 
 ## Прочитать блок
@@ -33,6 +34,7 @@ on<ClientTickEvent> {
 |---|---|---|
 | `world.block(x, y, z)` | `Block` | снимок состояния блока, `void_air` за границами мира |
 | `world.block(position)` | `Block` | то же, координаты `Vec` округляются вниз |
+| `world.blockPending(x, y, z)` | `boolean` | блок там — твоё предсказание, которое сервер ещё не подтвердил (API 7) |
 | `block.id()` | `String` | id блока, например `minecraft:stone` |
 | `block.name()` | `String` | локализованное имя блока |
 | `block.x()` | `int` | координата x блока |
@@ -142,9 +144,7 @@ on<ClientTickEvent> {
 | `world.collisionsIn(box)` | `List<Box>` | коробки жёстко сталкивающихся сущностей внутри, коллизии блоков не входят |
 | `world.blockCollisionsIn(box)` | `List<Box>` | части коллизий блоков, пересекающих коробку, без сущностей (API 3) |
 | `world.isFree(box)` | `boolean` | ни одна сталкивающаяся сущность не пересекает коробку, блоки не проверяются |
-| `world.canPlace(itemId, x, y, z)` | `boolean` | этот блок сюда встанет: клетка заменяема, состояние допустимо, места хватает (бросает `ScriptException`, если предмет не блок) |
-| `world.respawnAnchorWorks(x, y, z)` | `boolean` | якорь возрождения здесь ставит точку спавна, а не взрывается |
-| `world.blockPending(x, y, z)` | `boolean` | блок там — твоё предсказание, которое сервер ещё не подтвердил |
+| `world.canPlace(itemId, x, y, z)` | `boolean` | клетка заменяема и сущности не мешают, опора не проверяется (API 6) (бросает `ScriptException`, если предмет не блок) |
 | `world.isBlockSpaceFree(box)` | `boolean` | ни одна коллизия блока не пересекает коробку, сущности не проверяются (API 3) |
 
 У неполного блока на каждую часть формы приходит своя коробка: у забора — столб и каждая перекладина, у плиты — одна в половину высоты.

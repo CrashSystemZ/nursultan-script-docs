@@ -104,6 +104,18 @@ val mesh = gpu.indexedMesh(format)
 | `BackRotations.INSTANT` | [Повороты](../actions/rotations.md) |
 | `BackRotations.HUMANIZED` | [Повороты](../actions/rotations.md) |
 | `backRotation(maxTicks) { }` | [Повороты](../actions/rotations.md) |
+| `rotations.locked()` | [Повороты](../actions/rotations.md) |
+| `slots.hold(hotbarSlot)` | [Слоты и броня](../actions/slots.md) |
+| `slots.selected()` | [Слоты и броня](../actions/slots.md) |
+| `HeldSlot.holding()` | [Слоты и броня](../actions/slots.md) |
+| `interaction.useBlock(x, y, z, side, hand, hit)` | [Взаимодействие](../actions/interaction.md) |
+| `interaction.placeBlock(x, y, z, side, hand, hit)` | [Взаимодействие](../actions/interaction.md) |
+| `combat.explosionExposure(target, source, cover)` | [Взаимодействие](../actions/interaction.md) |
+| `combat.explosionDamage(target, source, power, cover)` | [Взаимодействие](../actions/interaction.md) |
+| `entity.serverPosition()` | [Сущности и фильтры](../game/entities.md) |
+| `entity.interpolating()` | [Сущности и фильтры](../game/entities.md) |
+| `world.canPlace(itemId, x, y, z)` | [Мир и блоки](../game/world.md) |
+| `world.respawnAnchorWorks(x, y, z)` | [Мир и блоки](../game/world.md) |
 
 ### API 7
 
@@ -118,6 +130,11 @@ val mesh = gpu.indexedMesh(format)
 | `render.blend()` | [Рендер 2D](../ui/render-2d.md) |
 | `render.blend(mode)` | [Рендер 2D](../ui/render-2d.md) |
 | `BlendMode.INVERT` | [Своя геометрия](../ui/gpu.md) |
+| `RotationOptions.lock()` | [Повороты](../actions/rotations.md) |
+| `RotationOptions.lock(value)` | [Повороты](../actions/rotations.md) |
+| `RotationOptions(priority, clientSide, strongCorrection, smoothBackRotation, normalizeMouseMovement, backRotation, lock)` | [Повороты](../actions/rotations.md) |
+| `interaction.pendingAck()` | [Взаимодействие](../actions/interaction.md) |
+| `world.blockPending(x, y, z)` | [Мир и блоки](../game/world.md) |
 
 ### API 8
 

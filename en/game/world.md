@@ -25,6 +25,7 @@ on<ClientTickEvent> {
 | `world.rainGradient()` | `float` | rain strength 0..1 |
 | `world.thunderGradient()` | `float` | thunder strength 0..1 |
 | `world.biome(position)` | `String?` | biome registry id at the floored position |
+| `world.respawnAnchorWorks(x, y, z)` | `boolean` | a respawn anchor sets spawn here instead of exploding (API 6) |
 | `world.topY(x, z)` | `int` | y above the highest non-air block, bottom y when unloaded |
 
 ## Reading a block
@@ -33,6 +34,7 @@ on<ClientTickEvent> {
 |---|---|---|
 | `world.block(x, y, z)` | `Block` | block state snapshot, `void_air` outside world limits |
 | `world.block(position)` | `Block` | same, `Vec` coordinates floored |
+| `world.blockPending(x, y, z)` | `boolean` | the block there is your own prediction the server has not acknowledged yet (API 7) |
 | `block.id()` | `String` | block registry id, e.g. `minecraft:stone` |
 | `block.name()` | `String` | localized block name |
 | `block.x()` | `int` | block x coordinate |
@@ -142,9 +144,7 @@ Entity members and the ready-made filters are on [Entities and filters](entities
 | `world.collisionsIn(box)` | `List<Box>` | boxes of hard-colliding entities in the box, block collisions excluded |
 | `world.blockCollisionsIn(box)` | `List<Box>` | block collision shape parts intersecting the box, entities excluded (API 3) |
 | `world.isFree(box)` | `boolean` | no colliding entity intersects the box, block collisions not checked |
-| `world.canPlace(itemId, x, y, z)` | `boolean` | that block item fits there: cell replaceable, state allowed, space empty (throws `ScriptException` when the item is not a block) |
-| `world.respawnAnchorWorks(x, y, z)` | `boolean` | a respawn anchor sets spawn here instead of exploding |
-| `world.blockPending(x, y, z)` | `boolean` | the block there is your own prediction the server has not acknowledged yet |
+| `world.canPlace(itemId, x, y, z)` | `boolean` | cell replaceable and no entity in the way, support not checked (API 6) (throws `ScriptException` when the item is not a block) |
 | `world.isBlockSpaceFree(box)` | `boolean` | no block collision intersects the box, entities not checked (API 3) |
 
 A partial block reports one box per shape part: a fence gives the post and every connected arm, a slab one half-height box.
