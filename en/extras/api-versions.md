@@ -104,6 +104,18 @@ Packet records follow the Minecraft version, not this number — see [Packets](.
 | `BackRotations.INSTANT` | [Rotations](../actions/rotations.md) |
 | `BackRotations.HUMANIZED` | [Rotations](../actions/rotations.md) |
 | `backRotation(maxTicks) { }` | [Rotations](../actions/rotations.md) |
+| `rotations.locked()` | [Rotations](../actions/rotations.md) |
+| `slots.hold(hotbarSlot)` | [Slots and armor](../actions/slots.md) |
+| `slots.selected()` | [Slots and armor](../actions/slots.md) |
+| `HeldSlot.holding()` | [Slots and armor](../actions/slots.md) |
+| `interaction.useBlock(x, y, z, side, hand, hit)` | [Interaction](../actions/interaction.md) |
+| `interaction.placeBlock(x, y, z, side, hand, hit)` | [Interaction](../actions/interaction.md) |
+| `combat.explosionExposure(target, source, cover)` | [Interaction](../actions/interaction.md) |
+| `combat.explosionDamage(target, source, power, cover)` | [Interaction](../actions/interaction.md) |
+| `entity.serverPosition()` | [Entities and filters](../game/entities.md) |
+| `entity.interpolating()` | [Entities and filters](../game/entities.md) |
+| `world.canPlace(itemId, x, y, z)` | [World and blocks](../game/world.md) |
+| `world.respawnAnchorWorks(x, y, z)` | [World and blocks](../game/world.md) |
 
 ### API 7
 
@@ -118,6 +130,11 @@ Packet records follow the Minecraft version, not this number — see [Packets](.
 | `render.blend()` | [2D render](../ui/render-2d.md) |
 | `render.blend(mode)` | [2D render](../ui/render-2d.md) |
 | `BlendMode.INVERT` | [Your own geometry](../ui/gpu.md) |
+| `RotationOptions.lock()` | [Rotations](../actions/rotations.md) |
+| `RotationOptions.lock(value)` | [Rotations](../actions/rotations.md) |
+| `RotationOptions(priority, clientSide, strongCorrection, smoothBackRotation, normalizeMouseMovement, backRotation, lock)` | [Rotations](../actions/rotations.md) |
+| `interaction.pendingAck()` | [Interaction](../actions/interaction.md) |
+| `world.blockPending(x, y, z)` | [World and blocks](../game/world.md) |
 
 ### API 8
 

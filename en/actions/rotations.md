@@ -40,9 +40,10 @@ Raycasting the quantised value checks the exact angle you are about to apply.
 |---|---|---|
 | `rotations.apply(rotation)` | `void` | queues it with `RotationOptions.DEFAULT` (main thread only) |
 | `rotations.apply(rotation, options)` | `void` | queues it, null options mean `DEFAULT` (main thread only) |
+| `rotations.locked()` | `boolean` | the handler is locked this tick, `apply` without `lock` does nothing (API 6) |
 
-Applied at the next pre-player-tick exactly as given; one call covers one tick.
-Does nothing while another rotation holds the handler lock, and throws `ScriptStateException` with no player or world.
+Applied at the next pre-player-tick exactly as given, or inside the call with `lock`; one call covers one tick.
+Does nothing while the handler is locked, except that a `lock` rotation replaces an earlier `lock` one; throws `ScriptStateException` with no player or world.
 
 ## Options
 
@@ -55,13 +56,16 @@ Does nothing while another rotation holds the handler lock, and throws `ScriptSt
 | `options.strongCorrection(value)` | `RotationOptions` | copy with a new value |
 | `options.backRotation()` | `BackRotation` | shape of the return to the camera |
 | `options.backRotation(value)` | `RotationOptions` | copy with a new value |
+| `options.lock()` | `boolean` | true applies it at once and locks the handler, the attack aura skips that tick (API 7) |
+| `options.lock(value)` | `RotationOptions` | copy with a new value (API 7) |
 | `options.smoothBackRotation()` | `boolean` | stored flag (deprecated, use `backRotation`) |
 | `options.smoothBackRotation(value)` | `RotationOptions` | copy with a new value, true turns a `SNAP` return into `HUMANIZED` (deprecated, use `backRotation`) |
 | `options.clientSide()` | `boolean` | stored flag (deprecated) (no effect: the rotation always reaches the server) |
 | `options.clientSide(value)` | `RotationOptions` | copy with a new value (deprecated) (no effect: the rotation always reaches the server) |
 | `options.normalizeMouseMovement()` | `boolean` | stored flag (deprecated, use `rotations.quantized`) (no effect: the value is never read) |
 | `options.normalizeMouseMovement(value)` | `RotationOptions` | copy with a new value (deprecated, use `rotations.quantized`) (no effect: the value is never read) |
-| `RotationOptions(priority, clientSide, strongCorrection, smoothBackRotation, normalizeMouseMovement, backRotation)` | `RotationOptions` | canonical constructor (throws `NullPointerException` when `priority` or `backRotation` is null) |
+| `RotationOptions(priority, clientSide, strongCorrection, smoothBackRotation, normalizeMouseMovement, backRotation, lock)` | `RotationOptions` | canonical constructor (API 7) (throws `NullPointerException` when `priority` or `backRotation` is null) |
+| `RotationOptions(priority, clientSide, strongCorrection, smoothBackRotation, normalizeMouseMovement, backRotation)` | `RotationOptions` | the same with `lock` false (throws `NullPointerException` when `priority` or `backRotation` is null) |
 | `RotationOptions(priority, strongCorrection, backRotation)` | `RotationOptions` | constructor without the deprecated flags (API 6) |
 
 The record is immutable: every setter returns a copy and `DEFAULT` never changes.
