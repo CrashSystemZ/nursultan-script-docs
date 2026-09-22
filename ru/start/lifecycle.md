@@ -63,6 +63,7 @@ whenInGame { enabled = true }
 | `storage` | `Config` | конфиг скрипта по умолчанию — [Сохранение данных](../settings/storage.md) |
 | `configs` | `Configs` | именованные конфиги этого скрипта — [Сохранение данных](../settings/storage.md) |
 | `assets` | `Assets` | чтение из `scripts/assets` — [Папка assets](../extras/assets.md) (API 2) |
+| `sound` | `Sound` | проигрывание `.wav` и `.ogg` из `scripts/assets` — [Папка assets](../extras/assets.md) (API 9) |
 | `clipboard` | `Clipboard` | системный буфер обмена — [Сообщения](../ui/messages.md) (API 2) |
 | `filters` | `EntityFilters` | готовые предикаты сущностей — [Сущности и фильтры](../game/entities.md) |
 | `keys` | `Keys` | состояние клавиатуры и мыши — [Клавиши и бинды](../actions/keys.md) |
@@ -83,6 +84,8 @@ whenInGame { enabled = true }
 | `rotations` | `Rotations` | подмена yaw/pitch для сервера — [Повороты](../actions/rotations.md) |
 | `prediction` | `Prediction` | предсказание движения и снарядов — [Предсказание](../actions/prediction.md) |
 | `gpu` | `Gpu` | реестр мешей и пайплайнов — [Своя геометрия](../ui/gpu.md) (API 2) |
+| `theme` | `Theme` | цвета и масштабы меню и HUD клиента — [Рендер 2D](../ui/render-2d.md#тема-клиента) (API 8) |
+| `language` | `String` | язык интерфейса клиента, `en` или `ru` (API 8) |
 
 `player`, `world`, `inventory`, `container`, `recipes`, `interaction`, `raycast` и `control` бросают `ScriptStateException` вне мира; проверка — `inGame`.
 Любой корень бросает `ScriptStateException` после выгрузки скрипта.
@@ -100,6 +103,7 @@ whenInGame { enabled = true }
 | `client.storage()` | `Config` | конфиг скрипта по умолчанию, имя файла `storage` |
 | `client.configs()` | `Configs` | хранилище именованных конфигов скрипта |
 | `client.assets()` | `Assets` | чтение файлов из `scripts/assets` (API 2) |
+| `client.sound()` | `Sound` | проигрывание `.wav` и `.ogg` из `scripts/assets` — [Папка assets](../extras/assets.md) (API 9) |
 | `client.clipboard()` | `Clipboard` | чтение и запись системного буфера (API 2) |
 | `client.commands()` | `Commands` | регистрация команд с префиксом `.` — [Свои команды](../extras/commands.md) |
 | `client.modules()` | `Modules` | реестр модулей клиента — [Модули клиента](../extras/modules.md) |
@@ -117,6 +121,8 @@ whenInGame { enabled = true }
 | `client.shaders()` | `Shaders` | реестр шейдеров этого скрипта — [Шейдеры](../ui/shaders.md) |
 | `client.gpu()` | `Gpu` | реестр GPU-буферов и пайплайнов скрипта (API 2) |
 | `client.textures()` | `Textures` | реестр текстур этого скрипта — [Рендер 2D](../ui/render-2d.md) |
+| `client.theme()` | `Theme` | цвета и масштабы меню и HUD клиента — [Рендер 2D](../ui/render-2d.md#тема-клиента) (API 8) |
+| `client.language()` | `String` | язык интерфейса клиента, `en` или `ru` (API 8) |
 
 `client.fps()`, `tick()`, `millis()`, `nanos()`, `tickDelta()` и `onClientThread()` описаны на странице [Таймеры и задачи](../extras/tasks.md).
 

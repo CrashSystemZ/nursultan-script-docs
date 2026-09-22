@@ -63,6 +63,7 @@ The top level runs once, at load. While the script is off its handlers, commands
 | `storage` | `Config` | the script's default config — [Saving data](../settings/storage.md) |
 | `configs` | `Configs` | this script's named configs — [Saving data](../settings/storage.md) |
 | `assets` | `Assets` | read access to `scripts/assets` — [The assets folder](../extras/assets.md) (API 2) |
+| `sound` | `Sound` | plays `.wav` and `.ogg` from `scripts/assets` — [The assets folder](../extras/assets.md) (API 9) |
 | `clipboard` | `Clipboard` | system clipboard — [Messages](../ui/messages.md) (API 2) |
 | `filters` | `EntityFilters` | prebuilt entity predicates — [Entities and filters](../game/entities.md) |
 | `keys` | `Keys` | keyboard and mouse state — [Keys and binds](../actions/keys.md) |
@@ -83,6 +84,8 @@ The top level runs once, at load. While the script is off its handlers, commands
 | `rotations` | `Rotations` | server-side yaw/pitch spoofing — [Rotations](../actions/rotations.md) |
 | `prediction` | `Prediction` | movement and projectile prediction — [Prediction](../actions/prediction.md) |
 | `gpu` | `Gpu` | mesh and pipeline registry — [Your own geometry](../ui/gpu.md) (API 2) |
+| `theme` | `Theme` | client menu and HUD colours and scales — [2D render](../ui/render-2d.md#client-theme) (API 8) |
+| `language` | `String` | client interface language, `en` or `ru` (API 8) |
 
 `player`, `world`, `inventory`, `container`, `recipes`, `interaction`, `raycast` and `control` throw `ScriptStateException` outside a world; `inGame` is the guard.
 Every root throws `ScriptStateException` after the script has been unloaded.
@@ -100,6 +103,7 @@ Every root throws `ScriptStateException` after the script has been unloaded.
 | `client.storage()` | `Config` | the script's default config, file name `storage` |
 | `client.configs()` | `Configs` | named per-script config store |
 | `client.assets()` | `Assets` | read-only file access under `scripts/assets` (API 2) |
+| `client.sound()` | `Sound` | plays `.wav` and `.ogg` from `scripts/assets` — [The assets folder](../extras/assets.md) (API 9) |
 | `client.clipboard()` | `Clipboard` | system clipboard read and write (API 2) |
 | `client.commands()` | `Commands` | `.`-prefixed command registration — [Your own commands](../extras/commands.md) |
 | `client.modules()` | `Modules` | client module registry — [Client modules](../extras/modules.md) |
@@ -117,6 +121,8 @@ Every root throws `ScriptStateException` after the script has been unloaded.
 | `client.shaders()` | `Shaders` | per-script shader registry — [Shaders](../ui/shaders.md) |
 | `client.gpu()` | `Gpu` | per-script GPU buffer and pipeline registry (API 2) |
 | `client.textures()` | `Textures` | per-script texture registry — [2D render](../ui/render-2d.md) |
+| `client.theme()` | `Theme` | client menu and HUD colours and scales — [2D render](../ui/render-2d.md#client-theme) (API 8) |
+| `client.language()` | `String` | client interface language, `en` or `ru` (API 8) |
 
 `client.fps()`, `tick()`, `millis()`, `nanos()`, `tickDelta()` and `onClientThread()` are documented on [Timers and tasks](../extras/tasks.md).
 
