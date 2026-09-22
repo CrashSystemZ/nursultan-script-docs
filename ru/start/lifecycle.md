@@ -161,4 +161,4 @@ whenInGame { enabled = true }
 |---|---|---|
 | `requireApi(minimum)` | `Unit` | не даёт загрузиться на старом клиенте (бросает `ScriptApiException`, когда `ApiVersion.CURRENT` < `minimum`) |
 
-Этот клиент предоставляет версию API 5 — см. [Версии API](../extras/api-versions.md).
+Этот клиент предоставляет версию API 9 — см. [Версии API](../extras/api-versions.md).

@@ -161,4 +161,4 @@ Every root throws `ScriptStateException` after the script has been unloaded.
 |---|---|---|
 | `requireApi(minimum)` | `Unit` | refuses the load on an older client (throws `ScriptApiException` when `ApiVersion.CURRENT` < `minimum`) |
 
-This client provides API version 5 — see [API versions](../extras/api-versions.md).
+This client provides API version 9 — see [API versions](../extras/api-versions.md).
