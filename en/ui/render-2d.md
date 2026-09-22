@@ -243,7 +243,7 @@ The colours and scales the client menu and HUD draw with. `theme` is the DSL roo
 | `r.popScissor()` | `void` | drops one clip level (API 5) (no effect: the scissor stack is empty) |
 
 The rect is in framebuffer px, rounded and clamped to the frame; a negative width or height becomes 0.
-Every scissor a render handler leaves open is dropped when that handler returns.
+Every scissor a render handler leaves open is dropped when that handler returns, and a blur samples the unclipped frame: only its output is cut.
 
 ## Blending
 
