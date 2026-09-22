@@ -1,107 +1,60 @@
 # Entry со своей логикой
 
-Варианты у `selectable` и `combo` — это не строки, а объекты **entry**. Строки тоже работают, но entry позволяет привязать к варианту его собственное поведение и не сравнивать текст.
-
-## Строки — когда логики нет
-
-Если варианты просто помечают режим, пиши строками:
-
-```kotlin
-val mode by selectable("Режим", "Fast", "Smooth", selected = "Fast")
-
-if (mode == "Fast") { ... }
-```
-
-Entry для них создадутся сами.
-
-## Entry — когда логика есть
-
-`entry("Имя")` создаёт вариант, к которому можно прицепить обработчики:
+`entry(name) { }` — это один вариант `selectable` или `combo`, который несёт собственные колбэки и обработчики событий. Они работают, только пока этот вариант выбран и скрипт включён.
 
 ```kotlin
 val fast = entry("Fast", true) {
-    onSelect { chat.print("быстрый режим") }
-    onDeselect { chat.print("больше не быстрый") }
+    onSelect { chat.print("fast mode") }
     on<ClientTickEvent> { control.jump() }
 }
+val smooth = entry("Smooth")
 
-val smooth = entry("Smooth") {
-    on<ClientTickEvent> {
-        if (player.onGround()) {
-            control.jump()
-        }
-    }
-}
-
-val mode = selectable("Режим", fast, smooth)
+val mode = selectable("Mode", fast, smooth)
 ```
 
-| Обработчик | Когда вызывается |
-|---|---|
-| `onSelect` | вариант выбрали |
-| `onDeselect` | выбрали другой (для `combo` — сняли галочку) |
-| `on<Event>` | сработало это событие, но **только пока этот вариант выбран и скрипт включён** |
+## Строки или entry
 
-Второй аргумент `entry("Fast", true)` — выбран ли вариант по умолчанию. У `selectable` ровно один вариант должен быть выбран; не пометишь ни одного — выберется первый. У `combo` можно сколько угодно, в том числе ни одного.
+| Метод | Тип | Описание |
+|---|---|---|
+| `selectable("Mode", "A", "B")` | `Selectable` | варианты строками, entry создаются за тебя |
+| `selectable("Mode", entry("A") { }, entry("B") { })` | `Selectable` | варианты объектами entry со своей логикой |
+| `entry(name, selected, body)` | `Entry` | создаёт вариант, `selected` — выбран ли сразу (бросает ScriptException при пустом имени) |
 
-Так режим со своей логикой пишется целиком в одном месте, а обработчик события не превращается в лестницу из `if`.
+У `combo` те же две формы. Если у `selectable` не отмечен ни один вариант, выбирается первый; у `combo` может не быть ни одного.
+Все перегрузки `selectable` и `combo` перечислены на странице [Виды настроек](types.md).
 
-## Любое событие, как у скрипта
+## Внутри блока
 
-`on` внутри entry — это тот же `on`, что и у самого скрипта: любое событие, `priority` и `ignoreCancelled` работают, возвращается `Subscription`:
+| Метод | Тип | Описание |
+|---|---|---|
+| `name` | `String` | имя варианта, переданное в `entry()` |
+| `selected` | `Boolean` | выбран ли этот вариант прямо сейчас |
+| `on<E>(ignoreCancelled) { }` | `Subscription` | подписка; обработчик работает, только пока вариант выбран |
+| `on(type, ignoreCancelled) { }` | `Subscription` | то же, класс события задан явно |
+| `on<E>(priority, ignoreCancelled) { }` | `Subscription` | (устарело, убери аргумент) |
+| `on(type, priority, ignoreCancelled) { }` | `Subscription` | (устарело, убери аргумент) |
+| `onSelect { }` | `Unit` | вызывается, когда вариант становится выбранным |
+| `onDeselect { }` | `Unit` | вызывается, когда вариант перестаёт быть выбранным |
 
-```kotlin
-val silent = entry("Silent", true) {
-    on<MovePacketEvent>(priority = Priority.LAST) { it.onGround(true) }
-    on<AttackEvent> { chat.print("бью " + it.target().name()) }
-}
+Подписка регистрируется один раз при загрузке и живёт при переключении вариантов; снятие выбора фильтрует обработчик при рассылке, а не отписывает его.
+`ignoreCancelled`, отмена события и отписка работают так же, как на странице [Подписка на события](../events/basics.md).
 
-val legit = entry("Legit") {
-    on<JumpEvent> { chat.print("прыгнул") }
-}
+## Объект Entry
 
-val mode = selectable("Режим", silent, legit)
-```
+| Метод | Тип | Описание |
+|---|---|---|
+| `name()` | `String` | имя варианта; у entry модулей срезается префикс `entry.` |
+| `id()` | `String` | ключ локализации `entry.<scriptId>.<name>`, нижний регистр, пробелы в дефисы |
+| `selected()` | `boolean` | выбран ли этот вариант сейчас |
+| `onSelect(action)` | `Entry` | добавляет действие на переход выбора в true |
+| `onDeselect(action)` | `Entry` | добавляет действие на переход выбора в false |
+| `on(type, handler)` | `Subscription` | подписка с `EventOptions.DEFAULT` |
+| `on(type, options, handler)` | `Subscription` | подписка; работает, только пока вариант выбран и скрипт включён |
 
-Отличие одно — то самое правило выше: обработчик срабатывает, только пока его вариант выбран. Никаких подписок и отписок при переключении не происходит: слушатель регистрируется один раз при загрузке и просто молчит, пока вариант не выбран, так что хоть десяток вариантов — это ничего не стоит.
+`onSelect`/`onDeselect` срабатывают только после того, как entry попал в `selectable` или `combo`, и только на реальном изменении — состояние при создании не сообщается.
+Чтение и переключение выбора (`value()`, `select()`, `has()`, `entry(reference)`) — на странице [Виды настроек](types.md).
 
-Именно это превращает `selectable` из флажка режима в набор независимых поведений: каждый вариант подписывается на то, что ему нужно, и никому не приходится разводить события руками.
+## Entry модулей клиента
 
-## Работа с выбором
-
-```kotlin
-mode.value()              // выбранный Entry
-mode.value() == fast      // сравнение по объекту, без строк
-mode.selected(smooth)     // то же самое, но короче
-mode.select(fast)         // выбрать
-mode.entries()            // все варианты
-mode.options()            // их имена строками
-```
-
-У `combo` то же самое, только про множество:
-
-```kotlin
-val items = combo("Предметы", trident, crossbow)
-
-items.value()             // список выбранных Entry
-items.has(trident)
-items.set(crossbow, false)
-items.value(listOf(trident))
-```
-
-## Найти entry по имени
-
-Если объекта под рукой нет — например, работаешь с [модулем клиента](../extras/modules.md) — вариант можно достать по ссылке:
-
-```kotlin
-val targets = client.modules().get("AttackAura").combo("targets")
-
-targets.set(targets.entry("entry.players"), true)
-targets.set("players", true)          // то же самое короче
-```
-
-Ищется по полному ключу (`entry.players`), по имени и по последнему сегменту; регистр, точки, дефисы и подчёркивания не важны.
-
-## Что нельзя
-
-К entry встроенного модуля клиента прицепить `onSelect`, `onDeselect` или `on<Event>` нельзя — это чужая настройка, скрипт может её только читать и переключать.
+`onSelect(...)`, `onDeselect(...)` и `on(...)` бросают `ScriptException` на entry, который принадлежит встроенному модулю клиента.
+`name()`, `id()` и `selected()` на нём работают, а переключается он через свой `Selectable`/`Combo` — см. [модули клиента](../extras/modules.md).

@@ -2,6 +2,8 @@
 
 * [Что это](README.md)
 
+## Скрипты
+
 * [Начало](start/README.md)
   * [Первый скрипт](start/first-script.md)
   * [Проект в IDE](start/ide.md)
@@ -23,6 +25,7 @@
   * [Инвентарь и предметы](game/inventory.md)
   * [Контейнеры](game/containers.md)
   * [Лучи и прицел](game/raycast.md)
+  * [Векторы, коробки, углы](game/math.md)
   * [Сервер, табло, таблист](game/server.md)
 
 * [Действия](actions/README.md)
@@ -30,7 +33,13 @@
   * [Повороты](actions/rotations.md)
   * [Слоты и броня](actions/slots.md)
   * [Движение](actions/control.md)
+  * [Клавиши и бинды](actions/keys.md)
   * [Пакеты](actions/packets.md)
+    * [Пакеты, которые можно отправить](actions/packets/c2s.md)
+    * [Пакеты сущностей](actions/packets/s2c-entities.md)
+    * [Пакеты мира](actions/packets/s2c-world.md)
+    * [Пакеты экранов и чата](actions/packets/s2c-screens.md)
+    * [Перечисления пакетов](actions/packets/enums.md)
   * [Предсказание](actions/prediction.md)
 
 * [Интерфейс](ui/README.md)
@@ -44,8 +53,10 @@
 * [Ещё](extras/README.md)
   * [Свои команды](extras/commands.md)
   * [Модули клиента](extras/modules.md)
+  * [Твой аккаунт](extras/user.md)
   * [Таймеры и задачи](extras/tasks.md)
   * [Путевые точки](extras/waypoints.md)
+  * [Сообщения в группе](extras/party.md)
   * [Папка assets](extras/assets.md)
   * [Песочница и лимиты](extras/limits.md)
   * [Версии API](extras/api-versions.md)
@@ -56,3 +67,7 @@
   * [Строитель мостов](examples/bridge-builder.md)
   * [Автосуп](examples/auto-soup.md)
   * [Помощник на анархии](examples/anarchyhelper.md)
+
+## Гайды по клиенту
+
+* [AutoBuy](autobuy/README.md)

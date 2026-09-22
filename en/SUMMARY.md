@@ -2,6 +2,8 @@
 
 * [What this is](README.md)
 
+## Scripting
+
 * [Getting started](start/README.md)
   * [Your first script](start/first-script.md)
   * [The project in your IDE](start/ide.md)
@@ -23,6 +25,7 @@
   * [Inventory and items](game/inventory.md)
   * [Containers](game/containers.md)
   * [Rays and the crosshair](game/raycast.md)
+  * [Vectors, boxes, angles](game/math.md)
   * [Server, scoreboard, tab list](game/server.md)
 
 * [Actions](actions/README.md)
@@ -30,7 +33,13 @@
   * [Rotations](actions/rotations.md)
   * [Slots and armor](actions/slots.md)
   * [Movement](actions/control.md)
+  * [Keys and binds](actions/keys.md)
   * [Packets](actions/packets.md)
+    * [Packets you can send](actions/packets/c2s.md)
+    * [Entity packets](actions/packets/s2c-entities.md)
+    * [World packets](actions/packets/s2c-world.md)
+    * [Screen and chat packets](actions/packets/s2c-screens.md)
+    * [Packet enums](actions/packets/enums.md)
   * [Prediction](actions/prediction.md)
 
 * [Interface](ui/README.md)
@@ -44,8 +53,10 @@
 * [More](extras/README.md)
   * [Your own commands](extras/commands.md)
   * [Client modules](extras/modules.md)
+  * [Your account](extras/user.md)
   * [Timers and tasks](extras/tasks.md)
   * [Waypoints](extras/waypoints.md)
+  * [Party messages](extras/party.md)
   * [The assets folder](extras/assets.md)
   * [Sandbox and limits](extras/limits.md)
   * [API versions](extras/api-versions.md)
@@ -56,3 +67,7 @@
   * [Bridge builder](examples/bridge-builder.md)
   * [Auto soup](examples/auto-soup.md)
   * [Anarchy helper](examples/anarchyhelper.md)
+
+## Client guides
+
+* [AutoBuy](autobuy/README.md)

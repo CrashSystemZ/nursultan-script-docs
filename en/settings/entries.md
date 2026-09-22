@@ -1,107 +1,60 @@
 # Entries with their own logic
 
-The options of a `selectable` or a `combo` are not strings but **entry** objects. Strings work too, but an entry lets you attach behaviour to an option instead of comparing text.
-
-## Strings — when there is no logic
-
-If the options just mark a mode, strings are fine:
-
-```kotlin
-val mode by selectable("Mode", "Fast", "Smooth", selected = "Fast")
-
-if (mode == "Fast") { ... }
-```
-
-The entries are built for you.
-
-## Entries — when there is logic
-
-`entry("Name")` creates an option you can hang handlers on:
+An `entry(name) { }` is one option of a `selectable` or a `combo` that carries its own callbacks and event handlers. They run only while that option is selected and the script is switched on.
 
 ```kotlin
 val fast = entry("Fast", true) {
     onSelect { chat.print("fast mode") }
-    onDeselect { chat.print("not fast any more") }
     on<ClientTickEvent> { control.jump() }
 }
-
-val smooth = entry("Smooth") {
-    on<ClientTickEvent> {
-        if (player.onGround()) {
-            control.jump()
-        }
-    }
-}
+val smooth = entry("Smooth")
 
 val mode = selectable("Mode", fast, smooth)
 ```
 
-| Handler | When it fires |
-|---|---|
-| `onSelect` | the option was picked |
-| `onDeselect` | another one was picked (for a `combo`, it was unchecked) |
-| `on<Event>` | that event fires, but **only while this option is selected and the script is on** |
+## Strings or entries
 
-The second argument of `entry("Fast", true)` is whether it starts selected. A `selectable` needs exactly one selected option; mark none and the first one wins. A `combo` takes any number, including none.
+| Method | Type | Description |
+|---|---|---|
+| `selectable("Mode", "A", "B")` | `Selectable` | options as plain strings, entries built for you |
+| `selectable("Mode", entry("A") { }, entry("B") { })` | `Selectable` | options as entry objects carrying their own logic |
+| `entry(name, selected, body)` | `Entry` | creates one option, `selected` starts it picked (throws ScriptException when name is blank) |
 
-This way a mode with its own behaviour lives in one place, and your event handler does not turn into a ladder of `if`s.
+`combo` takes the same two forms. A `selectable` with nothing marked selects its first option; a `combo` may start with none.
+Every `selectable` and `combo` overload is listed on [Kinds of settings](types.md).
 
-## Every event, the same as the script's
+## Inside the block
 
-`on` inside an entry is the script's own `on` — any event, `priority` and `ignoreCancelled` included, and it hands back a `Subscription`:
+| Method | Type | Description |
+|---|---|---|
+| `name` | `String` | display name passed to `entry()` |
+| `selected` | `Boolean` | whether this option is selected right now |
+| `on<E>(ignoreCancelled) { }` | `Subscription` | subscribes; the handler runs only while this option is selected |
+| `on(type, ignoreCancelled) { }` | `Subscription` | same, event class given explicitly |
+| `on<E>(priority, ignoreCancelled) { }` | `Subscription` | (deprecated, drop the argument) |
+| `on(type, priority, ignoreCancelled) { }` | `Subscription` | (deprecated, drop the argument) |
+| `onSelect { }` | `Unit` | runs when this option becomes selected |
+| `onDeselect { }` | `Unit` | runs when this option stops being selected |
 
-```kotlin
-val silent = entry("Silent", true) {
-    on<MovePacketEvent>(priority = Priority.LAST) { it.onGround(true) }
-    on<AttackEvent> { chat.print("hit " + it.target().name()) }
-}
+The subscription is registered once at load and stays registered across selection changes; deselecting filters the handler at dispatch, it does not unsubscribe.
+`ignoreCancelled`, cancelling and unsubscribing behave exactly as on [Subscribing](../events/basics.md).
 
-val legit = entry("Legit") {
-    on<JumpEvent> { chat.print("jumped") }
-}
+## The entry object
 
-val mode = selectable("Mode", silent, legit)
-```
+| Method | Type | Description |
+|---|---|---|
+| `name()` | `String` | display name; built-in entries drop the leading `entry.` |
+| `id()` | `String` | locale key `entry.<scriptId>.<name>`, lowercased, spaces as dashes |
+| `selected()` | `boolean` | whether this option is currently selected |
+| `onSelect(action)` | `Entry` | adds an action run when selection flips to true |
+| `onDeselect(action)` | `Entry` | adds an action run when selection flips to false |
+| `on(type, handler)` | `Subscription` | subscribes with `EventOptions.DEFAULT` |
+| `on(type, options, handler)` | `Subscription` | subscribes; runs only while selected and the script is on |
 
-The one difference is the rule above: the handler runs only while its option is selected. Nothing is subscribed and unsubscribed as you switch options — the listener is registered once when the script loads and simply stays quiet while the option is not picked, so listing a dozen options costs nothing.
+`onSelect`/`onDeselect` fire only once the entry belongs to a `selectable` or `combo`, and only on an actual change — the state at creation is never reported.
+Reading and switching the selection (`value()`, `select()`, `has()`, `entry(reference)`) is on [Kinds of settings](types.md).
 
-That is what makes a `selectable` a set of independent behaviours instead of a mode flag: each option subscribes to what it needs, and no one has to route events by hand.
+## Built-in module entries
 
-## Working with the selection
-
-```kotlin
-mode.value()              // the selected Entry
-mode.value() == fast      // identity, no strings
-mode.selected(smooth)     // same thing, shorter
-mode.select(fast)         // pick it
-mode.entries()            // every option
-mode.options()            // their names as strings
-```
-
-A combo is the same, only about a set:
-
-```kotlin
-val items = combo("Items", trident, crossbow)
-
-items.value()             // list of selected entries
-items.has(trident)
-items.set(crossbow, false)
-items.value(listOf(trident))
-```
-
-## Finding an entry by name
-
-When you do not have the object — say you are driving a [client module](../extras/modules.md) — you can look one up:
-
-```kotlin
-val targets = client.modules().get("AttackAura").combo("targets")
-
-targets.set(targets.entry("entry.players"), true)
-targets.set("players", true)          // same thing, shorter
-```
-
-Lookup accepts the full key (`entry.players`), the name, or the last segment; case, dots, dashes and underscores do not matter.
-
-## What you cannot do
-
-You cannot attach `onSelect`, `onDeselect` or `on<Event>` to an entry of a built-in client module — it is someone else's setting, and a script may only read and switch it.
+`onSelect(...)`, `onDeselect(...)` and `on(...)` throw `ScriptException` on an entry that belongs to a built-in client module.
+`name()`, `id()` and `selected()` work on it, and it is switched through its own `Selectable`/`Combo` — see [client modules](../extras/modules.md).

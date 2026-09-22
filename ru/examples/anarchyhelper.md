@@ -67,7 +67,7 @@ on<EntityRemoveEvent> { e ->
     if (entity.distanceTo(player.position()) > 48.0) return@on
 
     client.waypoints().add(entity.name(), entity.position(), deathMinutes.intValue() * 20 * 60)
-    chat.print("отметил, где лёг " + entity.name())
+    chat.print("отметил место, где " + entity.name() + " лёг")
 }
 
 command("note") {
