@@ -1,6 +1,6 @@
 # API versions
 
-`ApiVersion.CURRENT` is 3. `requireApi(n)` fails the script at load when the running client is older; it cannot rescue a compile error, because a name that does not exist on the older SDK never compiles in the first place.
+`ApiVersion.CURRENT` is 9. `requireApi(n)` fails the script at load when the running client is older; it cannot rescue a compile error, because a name that does not exist on the older SDK never compiles in the first place.
 
 ```kotlin
 requireApi(2)
@@ -16,14 +16,152 @@ val mesh = gpu.indexedMesh(format)
 
 | Method | Type | Description |
 |---|---|---|
-| `ApiVersion.CURRENT` | `int` | script API version of this client, currently 3 |
+| `ApiVersion.CURRENT` | `int` | script API version of this client, currently 9 |
 | `ApiVersion.require(minimum)` | `void` | static (throws `ScriptApiException` when `CURRENT` < `minimum`) |
 | `requireApi(minimum)` | `Unit` | the DSL form of `ApiVersion.require` (throws `ScriptApiException` when `CURRENT` < `minimum`) |
 
-`ApiVersion` has a private constructor: there is no instance, only the two static members.
-The client appends `this client provides v3` to every `Unresolved reference` compile error, and compilation happens before the first line runs.
-Nothing is gated per member: every addition above is present unconditionally in a client of that version, and `requireApi(n)` is the only check that exists.
+`ApiVersion` has a private constructor: no instance, only the two static members, and the client appends `this client provides v9` to every `Unresolved reference` compile error.
 Packet records follow the Minecraft version, not this number — see [Packets](../actions/packets.md).
+
+## What each version added
+
+### API 3
+
+| Added in 3 | Documented on |
+|---|---|
+| `combat.explosionExposure(target, source)` | [Interaction](../actions/interaction.md) |
+| `combat.explosionDamage(target, source, power)` | [Interaction](../actions/interaction.md) |
+| `combat.explosionDamageTaken(target, source, power)` | [Interaction](../actions/interaction.md) |
+| `combat.damageAfterArmor(target, damage)` | [Interaction](../actions/interaction.md) |
+| `living.visibleEffects()` | [Entities and filters](../game/entities.md) |
+| `block.collisionBoxes()` | [World and blocks](../game/world.md) |
+| `block.outlineBoxes()` | [World and blocks](../game/world.md) |
+| `world.blockCollisionsIn(box)` | [World and blocks](../game/world.md) |
+| `world.isBlockSpaceFree(box)` | [World and blocks](../game/world.md) |
+| `RenderItemEvent.translate(x, y, z)` | [Event list](../events/reference.md) |
+| `RenderItemEvent.rotate(degrees, axisX, axisY, axisZ)` | [Event list](../events/reference.md) |
+| `RenderItemEvent.rotateX(degrees)` | [Event list](../events/reference.md) |
+| `RenderItemEvent.rotateY(degrees)` | [Event list](../events/reference.md) |
+| `RenderItemEvent.rotateZ(degrees)` | [Event list](../events/reference.md) |
+| `RenderItemEvent.scale(x, y, z)` | [Event list](../events/reference.md) |
+| `RenderItemEvent.Matrix` | [Event list](../events/reference.md) |
+
+### API 4
+
+| Added in 4 | Documented on |
+|---|---|
+| `client.party()` | [How a script works](../start/lifecycle.md) |
+| `party` | [Party messages](party.md) |
+| `Party` | [Party messages](party.md) |
+| `PartyChannel` | [Party messages](party.md) |
+| `PartyMember` | [Party messages](party.md) |
+| `PartyMessage` | [Party messages](party.md) |
+| `PartyShapedMessage` | [Party messages](party.md) |
+| `PartyMessageKind` | [Party messages](party.md) |
+| `PartyFields` | [Party messages](party.md) |
+| `PartyShape` | [Party messages](party.md) |
+| `PartyShapeBuilder` | [Party messages](party.md) |
+| `PartyField` | [Party messages](party.md) |
+| `PartyFieldType` | [Party messages](party.md) |
+| `PartyWire` | [Party messages](party.md) |
+| `PartyStruct` | [Party messages](party.md) |
+| `PartyShapedWriter` | [Party messages](party.md) |
+| `PartyPayloadWriter` | [Party messages](party.md) |
+| `PartyPayloadReader` | [Party messages](party.md) |
+| `PartyTarget` | [Party messages](party.md) |
+| `PartyTargetKind` | [Party messages](party.md) |
+| `SenderRule` | [Party messages](party.md) |
+| `PartySendResult` | [Party messages](party.md) |
+| 43 `nursultan.dsl` party helpers — `shape`, the field builders, `send`, `publish`, the typed field readers | [Party messages](party.md) |
+| `nursultan.party.*` as a default import | [Party messages](party.md) |
+| `entity.isItem()` | [Entities and filters](../game/entities.md) |
+| `entity.asItemEntity()` | [Entities and filters](../game/entities.md) |
+| `ItemEntity` | [Entities and filters](../game/entities.md) |
+
+### API 5
+
+| Added in 5 | Documented on |
+|---|---|
+| `party.code()` | [Party messages](party.md) |
+| `PartyMember.color()` | [Party messages](party.md) |
+| `PartyMember.position()` | [Party messages](party.md) |
+| `PartyMember.positionAge()` | [Party messages](party.md) |
+| `player.serverSprinting()` | [Your player](../game/player.md) |
+| `player.velocity(value)` | [Your player](../game/player.md) |
+| `render.pushScissor(x, y, width, height)` | [2D render](../ui/render-2d.md) |
+| `render.popScissor()` | [2D render](../ui/render-2d.md) |
+
+### API 6
+
+| Added in 6 | Documented on |
+|---|---|
+| `rotations.quantized(rotation)` | [Rotations](../actions/rotations.md) |
+| `BackRotation` | [Rotations](../actions/rotations.md) |
+| `BackRotation.step(from, to, tick)` | [Rotations](../actions/rotations.md) |
+| `BackRotation.maxTicks()` | [Rotations](../actions/rotations.md) |
+| `BackRotations` | [Rotations](../actions/rotations.md) |
+| `BackRotations.SNAP` | [Rotations](../actions/rotations.md) |
+| `BackRotations.INSTANT` | [Rotations](../actions/rotations.md) |
+| `BackRotations.HUMANIZED` | [Rotations](../actions/rotations.md) |
+| `backRotation(maxTicks) { }` | [Rotations](../actions/rotations.md) |
+| `rotations.locked()` | [Rotations](../actions/rotations.md) |
+| `slots.hold(hotbarSlot)` | [Slots and armor](../actions/slots.md) |
+| `slots.selected()` | [Slots and armor](../actions/slots.md) |
+| `HeldSlot.holding()` | [Slots and armor](../actions/slots.md) |
+| `interaction.useBlock(x, y, z, side, hand, hit)` | [Interaction](../actions/interaction.md) |
+| `interaction.placeBlock(x, y, z, side, hand, hit)` | [Interaction](../actions/interaction.md) |
+| `combat.explosionExposure(target, source, cover)` | [Interaction](../actions/interaction.md) |
+| `combat.explosionDamage(target, source, power, cover)` | [Interaction](../actions/interaction.md) |
+| `entity.serverPosition()` | [Entities and filters](../game/entities.md) |
+| `entity.interpolating()` | [Entities and filters](../game/entities.md) |
+| `world.canPlace(itemId, x, y, z)` | [World and blocks](../game/world.md) |
+| `world.respawnAnchorWorks(x, y, z)` | [World and blocks](../game/world.md) |
+
+### API 7
+
+| Added in 7 | Documented on |
+|---|---|
+| `entity.yaw(value)` | [Entities and filters](../game/entities.md) |
+| `entity.pitch(value)` | [Entities and filters](../game/entities.md) |
+| `entity.velocity(value)` | [Entities and filters](../game/entities.md) |
+| `entity.fallDistanceBlocks(value)` | [Entities and filters](../game/entities.md) |
+| `entity.noClip()` | [Entities and filters](../game/entities.md) |
+| `entity.noClip(value)` | [Entities and filters](../game/entities.md) |
+| `render.blend()` | [2D render](../ui/render-2d.md) |
+| `render.blend(mode)` | [2D render](../ui/render-2d.md) |
+| `BlendMode.INVERT` | [Your own geometry](../ui/gpu.md) |
+| `RotationOptions.lock()` | [Rotations](../actions/rotations.md) |
+| `RotationOptions.lock(value)` | [Rotations](../actions/rotations.md) |
+| `RotationOptions(priority, clientSide, strongCorrection, smoothBackRotation, normalizeMouseMovement, backRotation, lock)` | [Rotations](../actions/rotations.md) |
+| `interaction.pendingAck()` | [Interaction](../actions/interaction.md) |
+| `world.blockPending(x, y, z)` | [World and blocks](../game/world.md) |
+
+### API 8
+
+| Added in 8 | Documented on |
+|---|---|
+| `client.theme()` | [How a script works](../start/lifecycle.md) |
+| `client.language()` | [How a script works](../start/lifecycle.md) |
+| `language` | [How a script works](../start/lifecycle.md) |
+| `theme` | [2D render](../ui/render-2d.md) |
+| `Theme` | [2D render](../ui/render-2d.md) |
+
+### API 9
+
+| Added in 9 | Documented on |
+|---|---|
+| `client.sound()` | [The assets folder](assets.md) |
+| `sound` | [The assets folder](assets.md) |
+| `Sound` | [The assets folder](assets.md) |
+| `SoundHandle` | [The assets folder](assets.md) |
+| `sound.play(path)` | [The assets folder](assets.md) |
+| `sound.play(path, volume, pitch)` | [The assets folder](assets.md) |
+| `sound.loop(path)` | [The assets folder](assets.md) |
+| `sound.loop(path, volume, pitch)` | [The assets folder](assets.md) |
+| `sound.stopAll()` | [The assets folder](assets.md) |
+
+Nothing is gated per member: every addition above is present unconditionally in a client of that version, and `requireApi(n)` is the only check that exists.
+API 1 is the surface that carries no marker at all; API 2 members are marked `(API 2)` in the tables of the page that documents them.
 
 ## Things that no longer do anything
 
@@ -49,11 +187,23 @@ Targets: type, method, field, parameter, record component.
 | `EntryScope.on(type, priority, ignoreCancelled) { }` | `Subscription` | discards the argument (deprecated, drop the argument) |
 | `RotationOptions.clientSide()` | `boolean` | record component and its accessor (deprecated) (no effect: the rotation always reaches the server) |
 | `RotationOptions.clientSide(value)` | `RotationOptions` | copy carrying the value (deprecated) (no effect: the rotation always reaches the server) |
-| `RotationOptions.normalizeMouseMovement()` | `boolean` | record component and its accessor (deprecated) (no effect: the angle is always snapped to a mouse step) |
-| `RotationOptions.normalizeMouseMovement(value)` | `RotationOptions` | copy carrying the value (deprecated) (no effect: the angle is always snapped to a mouse step) |
+| `RotationOptions.normalizeMouseMovement()` | `boolean` | record component and its accessor (deprecated, use `rotations.quantized`) (no effect: the value is never read) |
+| `RotationOptions.normalizeMouseMovement(value)` | `RotationOptions` | copy carrying the value (deprecated, use `rotations.quantized`) (no effect: the value is never read) |
 
 All eleven still compile and still store what you give them; nothing reads the stored value.
 The order that replaced `Priority` is on [Subscribing](../events/basics.md#priority-does-nothing), the two rotation flags on [Rotations](../actions/rotations.md#options).
+Every one of them raises a compile warning in the script console, with the line it sits on.
+
+### Deprecated but still working
+
+| Member | Type | Description |
+|---|---|---|
+| `RotationOptions.smoothBackRotation()` | `boolean` | record component and its accessor (deprecated, use `backRotation`) |
+| `RotationOptions.smoothBackRotation(value)` | `RotationOptions` | true turns a `SNAP` return into `HUMANIZED` (deprecated, use `backRotation`) |
+| `BackRotation.FAST` | `BackRotation` | the return `BackRotations.SNAP` gives (deprecated, use `BackRotations.SNAP`) |
+| `BackRotation.SMOOTH` | `BackRotation` | the return `BackRotations.HUMANIZED` gives (deprecated, use `BackRotations.HUMANIZED`) |
+
+These four are aliases, not stubs: they kept their old shape of return when API 6 rewrote it, so a script written before it behaves the same.
 
 ## What a bump costs
 

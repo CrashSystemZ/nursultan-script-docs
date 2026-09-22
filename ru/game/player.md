@@ -32,6 +32,7 @@ on<ClientTickEvent> {
 | `player.bodyYaw()` | `float` | yaw тела в градусах |
 | `player.headYaw()` | `float` | yaw головы в градусах |
 | `player.velocity()` | `Vec` | скорость в блоках за тик |
+| `player.velocity(value)` | `void` | перезаписывает её; гравитация и ввод применятся следующим тиком (API 5) (бросает `ScriptException`, если `value` null) |
 | `player.movementSpeed()` | `float` | атрибут скорости в блоках за тик |
 | `player.distanceTo(other)` | `double` | расстояние между позициями в блоках (бросает `ScriptStateException`, если `other` не сущность мира) |
 | `player.distanceTo(point)` | `double` | расстояние от позиции до точки в блоках |
@@ -44,7 +45,8 @@ on<ClientTickEvent> {
 | `player.onGround()` | `boolean` | стоит на земле |
 | `player.sneaking()` | `boolean` | флаг приседания |
 | `player.sprinting()` | `boolean` | флаг спринта |
-| `player.wasSprinting()` | `boolean` | состояние спринта в прошлом тике |
+| `player.serverSprinting()` | `boolean` | состояние спринта, о котором знает сервер (API 5) |
+| `player.wasSprinting()` | `boolean` | старое имя `serverSprinting()`, то же значение |
 | `player.hasMovementInput()` | `boolean` | клавиши движения дают ввод в этом тике |
 | `player.swimming()` | `boolean` | флаг плавания |
 | `player.crawling()` | `boolean` | ползёт в щели высотой в один блок |

@@ -182,14 +182,49 @@ Every colour is an `int` shaped `0xAARRGGBB`.
 | `Colors.fade(argb, factor)` | `int` | multiplies alpha by factor clamped 0..1 |
 | `Colors.mix(first, second, amount)` | `int` | per-channel lerp including alpha, amount clamped 0..1 |
 
-## Clipping
+## Client theme
+
+The colours and scales the client menu and HUD draw with. `theme` is the DSL root, `client.theme()` the same object; every colour is ARGB, every value is read at the moment of the call, so the accent-derived ones change as soon as the user picks another accent.
 
 | Method | Type | Description |
 |---|---|---|
-| `r.pushScissor(x, y, width, height)` | `void` | clips later commands to the rect, intersected with the enclosing one |
-| `r.popScissor()` | `void` | restores the previous clip, no-op when nothing is pushed |
-
-The clip applies at the command's place in the queue, so only what is issued between push and pop is cut; an unbalanced push is closed when the handler returns, so it never reaches another script. Blur reads the framebuffer unclipped and only its output is clipped.
+| `theme.defaultAccent()` | `int` | accent before the user picked one, `0xFF8BACFF` (API 8) |
+| `theme.accent()` | `int` | current menu accent, follows the client settings (API 8) |
+| `theme.background()` | `int` | window background (API 8) |
+| `theme.border()` | `int` | window border (API 8) |
+| `theme.divider()` | `int` | divider line, white at 2% alpha (API 8) |
+| `theme.textPrimary()` | `int` | main text, opaque white (API 8) |
+| `theme.textSecondary()` | `int` | secondary text, white at 72% alpha (API 8) |
+| `theme.textTertiary()` | `int` | hint text, white at 48% alpha (API 8) |
+| `theme.textQuaternary()` | `int` | faint text, white at 24% alpha (API 8) |
+| `theme.textInactive()` | `int` | disabled text, `0xFF929292` (API 8) |
+| `theme.textOnBrand()` | `int` | text over `accent()`, black on a bright accent (API 8) |
+| `theme.iconSecondary()` | `int` | secondary icon, white at 72% alpha (API 8) |
+| `theme.iconTertiary()` | `int` | hint icon, white at 48% alpha (API 8) |
+| `theme.iconQuaternary()` | `int` | faint icon, white at 24% alpha (API 8) |
+| `theme.iconOnBrand()` | `int` | icon over `accent()`, black on a bright accent (API 8) |
+| `theme.backgroundBase()` | `int` | base menu layer (API 8) |
+| `theme.backgroundSurface()` | `int` | panel over the base layer (API 8) |
+| `theme.backgroundModal()` | `int` | modal window (API 8) |
+| `theme.backgroundElevated()` | `int` | raised panel (API 8) |
+| `theme.backgroundSurfaceSolid()` | `int` | opaque `backgroundSurface()` (API 8) |
+| `theme.backgroundElevatedSolid()` | `int` | opaque `backgroundElevated()` (API 8) |
+| `theme.backgroundScrollSurface()` | `int` | scrollbar track (API 8) |
+| `theme.backgroundScrollBar()` | `int` | scrollbar thumb (API 8) |
+| `theme.backgroundScrollBarHover()` | `int` | scrollbar thumb under the cursor (API 8) |
+| `theme.backgroundScrollBarActive()` | `int` | scrollbar thumb while dragged (API 8) |
+| `theme.backgroundActive()` | `int` | pressed or hovered item, white at 8% alpha (API 8) |
+| `theme.borderSurface()` | `int` | panel border, white at 2% alpha (API 8) |
+| `theme.fieldSurface()` | `int` | input field fill (API 8) |
+| `theme.fieldItem()` | `int` | item inside an input field (API 8) |
+| `theme.fieldSurfaceDisabled()` | `int` | disabled input field fill (API 8) |
+| `theme.effectShadow()` | `int` | drop shadow (API 8) |
+| `theme.surfaceBorder()` | `int` | card border (API 8) |
+| `theme.hudShadow()` | `int` | HUD element shadow (API 8) |
+| `theme.switchOffBg()` | `int` | disabled switch fill, white at 8% alpha (API 8) |
+| `theme.switchOffThumb()` | `int` | disabled switch thumb, white at 48% alpha (API 8) |
+| `theme.menuScale()` | `float` | menu scale setting, 1, 1.25, 1.5 or 2 (API 8) |
+| `theme.hudScale()` | `float` | HUD scale setting, 1, 1.25, 1.5 or 2 (API 8) |
 
 ## A world point on the screen
 
@@ -199,6 +234,26 @@ The clip applies at the command's place in the queue, so only what is issued bet
 | `p.visible()` | `boolean` | false when the point projects behind the camera |
 | `p.x()` | `float` | screen X in framebuffer px, 0 when not visible |
 | `p.y()` | `float` | screen Y in framebuffer px, 0 when not visible |
+
+## Clipping
+
+| Method | Type | Description |
+|---|---|---|
+| `r.pushScissor(x, y, width, height)` | `void` | clips later draws to the rect, intersected with the enclosing one (API 5) |
+| `r.popScissor()` | `void` | drops one clip level (API 5) (no effect: the scissor stack is empty) |
+
+The rect is in framebuffer px, rounded and clamped to the frame; a negative width or height becomes 0.
+Every scissor a render handler leaves open is dropped when that handler returns.
+
+## Blending
+
+| Method | Type | Description |
+|---|---|---|
+| `r.blend()` | `BlendMode` | mode applied to later shapes and textures, ALPHA when a handler starts (API 7) |
+| `r.blend(mode)` | `void` | sets it for later shapes and textures, null means ALPHA (API 7) |
+
+Text, items, heads, blur and shader quads keep their own blending; the modes are listed on [Your own geometry](gpu.md#blendmode).
+`INVERT` flips every pixel under the shape, weighted by its alpha — the blend of the vanilla crosshair.
 
 ## Shaders
 

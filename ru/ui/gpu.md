@@ -127,6 +127,7 @@ GL-буфер создаётся при первом использовании,
 | `BlendMode.ALPHA` | `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`, замена для null |
 | `BlendMode.PREMULTIPLIED` | `ONE, ONE_MINUS_SRC_ALPHA` по цвету и альфе |
 | `BlendMode.ADDITIVE` | `SRC_ALPHA, ONE` по цвету и альфе |
+| `BlendMode.INVERT` | `ONE_MINUS_DST_COLOR, ONE_MINUS_SRC_COLOR` по цвету, `ONE, ZERO` по альфе, смешивание ванильного прицела (API 7) |
 
 ### DepthMode
 

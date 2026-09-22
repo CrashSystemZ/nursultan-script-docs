@@ -466,8 +466,25 @@ Setting the same perspective again fires nothing.
 |---|---|---|
 | `arm()` | [`Arm`](../game/inventory.md) | arm being rendered, LEFT or RIGHT |
 | `swingProgress()` | `float` | swing animation progress, 0..1 |
+| `translate(x, y, z)` | `void` | offsets the held-item matrix, item-space units (API 3) |
+| `rotate(degrees, axisX, axisY, axisZ)` | `void` | rotates it about the axis, degrees (API 3) (no effect: axis length squared under 1e-6) |
+| `rotateX(degrees)` | `void` | rotates it about `(1, 0, 0)`, degrees (API 3) |
+| `rotateY(degrees)` | `void` | rotates it about `(0, 1, 0)`, degrees (API 3) |
+| `rotateZ(degrees)` | `void` | rotates it about `(0, 0, 1)`, degrees (API 3) |
+| `scale(x, y, z)` | `void` | scales it per axis (API 3) |
 
 Cancelling leaves the matrix at the hand origin, so the swing transform is skipped for that hand.
+The ops write into the live hand matrix and compose in call order, before the vanilla swing transform.
+
+### Matrix
+
+| Method | Type | Description |
+|---|---|---|
+| `translate(x, y, z)` | `void` | offsets the matrix, item-space units (API 3) |
+| `rotate(degrees, axisX, axisY, axisZ)` | `void` | rotates it about the axis, degrees (API 3) (no effect: axis length squared under 1e-6) |
+| `scale(x, y, z)` | `void` | scales it per axis (API 3) |
+
+`RenderItemEvent.Matrix` is the adapter the event forwards to; `rotateX`, `rotateY` and `rotateZ` exist only on the event.
 
 ### BlockOutlineEvent
 

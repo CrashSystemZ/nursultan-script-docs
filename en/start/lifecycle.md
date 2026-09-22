@@ -28,6 +28,19 @@ whenInGame { enabled = true }
 
 The top level runs once, at load. While the script is off its handlers, commands, hotkeys and scheduled tasks are unsubscribed; switching it back on re-arms them without re-running the file.
 
+### Script
+
+| Method | Type | Description |
+|---|---|---|
+| `Script.setEnabled(value)` | `void` | Java form of writing `enabled`, marshals to the client thread |
+| `Script.defaultKey(key)` | `Script` | Java form of `key(key)`, returns the script |
+| `Script.events()` | `Events` | the event registry behind `on<E> { }` — [Subscribing](../events/basics.md) |
+| `Script.client()` | `Client` | the `client` root, table below |
+| `Script.game()` | `Game` | the `game` root, table below |
+
+`Script` is the Java object every member above forwards to; `id()`, `name()`, `description()`, `enabled()`, `toggle()`, `bind()`, `onEnable()`, `onDisable()` and `onUnload()` carry the names already on this page.
+`Script` extends `SettingHost`, so every setting factory on [Kinds of settings](../settings/types.md) is a member of it too.
+
 ## Name, description, bind
 
 | Method | Type | Description |
@@ -50,9 +63,11 @@ The top level runs once, at load. While the script is off its handlers, commands
 | `storage` | `Config` | the script's default config — [Saving data](../settings/storage.md) |
 | `configs` | `Configs` | this script's named configs — [Saving data](../settings/storage.md) |
 | `assets` | `Assets` | read access to `scripts/assets` — [The assets folder](../extras/assets.md) (API 2) |
+| `sound` | `Sound` | plays `.wav` and `.ogg` from `scripts/assets` — [The assets folder](../extras/assets.md) (API 9) |
 | `clipboard` | `Clipboard` | system clipboard — [Messages](../ui/messages.md) (API 2) |
 | `filters` | `EntityFilters` | prebuilt entity predicates — [Entities and filters](../game/entities.md) |
 | `keys` | `Keys` | keyboard and mouse state — [Keys and binds](../actions/keys.md) |
+| `party` | `Party` | party info and the script message bus — [Party messages](../extras/party.md) (API 4) |
 | `player` | `SelfPlayer` | the local player — [Your player](../game/player.md) |
 | `world` | `World` | the loaded world — [World and blocks](../game/world.md) |
 | `inventory` | `Inventory` | the player inventory — [Inventory and items](../game/inventory.md) |
@@ -69,6 +84,8 @@ The top level runs once, at load. While the script is off its handlers, commands
 | `rotations` | `Rotations` | server-side yaw/pitch spoofing — [Rotations](../actions/rotations.md) |
 | `prediction` | `Prediction` | movement and projectile prediction — [Prediction](../actions/prediction.md) |
 | `gpu` | `Gpu` | mesh and pipeline registry — [Your own geometry](../ui/gpu.md) (API 2) |
+| `theme` | `Theme` | client menu and HUD colours and scales — [2D render](../ui/render-2d.md#client-theme) (API 8) |
+| `language` | `String` | client interface language, `en` or `ru` (API 8) |
 
 `player`, `world`, `inventory`, `container`, `recipes`, `interaction`, `raycast` and `control` throw `ScriptStateException` outside a world; `inGame` is the guard.
 Every root throws `ScriptStateException` after the script has been unloaded.
@@ -86,10 +103,12 @@ Every root throws `ScriptStateException` after the script has been unloaded.
 | `client.storage()` | `Config` | the script's default config, file name `storage` |
 | `client.configs()` | `Configs` | named per-script config store |
 | `client.assets()` | `Assets` | read-only file access under `scripts/assets` (API 2) |
+| `client.sound()` | `Sound` | plays `.wav` and `.ogg` from `scripts/assets` — [The assets folder](../extras/assets.md) (API 9) |
 | `client.clipboard()` | `Clipboard` | system clipboard read and write (API 2) |
 | `client.commands()` | `Commands` | `.`-prefixed command registration — [Your own commands](../extras/commands.md) |
 | `client.modules()` | `Modules` | client module registry — [Client modules](../extras/modules.md) |
 | `client.waypoints()` | `Waypoints` | client waypoint manager — [Waypoints](../extras/waypoints.md) |
+| `client.party()` | `Party` | party info and the script message bus — [Party messages](../extras/party.md) (API 4) |
 | `client.rotations()` | `Rotations` | spoofed server rotation handler |
 | `client.combat()` | `Combat` | attack point, target marking |
 | `client.slots()` | `Slots` | hotbar and held-slot control |
@@ -102,6 +121,8 @@ Every root throws `ScriptStateException` after the script has been unloaded.
 | `client.shaders()` | `Shaders` | per-script shader registry — [Shaders](../ui/shaders.md) |
 | `client.gpu()` | `Gpu` | per-script GPU buffer and pipeline registry (API 2) |
 | `client.textures()` | `Textures` | per-script texture registry — [2D render](../ui/render-2d.md) |
+| `client.theme()` | `Theme` | client menu and HUD colours and scales — [2D render](../ui/render-2d.md#client-theme) (API 8) |
+| `client.language()` | `String` | client interface language, `en` or `ru` (API 8) |
 
 `client.fps()`, `tick()`, `millis()`, `nanos()`, `tickDelta()` and `onClientThread()` are documented on [Timers and tasks](../extras/tasks.md).
 
@@ -140,4 +161,4 @@ Every root throws `ScriptStateException` after the script has been unloaded.
 |---|---|---|
 | `requireApi(minimum)` | `Unit` | refuses the load on an older client (throws `ScriptApiException` when `ApiVersion.CURRENT` < `minimum`) |
 
-This client provides API version 2 — see [API versions](../extras/api-versions.md).
+This client provides API version 5 — see [API versions](../extras/api-versions.md).

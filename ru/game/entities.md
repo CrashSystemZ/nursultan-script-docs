@@ -1,6 +1,6 @@
 # Сущности и фильтры
 
-Любая сущность, которую ты берёшь из [мира](world.md), из [луча](raycast.md) или из события, — живая обёртка: каждый геттер читает завёрнутую сущность Minecraft в момент вызова и продолжает читать её после того, как та ушла из мира, так что о пропаже говорит `alive()`. `LivingEntity`, `PlayerEntity` и `TextDisplay` добавляют методы поверх `Entity`; локальный игрок — это [`SelfPlayer`](player.md).
+Любая сущность, которую ты берёшь из [мира](world.md), из [луча](raycast.md) или из события, — живая обёртка: каждый геттер читает завёрнутую сущность Minecraft в момент вызова и продолжает читать её после того, как та ушла из мира, так что о пропаже говорит `alive()`. `LivingEntity`, `PlayerEntity`, `TextDisplay` и `ItemEntity` добавляют методы поверх `Entity`; локальный игрок — это [`SelfPlayer`](player.md).
 
 ```kotlin
 on<ClientTickEvent> {
@@ -26,9 +26,11 @@ on<ClientTickEvent> {
 | `entity.isLiving()` | `boolean` | завёрнутая сущность живая |
 | `entity.isPlayer()` | `boolean` | завёрнутая сущность — игрок |
 | `entity.isSelf()` | `boolean` | завёрнутая сущность — локальный игрок |
+| `entity.isItem()` | `boolean` | завёрнутая сущность — выброшенный предмет (API 4) |
 | `entity.asLiving()` | `LivingEntity?` | та же сущность как `LivingEntity`, иначе null |
 | `entity.asPlayer()` | `PlayerEntity?` | та же сущность как `PlayerEntity`, иначе null |
 | `entity.asTextDisplay()` | `TextDisplay?` | та же сущность как `TextDisplay`, иначе null |
+| `entity.asItemEntity()` | `ItemEntity?` | та же сущность как `ItemEntity`, иначе null (API 4) |
 
 ## Позиция и размер
 
@@ -39,14 +41,19 @@ on<ClientTickEvent> {
 | `entity.y()` | `double` | текущий Y в блоках |
 | `entity.z()` | `double` | текущий Z в блоках |
 | `entity.previousPosition()` | `Vec` | позиция на прошлом тике |
+| `entity.serverPosition()` | `Vec` | позиция, которую последней прислал сервер; `position()` для сущностей без интерполяции (API 6) |
+| `entity.interpolating()` | `boolean` | клиент всё ещё едет к `serverPosition()` (API 6) |
 | `entity.renderPosition()` | `Vec` | позиция с интерполяцией тика, для отрисовки |
 | `entity.box()` | [`Box`](math.md#box) | хитбокс в координатах мира |
 | `entity.width()` | `float` | ширина хитбокса в блоках |
 | `entity.height()` | `float` | высота хитбокса в блоках |
 | `entity.rotation()` | [`Rotation`](math.md#rotation) | yaw и pitch в градусах |
 | `entity.yaw()` | `float` | yaw в градусах |
+| `entity.yaw(value)` | `void` | ставит yaw только на клиенте (API 7) |
 | `entity.pitch()` | `float` | pitch в градусах, -90..90 |
+| `entity.pitch(value)` | `void` | ставит pitch только на клиенте (API 7) |
 | `entity.velocity()` | `Vec` | скорость в блоках за тик |
+| `entity.velocity(value)` | `void` | ставит скорость на клиенте; обновление с сервера перезапишет (API 7) |
 | `entity.distanceTo(other)` | `double` | расстояние между позициями в блоках (бросает `ScriptStateException`, если `other` не сущность мира) |
 | `entity.distanceTo(point)` | `double` | расстояние от позиции до точки в блоках |
 
@@ -75,8 +82,11 @@ on<ClientTickEvent> {
 | `entity.airTicks()` | `int` | остаток воздуха в тиках |
 | `entity.maxAirTicks()` | `int` | максимум воздуха в тиках |
 | `entity.fallDistanceBlocks()` | `double` | накопленная высота падения в блоках |
+| `entity.fallDistanceBlocks(value)` | `void` | ставит накопленную высоту падения в блоках (API 7) |
 | `entity.silent()` | `boolean` | флаг беззвучности |
 | `entity.noGravity()` | `boolean` | флаг отсутствия гравитации |
+| `entity.noClip()` | `boolean` | сущность проходит сквозь блоки (API 7) |
+| `entity.noClip(value)` | `void` | ставит флаг прохождения сквозь блоки на клиенте (API 7) |
 | `entity.age()` | `int` | сколько тиков сущность существует на клиенте |
 
 `invisible(true)` прячет модель, но не неймтег, а дисплеи флаг игнорируют вовсе.
@@ -215,6 +225,14 @@ Id эффектов сравниваются точно: `hasEffect("minecraft:s
 | `display.styledText()` | `Text` | оформленный текст дисплея |
 
 У текстового дисплея нет кастомного имени: `hasCustomName()` на нём false, а `customName()` — null.
+
+### ItemEntity
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `itemEntity.stack()` | [`Item`](inventory.md) | стак, лежащий на земле, оборачивается на каждый вызов (API 4) |
+
+Достаётся через `entity.asItemEntity()`; все методы `Entity` работают и на нём.
 
 ## Позы
 

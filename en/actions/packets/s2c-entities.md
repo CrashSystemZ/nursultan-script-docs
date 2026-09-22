@@ -121,10 +121,11 @@ Equipment slot contents for one entity.
 
 ## S2CEntityMoveRelativePacket
 
-Relative entity move without rotation. The entity id is not exposed.
+Relative entity move without rotation.
 
 | Component | Type | Description |
 |---|---|---|
+| `entityId()` | `int` | entity network id |
 | `deltaX()` | `short` | x delta in 1/4096 block units |
 | `deltaY()` | `short` | y delta in 1/4096 block units |
 | `deltaZ()` | `short` | z delta in 1/4096 block units |
@@ -176,10 +177,11 @@ Periodic absolute position resync for one entity.
 
 ## S2CEntityRotateAndMoveRelativePacket
 
-Relative entity move plus rotation. The entity id is not exposed.
+Relative entity move plus rotation.
 
 | Component | Type | Description |
 |---|---|---|
+| `entityId()` | `int` | entity network id |
 | `deltaX()` | `short` | x delta in 1/4096 block units |
 | `deltaY()` | `short` | y delta in 1/4096 block units |
 | `deltaZ()` | `short` | z delta in 1/4096 block units |

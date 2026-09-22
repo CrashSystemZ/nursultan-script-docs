@@ -32,6 +32,7 @@ on<ClientTickEvent> {
 | `player.bodyYaw()` | `float` | body yaw in degrees |
 | `player.headYaw()` | `float` | head yaw in degrees |
 | `player.velocity()` | `Vec` | velocity in blocks per tick |
+| `player.velocity(value)` | `void` | overwrites it; gravity and input still apply on the next tick (API 5) (throws `ScriptException` when `value` is null) |
 | `player.movementSpeed()` | `float` | movement-speed attribute in blocks per tick |
 | `player.distanceTo(other)` | `double` | distance between positions in blocks (throws `ScriptStateException` when `other` is not a world entity) |
 | `player.distanceTo(point)` | `double` | distance from the position to a point in blocks |
@@ -44,7 +45,8 @@ on<ClientTickEvent> {
 | `player.onGround()` | `boolean` | standing on ground |
 | `player.sneaking()` | `boolean` | sneak flag |
 | `player.sprinting()` | `boolean` | sprint flag |
-| `player.wasSprinting()` | `boolean` | sprint state on the previous tick |
+| `player.serverSprinting()` | `boolean` | sprint state the server was last told (API 5) |
+| `player.wasSprinting()` | `boolean` | older name for `serverSprinting()`, same value |
 | `player.hasMovementInput()` | `boolean` | movement keys produce input this tick |
 | `player.swimming()` | `boolean` | swimming flag |
 | `player.crawling()` | `boolean` | crawling in a 1-block gap |

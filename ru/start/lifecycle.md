@@ -28,6 +28,19 @@ whenInGame { enabled = true }
 
 Верхний уровень выполняется один раз, при загрузке. Пока скрипт выключен, его обработчики, команды, хоткеи и задачи отписаны; включение возвращает их обратно, файл заново не выполняется.
 
+### Script
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `Script.setEnabled(value)` | `void` | Java-форма записи в `enabled`, уходит на клиентский поток |
+| `Script.defaultKey(key)` | `Script` | Java-форма `key(key)`, возвращает скрипт |
+| `Script.events()` | `Events` | реестр событий под `on<E> { }` — [Подписка на события](../events/basics.md) |
+| `Script.client()` | `Client` | корень `client`, таблица ниже |
+| `Script.game()` | `Game` | корень `game`, таблица ниже |
+
+`Script` — это Java-объект, которому переадресует всё выше; `id()`, `name()`, `description()`, `enabled()`, `toggle()`, `bind()`, `onEnable()`, `onDisable()` и `onUnload()` носят те же имена, что уже есть на этой странице.
+`Script` наследует `SettingHost`, поэтому каждая фабрика настроек со страницы [Виды настроек](../settings/types.md) — тоже его член.
+
 ## Имя, описание, бинд
 
 | Метод | Тип | Описание |
@@ -50,9 +63,11 @@ whenInGame { enabled = true }
 | `storage` | `Config` | конфиг скрипта по умолчанию — [Сохранение данных](../settings/storage.md) |
 | `configs` | `Configs` | именованные конфиги этого скрипта — [Сохранение данных](../settings/storage.md) |
 | `assets` | `Assets` | чтение из `scripts/assets` — [Папка assets](../extras/assets.md) (API 2) |
+| `sound` | `Sound` | проигрывание `.wav` и `.ogg` из `scripts/assets` — [Папка assets](../extras/assets.md) (API 9) |
 | `clipboard` | `Clipboard` | системный буфер обмена — [Сообщения](../ui/messages.md) (API 2) |
 | `filters` | `EntityFilters` | готовые предикаты сущностей — [Сущности и фильтры](../game/entities.md) |
 | `keys` | `Keys` | состояние клавиатуры и мыши — [Клавиши и бинды](../actions/keys.md) |
+| `party` | `Party` | данные группы и шина сообщений скриптов — [Сообщения в группе](../extras/party.md) (API 4) |
 | `player` | `SelfPlayer` | свой игрок — [Свой игрок](../game/player.md) |
 | `world` | `World` | загруженный мир — [Мир и блоки](../game/world.md) |
 | `inventory` | `Inventory` | инвентарь игрока — [Инвентарь и предметы](../game/inventory.md) |
@@ -69,6 +84,8 @@ whenInGame { enabled = true }
 | `rotations` | `Rotations` | подмена yaw/pitch для сервера — [Повороты](../actions/rotations.md) |
 | `prediction` | `Prediction` | предсказание движения и снарядов — [Предсказание](../actions/prediction.md) |
 | `gpu` | `Gpu` | реестр мешей и пайплайнов — [Своя геометрия](../ui/gpu.md) (API 2) |
+| `theme` | `Theme` | цвета и масштабы меню и HUD клиента — [Рендер 2D](../ui/render-2d.md#тема-клиента) (API 8) |
+| `language` | `String` | язык интерфейса клиента, `en` или `ru` (API 8) |
 
 `player`, `world`, `inventory`, `container`, `recipes`, `interaction`, `raycast` и `control` бросают `ScriptStateException` вне мира; проверка — `inGame`.
 Любой корень бросает `ScriptStateException` после выгрузки скрипта.
@@ -86,10 +103,12 @@ whenInGame { enabled = true }
 | `client.storage()` | `Config` | конфиг скрипта по умолчанию, имя файла `storage` |
 | `client.configs()` | `Configs` | хранилище именованных конфигов скрипта |
 | `client.assets()` | `Assets` | чтение файлов из `scripts/assets` (API 2) |
+| `client.sound()` | `Sound` | проигрывание `.wav` и `.ogg` из `scripts/assets` — [Папка assets](../extras/assets.md) (API 9) |
 | `client.clipboard()` | `Clipboard` | чтение и запись системного буфера (API 2) |
 | `client.commands()` | `Commands` | регистрация команд с префиксом `.` — [Свои команды](../extras/commands.md) |
 | `client.modules()` | `Modules` | реестр модулей клиента — [Модули клиента](../extras/modules.md) |
 | `client.waypoints()` | `Waypoints` | менеджер путевых точек — [Путевые точки](../extras/waypoints.md) |
+| `client.party()` | `Party` | данные группы и шина сообщений скриптов — [Сообщения в группе](../extras/party.md) (API 4) |
 | `client.rotations()` | `Rotations` | обработчик подменённых поворотов |
 | `client.combat()` | `Combat` | точка удара, пометка цели |
 | `client.slots()` | `Slots` | управление слотом хотбара и возвратом |
@@ -102,6 +121,8 @@ whenInGame { enabled = true }
 | `client.shaders()` | `Shaders` | реестр шейдеров этого скрипта — [Шейдеры](../ui/shaders.md) |
 | `client.gpu()` | `Gpu` | реестр GPU-буферов и пайплайнов скрипта (API 2) |
 | `client.textures()` | `Textures` | реестр текстур этого скрипта — [Рендер 2D](../ui/render-2d.md) |
+| `client.theme()` | `Theme` | цвета и масштабы меню и HUD клиента — [Рендер 2D](../ui/render-2d.md#тема-клиента) (API 8) |
+| `client.language()` | `String` | язык интерфейса клиента, `en` или `ru` (API 8) |
 
 `client.fps()`, `tick()`, `millis()`, `nanos()`, `tickDelta()` и `onClientThread()` описаны на странице [Таймеры и задачи](../extras/tasks.md).
 
@@ -140,4 +161,4 @@ whenInGame { enabled = true }
 |---|---|---|
 | `requireApi(minimum)` | `Unit` | не даёт загрузиться на старом клиенте (бросает `ScriptApiException`, когда `ApiVersion.CURRENT` < `minimum`) |
 
-Этот клиент предоставляет версию API 2 — см. [Версии API](../extras/api-versions.md).
+Этот клиент предоставляет версию API 5 — см. [Версии API](../extras/api-versions.md).

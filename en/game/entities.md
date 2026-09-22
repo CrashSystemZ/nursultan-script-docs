@@ -1,6 +1,6 @@
 # Entities and filters
 
-Every entity you get from [the world](world.md), a [ray](raycast.md) or an event is a live wrapper: each getter reads the wrapped Minecraft entity at call time, and it keeps reading it after the entity leaves the world, so `alive()` is what tells you it is gone. `LivingEntity`, `PlayerEntity` and `TextDisplay` add members on top of `Entity`; the local player is a [`SelfPlayer`](player.md).
+Every entity you get from [the world](world.md), a [ray](raycast.md) or an event is a live wrapper: each getter reads the wrapped Minecraft entity at call time, and it keeps reading it after the entity leaves the world, so `alive()` is what tells you it is gone. `LivingEntity`, `PlayerEntity`, `TextDisplay` and `ItemEntity` add members on top of `Entity`; the local player is a [`SelfPlayer`](player.md).
 
 ```kotlin
 on<ClientTickEvent> {
@@ -26,9 +26,11 @@ on<ClientTickEvent> {
 | `entity.isLiving()` | `boolean` | wrapped entity is a living entity |
 | `entity.isPlayer()` | `boolean` | wrapped entity is a player |
 | `entity.isSelf()` | `boolean` | wrapped entity is the local player |
+| `entity.isItem()` | `boolean` | wrapped entity is a dropped item stack (API 4) |
 | `entity.asLiving()` | `LivingEntity?` | same entity as `LivingEntity`, null otherwise |
 | `entity.asPlayer()` | `PlayerEntity?` | same entity as `PlayerEntity`, null otherwise |
 | `entity.asTextDisplay()` | `TextDisplay?` | same entity as `TextDisplay`, null otherwise |
+| `entity.asItemEntity()` | `ItemEntity?` | same entity as `ItemEntity`, null otherwise (API 4) |
 
 ## Position and size
 
@@ -39,14 +41,19 @@ on<ClientTickEvent> {
 | `entity.y()` | `double` | current world Y in blocks |
 | `entity.z()` | `double` | current world Z in blocks |
 | `entity.previousPosition()` | `Vec` | position at the previous tick |
+| `entity.serverPosition()` | `Vec` | position the server last sent, `position()` for entities that never lerp (API 6) |
+| `entity.interpolating()` | `boolean` | the client is still lerping towards `serverPosition()` (API 6) |
 | `entity.renderPosition()` | `Vec` | tick-interpolated position used for drawing |
 | `entity.box()` | [`Box`](math.md#box) | bounding box in world coordinates |
 | `entity.width()` | `float` | hitbox width in blocks |
 | `entity.height()` | `float` | hitbox height in blocks |
 | `entity.rotation()` | [`Rotation`](math.md#rotation) | yaw and pitch in degrees |
 | `entity.yaw()` | `float` | yaw in degrees |
+| `entity.yaw(value)` | `void` | sets yaw client-side (API 7) |
 | `entity.pitch()` | `float` | pitch in degrees, -90..90 |
+| `entity.pitch(value)` | `void` | sets pitch client-side (API 7) |
 | `entity.velocity()` | `Vec` | velocity in blocks per tick |
+| `entity.velocity(value)` | `void` | sets velocity client-side; a server update overwrites it (API 7) |
 | `entity.distanceTo(other)` | `double` | distance between positions in blocks (throws `ScriptStateException` when `other` is not a world entity) |
 | `entity.distanceTo(point)` | `double` | distance from the position to a point in blocks |
 
@@ -75,8 +82,11 @@ on<ClientTickEvent> {
 | `entity.airTicks()` | `int` | remaining air in ticks |
 | `entity.maxAirTicks()` | `int` | maximum air in ticks |
 | `entity.fallDistanceBlocks()` | `double` | accumulated fall distance in blocks |
+| `entity.fallDistanceBlocks(value)` | `void` | sets the accumulated fall distance in blocks (API 7) |
 | `entity.silent()` | `boolean` | silent flag |
 | `entity.noGravity()` | `boolean` | no-gravity flag |
+| `entity.noClip()` | `boolean` | entity moves through blocks (API 7) |
+| `entity.noClip(value)` | `void` | sets the no-clip flag client-side (API 7) |
 | `entity.age()` | `int` | ticks the entity has existed on the client |
 
 `invisible(true)` hides the model and not the nametag, and display entities ignore the flag entirely.
@@ -215,6 +225,14 @@ Effect ids are compared exactly: `hasEffect("minecraft:speed")` matches, `hasEff
 | `display.styledText()` | `Text` | styled text of the display |
 
 A text display has no custom name: `hasCustomName()` is false and `customName()` is null on it.
+
+### ItemEntity
+
+| Method | Type | Description |
+|---|---|---|
+| `itemEntity.stack()` | [`Item`](inventory.md) | the stack lying on the ground, wrapped on each call (API 4) |
+
+Reached with `entity.asItemEntity()`; every `Entity` member works on it too.
 
 ## Poses
 

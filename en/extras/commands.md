@@ -47,6 +47,8 @@ Nothing is registered until `register()`; the Kotlin `command(name) { }` form ca
 
 ## Inside `runs`
 
+The receiver is a `CommandContext`.
+
 | Method | Type | Description |
 |---|---|---|
 | `label()` | `String` | full node path, e.g. `home go` |
