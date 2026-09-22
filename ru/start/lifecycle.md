@@ -63,6 +63,7 @@ whenInGame { enabled = true }
 | `storage` | `Config` | конфиг скрипта по умолчанию — [Сохранение данных](../settings/storage.md) |
 | `configs` | `Configs` | именованные конфиги этого скрипта — [Сохранение данных](../settings/storage.md) |
 | `assets` | `Assets` | чтение из `scripts/assets` — [Папка assets](../extras/assets.md) (API 2) |
+| `sound` | `Sound` | проигрывание `.wav` и `.ogg` из `scripts/assets` — [Папка assets](../extras/assets.md) (API 9) |
 | `clipboard` | `Clipboard` | системный буфер обмена — [Сообщения](../ui/messages.md) (API 2) |
 | `filters` | `EntityFilters` | готовые предикаты сущностей — [Сущности и фильтры](../game/entities.md) |
 | `keys` | `Keys` | состояние клавиатуры и мыши — [Клавиши и бинды](../actions/keys.md) |
@@ -102,6 +103,7 @@ whenInGame { enabled = true }
 | `client.storage()` | `Config` | конфиг скрипта по умолчанию, имя файла `storage` |
 | `client.configs()` | `Configs` | хранилище именованных конфигов скрипта |
 | `client.assets()` | `Assets` | чтение файлов из `scripts/assets` (API 2) |
+| `client.sound()` | `Sound` | проигрывание `.wav` и `.ogg` из `scripts/assets` — [Папка assets](../extras/assets.md) (API 9) |
 | `client.clipboard()` | `Clipboard` | чтение и запись системного буфера (API 2) |
 | `client.commands()` | `Commands` | регистрация команд с префиксом `.` — [Свои команды](../extras/commands.md) |
 | `client.modules()` | `Modules` | реестр модулей клиента — [Модули клиента](../extras/modules.md) |
