@@ -182,6 +182,50 @@ on<Render2DEvent> { e ->
 | `Colors.fade(argb, factor)` | `int` | умножает альфу на factor, зажатый в 0..1 |
 | `Colors.mix(first, second, amount)` | `int` | поканальная интерполяция вместе с альфой, amount зажат в 0..1 |
 
+## Тема клиента
+
+Цвета и масштабы, с которыми рисуются меню и HUD клиента. `theme` — корень DSL, `client.theme()` — тот же объект; каждый цвет — ARGB, каждое значение читается в момент вызова, поэтому производные от акцента меняются сразу, как только пользователь выбрал другой акцент.
+
+| Метод | Тип | Описание |
+|---|---|---|
+| `theme.defaultAccent()` | `int` | акцент до выбора пользователем, `0xFF8BACFF` (API 8) |
+| `theme.accent()` | `int` | текущий акцент меню, следует настройкам клиента (API 8) |
+| `theme.background()` | `int` | фон окна (API 8) |
+| `theme.border()` | `int` | рамка окна (API 8) |
+| `theme.divider()` | `int` | линия-разделитель, белый с альфой 2% (API 8) |
+| `theme.textPrimary()` | `int` | основной текст, непрозрачный белый (API 8) |
+| `theme.textSecondary()` | `int` | второстепенный текст, белый с альфой 72% (API 8) |
+| `theme.textTertiary()` | `int` | текст подсказок, белый с альфой 48% (API 8) |
+| `theme.textQuaternary()` | `int` | едва заметный текст, белый с альфой 24% (API 8) |
+| `theme.textInactive()` | `int` | неактивный текст, `0xFF929292` (API 8) |
+| `theme.textOnBrand()` | `int` | текст поверх `accent()`, чёрный на ярком акценте (API 8) |
+| `theme.iconSecondary()` | `int` | второстепенная иконка, белый с альфой 72% (API 8) |
+| `theme.iconTertiary()` | `int` | иконка подсказки, белый с альфой 48% (API 8) |
+| `theme.iconQuaternary()` | `int` | едва заметная иконка, белый с альфой 24% (API 8) |
+| `theme.iconOnBrand()` | `int` | иконка поверх `accent()`, чёрная на ярком акценте (API 8) |
+| `theme.backgroundBase()` | `int` | базовый слой меню (API 8) |
+| `theme.backgroundSurface()` | `int` | панель поверх базового слоя (API 8) |
+| `theme.backgroundModal()` | `int` | модальное окно (API 8) |
+| `theme.backgroundElevated()` | `int` | приподнятая панель (API 8) |
+| `theme.backgroundSurfaceSolid()` | `int` | непрозрачный `backgroundSurface()` (API 8) |
+| `theme.backgroundElevatedSolid()` | `int` | непрозрачный `backgroundElevated()` (API 8) |
+| `theme.backgroundScrollSurface()` | `int` | дорожка скроллбара (API 8) |
+| `theme.backgroundScrollBar()` | `int` | ползунок скроллбара (API 8) |
+| `theme.backgroundScrollBarHover()` | `int` | ползунок скроллбара под курсором (API 8) |
+| `theme.backgroundScrollBarActive()` | `int` | ползунок скроллбара при перетаскивании (API 8) |
+| `theme.backgroundActive()` | `int` | нажатый или наведённый элемент, белый с альфой 8% (API 8) |
+| `theme.borderSurface()` | `int` | рамка панели, белый с альфой 2% (API 8) |
+| `theme.fieldSurface()` | `int` | заливка поля ввода (API 8) |
+| `theme.fieldItem()` | `int` | элемент внутри поля ввода (API 8) |
+| `theme.fieldSurfaceDisabled()` | `int` | заливка неактивного поля ввода (API 8) |
+| `theme.effectShadow()` | `int` | отбрасываемая тень (API 8) |
+| `theme.surfaceBorder()` | `int` | рамка карточки (API 8) |
+| `theme.hudShadow()` | `int` | тень элемента HUD (API 8) |
+| `theme.switchOffBg()` | `int` | заливка выключенного переключателя, белый с альфой 8% (API 8) |
+| `theme.switchOffThumb()` | `int` | кружок выключенного переключателя, белый с альфой 48% (API 8) |
+| `theme.menuScale()` | `float` | настройка масштаба меню: 1, 1.25, 1.5 или 2 (API 8) |
+| `theme.hudScale()` | `float` | настройка масштаба HUD: 1, 1.25, 1.5 или 2 (API 8) |
+
 ## Точка мира на экране
 
 | Метод | Тип | Описание |

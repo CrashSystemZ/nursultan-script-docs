@@ -119,6 +119,16 @@ val mesh = gpu.indexedMesh(format)
 | `render.blend(mode)` | [Рендер 2D](../ui/render-2d.md) |
 | `BlendMode.INVERT` | [Своя геометрия](../ui/gpu.md) |
 
+### API 8
+
+| Добавлено в 8 | Где описано |
+|---|---|
+| `client.theme()` | [Как устроен скрипт](../start/lifecycle.md) |
+| `client.language()` | [Как устроен скрипт](../start/lifecycle.md) |
+| `language` | [Как устроен скрипт](../start/lifecycle.md) |
+| `theme` | [Рендер 2D](../ui/render-2d.md) |
+| `Theme` | [Рендер 2D](../ui/render-2d.md) |
+
 ### API 9
 
 | Добавлено в 9 | Где описано |

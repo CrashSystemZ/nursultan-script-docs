@@ -119,6 +119,16 @@ Packet records follow the Minecraft version, not this number — see [Packets](.
 | `render.blend(mode)` | [2D render](../ui/render-2d.md) |
 | `BlendMode.INVERT` | [Your own geometry](../ui/gpu.md) |
 
+### API 8
+
+| Added in 8 | Documented on |
+|---|---|
+| `client.theme()` | [How a script works](../start/lifecycle.md) |
+| `client.language()` | [How a script works](../start/lifecycle.md) |
+| `language` | [How a script works](../start/lifecycle.md) |
+| `theme` | [2D render](../ui/render-2d.md) |
+| `Theme` | [2D render](../ui/render-2d.md) |
+
 ### API 9
 
 | Added in 9 | Documented on |
