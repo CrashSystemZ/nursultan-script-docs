@@ -1,6 +1,6 @@
 # The assets folder
 
-`assets` is `client.assets()` and reads files under `%APPDATA%\Nursultan\scripts\assets`. `base64(...)` is the alternative: it turns string literals in the `.kts` itself into bytes a font or an image can be built from. Everything on this page is API 2.
+`assets` is `client.assets()` and reads files under `%APPDATA%\Nursultan\scripts\assets`. `base64(...)` is the alternative: it turns string literals in the `.kts` itself into bytes a font or an image can be built from. Everything on this page is API 2 except `sound`, which is API 9.
 
 ```kotlin
 val greeting = assets.text("messages/hello.txt") ?: "no file"
@@ -11,8 +11,16 @@ val FONT = base64(
 )
 font("myfont", FONT)
 
+var siren: SoundHandle? = null
+onEnable { siren = sound.loop("sounds/siren.ogg", 0.3f, 1f) }
+
 on<Render2DEvent> { e ->
     e.render().text(greeting, 10f, 10f, 12f, Colors.WHITE, "myfont")
+}
+
+on<AttackEvent> {
+    siren?.stop()
+    sound.play("sounds/hit.wav", 0.6f, 1.2f)
 }
 ```
 
@@ -28,6 +36,31 @@ on<Render2DEvent> { e ->
 
 Paths are relative to `scripts/assets`, forward or backslash separated. Nothing here throws: a rejected, missing or oversized file gives `null` or an empty list plus one warning in the script console.
 `list` returns file names only — no paths, no directories, no recursion.
+
+## Playing a sound
+
+`sound` is `client.sound()` and plays a `.wav` or `.ogg` file out of the same folder.
+
+| Method | Type | Description |
+|---|---|---|
+| `sound.play(path)` | `SoundHandle?` | plays the file once at full volume, null when rejected (API 9) |
+| `sound.play(path, volume, pitch)` | `SoundHandle?` | the same with volume `0..1` and pitch `0.5..2`, both clamped (API 9) |
+| `sound.loop(path)` | `SoundHandle?` | plays the file over and over until it is stopped (API 9) |
+| `sound.loop(path, volume, pitch)` | `SoundHandle?` | the same with volume `0..1` and pitch `0.5..2`, both clamped (API 9) |
+| `sound.stopAll()` | `void` | stops every sound this script started (API 9) |
+| `handle.path()` | `String` | the path the handle was made from (API 9) |
+| `handle.stop()` | `void` | stops that one sound (API 9) |
+
+`.wav` and `.ogg` decode, `.mp3` gives null; paths and rejections are the ones above.
+A sound is flat and `volume` is its only level; every sound of a script stops when it is switched off or unloaded.
+
+| Limit | Value |
+|---|---|
+| file size | 8 MiB |
+| looping sounds at a time | 8 |
+| calls per second | 32 |
+
+Going over a limit warns once in the script console and returns null.
 
 ## What is rejected
 

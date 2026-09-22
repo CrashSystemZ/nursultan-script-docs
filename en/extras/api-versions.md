@@ -1,6 +1,6 @@
 # API versions
 
-`ApiVersion.CURRENT` is 7. `requireApi(n)` fails the script at load when the running client is older; it cannot rescue a compile error, because a name that does not exist on the older SDK never compiles in the first place.
+`ApiVersion.CURRENT` is 9. `requireApi(n)` fails the script at load when the running client is older; it cannot rescue a compile error, because a name that does not exist on the older SDK never compiles in the first place.
 
 ```kotlin
 requireApi(2)
@@ -16,11 +16,11 @@ val mesh = gpu.indexedMesh(format)
 
 | Method | Type | Description |
 |---|---|---|
-| `ApiVersion.CURRENT` | `int` | script API version of this client, currently 7 |
+| `ApiVersion.CURRENT` | `int` | script API version of this client, currently 9 |
 | `ApiVersion.require(minimum)` | `void` | static (throws `ScriptApiException` when `CURRENT` < `minimum`) |
 | `requireApi(minimum)` | `Unit` | the DSL form of `ApiVersion.require` (throws `ScriptApiException` when `CURRENT` < `minimum`) |
 
-`ApiVersion` has a private constructor: no instance, only the two static members, and the client appends `this client provides v7` to every `Unresolved reference` compile error.
+`ApiVersion` has a private constructor: no instance, only the two static members, and the client appends `this client provides v9` to every `Unresolved reference` compile error.
 Packet records follow the Minecraft version, not this number — see [Packets](../actions/packets.md).
 
 ## What each version added
@@ -118,6 +118,20 @@ Packet records follow the Minecraft version, not this number — see [Packets](.
 | `render.blend()` | [2D render](../ui/render-2d.md) |
 | `render.blend(mode)` | [2D render](../ui/render-2d.md) |
 | `BlendMode.INVERT` | [Your own geometry](../ui/gpu.md) |
+
+### API 9
+
+| Added in 9 | Documented on |
+|---|---|
+| `client.sound()` | [The assets folder](assets.md) |
+| `sound` | [The assets folder](assets.md) |
+| `Sound` | [The assets folder](assets.md) |
+| `SoundHandle` | [The assets folder](assets.md) |
+| `sound.play(path)` | [The assets folder](assets.md) |
+| `sound.play(path, volume, pitch)` | [The assets folder](assets.md) |
+| `sound.loop(path)` | [The assets folder](assets.md) |
+| `sound.loop(path, volume, pitch)` | [The assets folder](assets.md) |
+| `sound.stopAll()` | [The assets folder](assets.md) |
 
 Nothing is gated per member: every addition above is present unconditionally in a client of that version, and `requireApi(n)` is the only check that exists.
 API 1 is the surface that carries no marker at all; API 2 members are marked `(API 2)` in the tables of the page that documents them.
