@@ -105,7 +105,7 @@ No read returns null: an absent stack comes back as an item whose `empty()` is t
 | `batch.delay(ticks)` | `Batch` | appends a pause in game ticks (throws ScriptException when ticks is 0 or less) |
 | `batch.onFinish(action)` | `Batch` | runs the action when the queue closes (API 2) (throws ScriptException when action is null) |
 
-Every mutation needs an open screen handler, and with a non-player screen open the `ARMOR` and `OFFHAND` slots throw `ScriptStateException`; a batch does not block, its queue drains over the following ticks.
+Every mutation needs an open screen handler, and with a non-player screen open the `ARMOR` and `OFFHAND` slots throw `ScriptStateException`; a batch does not block, its queue drains over the following ticks, and one with no click or delay is dropped together with its `onFinish`.
 Slots of an open chest or server menu are addressed by [Containers](containers.md); switching the held hotbar slot is [Slots and armor](../actions/slots.md).
 
 ## The stack
