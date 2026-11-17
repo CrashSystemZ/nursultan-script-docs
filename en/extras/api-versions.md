@@ -1,6 +1,6 @@
 # API versions
 
-`ApiVersion.CURRENT` is 9. `requireApi(n)` fails the script at load when the running client is older; it cannot rescue a compile error, because a name that does not exist on the older SDK never compiles in the first place.
+`ApiVersion.CURRENT` is 10. `requireApi(n)` fails the script at load when the running client is older; it cannot rescue a compile error, because a name that does not exist on the older SDK never compiles in the first place.
 
 ```kotlin
 requireApi(2)
@@ -16,11 +16,11 @@ val mesh = gpu.indexedMesh(format)
 
 | Method | Type | Description |
 |---|---|---|
-| `ApiVersion.CURRENT` | `int` | script API version of this client, currently 9 |
+| `ApiVersion.CURRENT` | `int` | script API version of this client, currently 10 |
 | `ApiVersion.require(minimum)` | `void` | static (throws `ScriptApiException` when `CURRENT` < `minimum`) |
 | `requireApi(minimum)` | `Unit` | the DSL form of `ApiVersion.require` (throws `ScriptApiException` when `CURRENT` < `minimum`) |
 
-`ApiVersion` has a private constructor: no instance, only the two static members, and the client appends `this client provides v9` to every `Unresolved reference` compile error.
+`ApiVersion` has a private constructor: no instance, only the two static members, and the client appends `this client provides v10` to every `Unresolved reference` compile error.
 Packet records follow the Minecraft version, not this number — see [Packets](../actions/packets.md).
 
 ## What each version added
@@ -159,6 +159,17 @@ Packet records follow the Minecraft version, not this number — see [Packets](.
 | `sound.loop(path)` | [The assets folder](assets.md) |
 | `sound.loop(path, volume, pitch)` | [The assets folder](assets.md) |
 | `sound.stopAll()` | [The assets folder](assets.md) |
+
+### API 10
+
+| Added in 10 | Documented on |
+|---|---|
+| `world.hideEntity(entity)` | [World and blocks](../game/world.md) |
+| `world.showEntity(entity)` | [World and blocks](../game/world.md) |
+| `world.entityHidden(entity)` | [World and blocks](../game/world.md) |
+| `world.captureModel(entity)` | [World and blocks](../game/world.md) |
+| `EntityModel` | [World and blocks](../game/world.md) |
+| `ModelCuboid` | [World and blocks](../game/world.md) |
 
 Nothing is gated per member: every addition above is present unconditionally in a client of that version, and `requireApi(n)` is the only check that exists.
 API 1 is the surface that carries no marker at all; API 2 members are marked `(API 2)` in the tables of the page that documents them.

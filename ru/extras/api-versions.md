@@ -1,6 +1,6 @@
 # Версии API
 
-`ApiVersion.CURRENT` равен 9. `requireApi(n)` не даёт скрипту загрузиться на клиенте постарше указанного, но от ошибки компиляции он не спасает: имя, которого в старом SDK нет, не скомпилируется вообще.
+`ApiVersion.CURRENT` равен 10. `requireApi(n)` не даёт скрипту загрузиться на клиенте постарше указанного, но от ошибки компиляции он не спасает: имя, которого в старом SDK нет, не скомпилируется вообще.
 
 ```kotlin
 requireApi(2)
@@ -16,11 +16,11 @@ val mesh = gpu.indexedMesh(format)
 
 | Метод | Тип | Описание |
 |---|---|---|
-| `ApiVersion.CURRENT` | `int` | версия скриптового API этого клиента, сейчас 9 |
+| `ApiVersion.CURRENT` | `int` | версия скриптового API этого клиента, сейчас 10 |
 | `ApiVersion.require(minimum)` | `void` | статический (бросает `ScriptApiException`, когда `CURRENT` < `minimum`) |
 | `requireApi(minimum)` | `Unit` | форма `ApiVersion.require` из DSL (бросает `ScriptApiException`, когда `CURRENT` < `minimum`) |
 
-У `ApiVersion` приватный конструктор: экземпляра нет, только два статических члена, а к каждой ошибке `Unresolved reference` клиент дописывает `this client provides v9`.
+У `ApiVersion` приватный конструктор: экземпляра нет, только два статических члена, а к каждой ошибке `Unresolved reference` клиент дописывает `this client provides v10`.
 Записи пакетов следуют за версией Minecraft, а не за этим номером — см. [Пакеты](../actions/packets.md).
 
 ## Что добавила каждая версия
@@ -159,6 +159,17 @@ val mesh = gpu.indexedMesh(format)
 | `sound.loop(path)` | [Папка assets](assets.md) |
 | `sound.loop(path, volume, pitch)` | [Папка assets](assets.md) |
 | `sound.stopAll()` | [Папка assets](assets.md) |
+
+### API 10
+
+| Добавлено в 10 | Где описано |
+|---|---|
+| `world.hideEntity(entity)` | [Мир и блоки](../game/world.md) |
+| `world.showEntity(entity)` | [Мир и блоки](../game/world.md) |
+| `world.entityHidden(entity)` | [Мир и блоки](../game/world.md) |
+| `world.captureModel(entity)` | [Мир и блоки](../game/world.md) |
+| `EntityModel` | [Мир и блоки](../game/world.md) |
+| `ModelCuboid` | [Мир и блоки](../game/world.md) |
 
 Ничего не закрыто пометкой по отдельным членам: всё перечисленное выше есть в клиенте своей версии безусловно, а `requireApi(n)` — единственная проверка.
 API 1 — это та часть, у которой пометки нет вообще; члены API 2 помечены `(API 2)` в таблицах той страницы, которая их описывает.

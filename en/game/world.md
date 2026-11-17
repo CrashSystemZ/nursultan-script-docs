@@ -157,8 +157,27 @@ These are the same shapes `raycast.blocks(...)` clips against; `block.box()` sta
 | `world.removeEntity(entity)` | `boolean` | client-side removal by wrapper, false when null (main thread only) |
 | `world.removeEntity(entityId)` | `boolean` | client-side removal by network id, false for own player (main thread only) |
 | `world.unhideEntities()` | `void` | clears the [hidden](entities.md#hiding-one) flag on every loaded entity |
+| `world.hideEntity(entity)` | `void` | stops drawing the entity: model, armour, nametag, shadow, glow (API 10) (main thread only) (throws `ScriptStateException` when `entity` is not a world entity) |
+| `world.showEntity(entity)` | `void` | undoes this script's own `hideEntity` (API 10) (main thread only) (throws `ScriptStateException` when `entity` is not a world entity) |
+| `world.entityHidden(entity)` | `boolean` | this script is hiding the entity with `hideEntity` (API 10) (main thread only) (throws `ScriptStateException` when `entity` is not a world entity) |
 
 Removal is local: the server keeps the entity and resends it on a chunk reload, and each removal fires `EntityRemoveEvent`.
+`hideEntity` belongs to the script that called it: switching the script off or unloading it shows the entity again, `unhideEntities()` does not touch it, an entity two scripts hide stays hidden until both show it, and one that unloads and comes back is visible again.
+
+## Entity models
+
+| Method | Type | Description |
+|---|---|---|
+| `world.captureModel(entity)` | `EntityModel?` | model pose drawn this frame, null for non-living entities (API 10) (main thread only) (throws `ScriptStateException` when `entity` is not a world entity) |
+| `model.entity()` | `Entity` | entity the model was captured from (API 10) |
+| `model.cuboids()` | `List<ModelCuboid>` | every visible cuboid of the model, immutable list (API 10) |
+| `cuboid.part()` | `String` | model part path, e.g. `head` or `right_arm/right_sleeve`, empty for the root (API 10) |
+| `cuboid.index()` | `int` | cuboid index inside its part, from 0 (API 10) |
+| `cuboid.corners()` | `List<Vec>` | 8 corners in world blocks, 0..3 one face, 4..7 the opposite one (API 10) |
+| `cuboid.center()` | `Vec` | cuboid centre in world blocks (API 10) |
+
+The pose is the one Minecraft draws this frame, animation, sneaking, sleeping and baby models included; armour, held items, capes and other layers are not in it.
+Corners `i` and `i + 4` share an edge, and `0-1-2-3` and `4-5-6-7` each run around one face; a hidden entity can still be captured.
 
 ## Sounds and particles
 
